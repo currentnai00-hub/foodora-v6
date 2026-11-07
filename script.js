@@ -1,20 +1,170 @@
-const $=s=>document.querySelector(s);
-let products=[],cart=[],category="All",couponCode="",couponDiscount=0,config={paymentMethods:["bKash","Nagad"],paymentNumber:"01XXXXXXXXX",deliveryFee:60,freeDeliveryFrom:999};
-const money=n=>"৳"+Number(n||0).toLocaleString("en-BD");
-async function api(url,options={}){const r=await fetch(url,{headers:{"Content-Type":"application/json",...(options.headers||{})},...options});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Request failed");return d}
-async function boot(){try{[products,config]=await Promise.all([api("/api/products"),api("/api/config")]);renderCategories();renderProducts();fillPaymentMethods()}catch(e){$("#products").innerHTML=`<p class="empty">${e.message}</p>`}}
-function renderCategories(){const cats=["All",...new Set(products.map(p=>p.category))];$("#categories").innerHTML=cats.map(c=>`<button class="chip ${c===category?"active":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");$("#categories").querySelectorAll("button").forEach(b=>b.onclick=()=>{category=b.dataset.cat;renderCategories();renderProducts()})}
-function renderProducts(){const q=$("#search").value.toLowerCase();const list=products.filter(p=>(category==="All"||p.category===category)&&(`${p.name} ${p.description}`.toLowerCase().includes(q)));$("#products").innerHTML=list.length?list.map(p=>`<article class="product-card"><div class="product-visual">${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" onerror="this.remove()">`:esc(p.emoji||"🍽️")}</div><div class="product-info"><h3>${esc(p.name)}</h3><p>${esc(p.description||"Freshly prepared for you.")}</p><div class="product-bottom"><span class="price">${money(p.price)}</span><button class="add-button" data-add="${esc(p.id)}" ${p.stock<=0?"disabled":""}>${p.stock<=0?"Sold out":"+ Add"}</button></div><small class="muted">${p.stock} available</small></div></article>`).join(""):'<p class="empty">No food found.</p>';$("#products").querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>add(b.dataset.add))}
-function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function add(id){const p=products.find(x=>x.id===id);if(!p)return;const line=cart.find(x=>x.id===id);if((line?.qty||0)>=p.stock)return alert("Stock limit reached");if(line)line.qty++;else cart.push({id,qty:1});renderCart()}
-function totals(){const subtotal=cart.reduce((s,x)=>s+(products.find(p=>p.id===x.id)?.price||0)*x.qty,0);const discount=Math.min(subtotal,couponDiscount);const deliveryFee=subtotal-discount>=Number(config.freeDeliveryFrom)?0:Number(config.deliveryFee);return{subtotal,discount,deliveryFee,total:subtotal-discount+deliveryFee}}
-function renderCart(){const count=cart.reduce((s,x)=>s+x.qty,0);$("#cartCount").textContent=count;$("#cartItems").innerHTML=cart.length?cart.map(x=>{const p=products.find(z=>z.id===x.id);return p?`<div class="cart-line"><div><b>${esc(p.name)}</b><div class="muted">${money(p.price)} each</div></div><div class="qty-controls"><button data-minus="${p.id}">−</button>${x.qty}<button data-plus="${p.id}">+</button></div></div>`:""}).join(""):'<p class="empty">Your cart is empty.</p>';$("#cartItems").querySelectorAll("[data-minus]").forEach(b=>b.onclick=()=>changeQty(b.dataset.minus,-1));$("#cartItems").querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>changeQty(b.dataset.plus,1));const t=totals();$("#totals").innerHTML=`<div class="total-line"><span>Subtotal</span><b>${money(t.subtotal)}</b></div><div class="total-line"><span>Discount</span><b>−${money(t.discount)}</b></div><div class="total-line"><span>Delivery</span><b>${t.deliveryFee?money(t.deliveryFee):"FREE"}</b></div><div class="total-line"><strong>Total</strong><strong>${money(t.total)}</strong></div>`;$("#checkoutOpen").disabled=!cart.length}
-function changeQty(id,delta){const x=cart.find(x=>x.id===id),p=products.find(p=>p.id===id);if(!x)return;x.qty+=delta;if(x.qty<=0)cart=cart.filter(y=>y.id!==id);if(delta>0&&x.qty>p.stock){x.qty=p.stock;alert("Stock limit reached")}renderCart()}
-function openCart(open){$("#drawer").classList.toggle("open",open);$("#backdrop").classList.toggle("show",open)}
-$("#cartOpen").onclick=()=>openCart(true);$("#cartClose").onclick=()=>openCart(false);$("#backdrop").onclick=()=>openCart(false);$("#search").oninput=renderProducts;$("#year").textContent=new Date().getFullYear();
-$("#applyCoupon").onclick=async()=>{try{const t=totals();const r=await api("/api/coupons/validate",{method:"POST",body:JSON.stringify({code:$("#coupon").value,subtotal:t.subtotal})});couponCode=r.code;couponDiscount=r.discount;$("#couponMessage").textContent=`Applied ${r.code}: ${money(r.discount)} off`;$("#couponMessage").className="muted notice success";renderCart()}catch(e){couponCode="";couponDiscount=0;$("#couponMessage").textContent=e.message;$("#couponMessage").className="notice";renderCart()}};
-function fillPaymentMethods(){$("#paymentMethod").innerHTML=(config.paymentMethods||["bKash","Nagad"]).map(x=>`<option>${esc(x)}</option>`).join("");$("#paymentHelp").textContent=`Manual payment: send the final amount to ${config.paymentNumber} using your selected method. Add the Transaction ID after payment. Admin will verify it.`}
-$("#checkoutOpen").onclick=()=>{if(!cart.length)return;openCart(false);$("#checkoutModal").classList.add("show")};$("#checkoutClose").onclick=()=>$("#checkoutModal").classList.remove("show");
-$("#checkoutForm").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget),data=Object.fromEntries(f.entries());data.items=cart.map(x=>({id:x.id,qty:x.qty}));data.couponCode=couponCode;const btn=e.currentTarget.querySelector("button[type=submit],button:not([type])");btn.disabled=true;$("#checkoutMessage").textContent="Placing your order…";try{const r=await api("/api/orders",{method:"POST",body:JSON.stringify(data)});$("#checkoutMessage").innerHTML=`Order placed! <b>${esc(r.order.id)}</b><br>Total: ${money(r.order.total)}<br>${esc(r.payment.instructions)}<br>Save your Order ID to track delivery.`;$("#checkoutMessage").className="notice success";cart=[];couponCode="";couponDiscount=0;renderCart();e.currentTarget.reset();}catch(err){$("#checkoutMessage").textContent=err.message;$("#checkoutMessage").className="notice"}finally{btn.disabled=false}};
-$("#trackForm").onsubmit=async e=>{e.preventDefault();$("#trackResult").textContent="Checking…";try{const o=await api("/api/orders/"+encodeURIComponent($("#trackId").value.trim()));$("#trackResult").innerHTML=`<b>${esc(o.id)}</b> — ${esc(o.status)}<br>Payment: ${esc(o.paymentStatus)} · Total: ${money(o.total)}`;$("#trackResult").className="notice success"}catch(err){$("#trackResult").textContent=err.message;$("#trackResult").className="notice"}};
-boot();renderCart();
+let products=[],cart=[],category="All";
+
+async function init(){
+ try{
+  const r=await fetch("/api/products");
+  if(!r.ok)throw Error("Menu loading failed");
+  products=await r.json();
+  render();
+ }catch(e){
+  document.getElementById("products").textContent="Could not load menu. Please refresh.";
+ }
+}
+
+function render(){
+ const term=(document.getElementById("search").value||"").toLowerCase();
+ const cats=["All",...new Set(products.map(p=>p.category))];
+
+ document.getElementById("categories").innerHTML=cats.map(c=>
+  `<button class="category ${category===c?"active":""}" onclick="setCategory('${safe(c)}')">${safe(c)}</button>`
+ ).join("");
+
+ const list=products.filter(p=>
+  (category==="All"||p.category===category)&&
+  (p.name+" "+p.category).toLowerCase().includes(term)
+ );
+
+ document.getElementById("products").innerHTML=list.length?
+ list.map(p=>`
+  <article class="product">
+   <div class="productPhoto"><span class="emoji">${safe(p.emoji||"🍽️")}</span></div>
+   <div class="productInfo">
+    <div class="tag">${safe(p.category)}</div>
+    <h3>${safe(p.name)}</h3>
+    <p>${safe(p.description||"Fresh and delicious.")}</p>
+    <div class="productBottom">
+     <span class="price">৳${Number(p.price)}</span>
+     <button class="add" onclick="add('${p.id}')">+ Add</button>
+    </div>
+   </div>
+  </article>
+ `).join(""):"<p>No food found. Try another search.</p>";
+}
+
+function safe(s){
+ return String(s??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+function setCategory(c){
+ category=c;
+ render();
+}
+
+function add(id){
+ let p=products.find(x=>String(x.id)===String(id));
+ if(!p)return;
+ let old=cart.find(x=>String(x.id)===String(id));
+ old?old.qty++:cart.push({...p,qty:1});
+ updateCart();
+}
+
+function updateCart(){
+ let count=cart.reduce((s,x)=>s+x.qty,0);
+ let subtotal=cart.reduce((s,x)=>s+x.price*x.qty,0);
+ let delivery=subtotal>=999||subtotal===0?0:60;
+
+ document.getElementById("count").textContent=count;
+ document.getElementById("subtotal").textContent="৳"+subtotal;
+ document.getElementById("delivery").textContent="৳"+delivery;
+ document.getElementById("total").textContent="৳"+(subtotal+delivery);
+
+ document.getElementById("cartItems").innerHTML=cart.length?
+ cart.map(p=>`
+  <div class="cartLine">
+   <div><b>${safe(p.name)}</b><br><small>৳${p.price} each</small></div>
+   <div class="qty">
+    <button onclick="changeQty('${p.id}',-1)">−</button>
+    ${p.qty}
+    <button onclick="changeQty('${p.id}',1)">+</button>
+   </div>
+  </div>
+ `).join(""):"Your basket is empty.";
+}
+
+function changeQty(id,n){
+ let p=cart.find(x=>String(x.id)===String(id));
+ if(p){
+  p.qty+=n;
+  if(p.qty<=0)cart=cart.filter(x=>x!==p);
+ }
+ updateCart();
+}
+
+function openCart(){
+ document.getElementById("cartModal").classList.add("show");
+}
+
+function closeCart(){
+ document.getElementById("cartModal").classList.remove("show");
+}
+
+function openCheckout(){
+ if(!cart.length)return alert("Add food first!");
+ closeCart();
+ document.getElementById("checkoutModal").classList.add("show");
+}
+
+function closeCheckout(){
+ document.getElementById("checkoutModal").classList.remove("show");
+}
+
+const checkoutForm=document.getElementById("checkout-form");
+
+checkoutForm.addEventListener("submit",async function(e){
+ e.preventDefault();
+
+ // Keep a direct reference to the form before awaiting fetch.
+ const form=e.currentTarget;
+
+ if(!cart.length)return alert("Your basket is empty.");
+
+ const button=form.querySelector('button[type="submit"]');
+ button.disabled=true;
+ button.textContent="Submitting...";
+
+ const data=new FormData(form);
+
+ try{
+  const r=await fetch("/api/orders",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    name:data.get("name"),
+    phone:data.get("phone"),
+    address:data.get("address"),
+    payment:data.get("payment"),
+    items:cart.map(p=>({id:p.id,qty:p.qty}))
+   })
+  });
+
+  const result=await r.json();
+
+  if(!r.ok)throw Error(result.error||"Order failed");
+
+  alert(
+   "Order successful!\nOrder ID: "+
+   result.orderId+
+   "\nTotal: ৳"+
+   result.total
+  );
+
+  cart=[];
+  updateCart();
+
+  // Safe reset: use saved form reference, not e.currentTarget.
+  form.reset();
+
+  closeCheckout();
+
+ }catch(err){
+  alert("Order Error: "+err.message);
+ }finally{
+  button.disabled=false;
+  button.textContent="Place Order →";
+ }
+});
+
+init();
+updateCart();
