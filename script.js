@@ -141,6 +141,26 @@ async function init() {
   }
 }
 
+
+function foodoraImage(p) {
+  const n = ((p.name || "") + " " + (p.category || "")).toLowerCase();
+  let id = "photo-1546069901-ba9599a7e63c";
+
+  if (/burger/.test(n)) id = "photo-1568901346375-23c9450c58cd";
+  else if (/pizza/.test(n)) id = "photo-1571407970349-bc81e7e96d47";
+  else if (/chicken|wings|nugget/.test(n)) id = "photo-1626082927389-6cd097cdc6ec";
+  else if (/cake|dessert|donut|ice cream/.test(n)) id = "photo-1578985545062-69928b1d9587";
+  else if (/shake|drink|juice|coffee/.test(n)) id = "photo-1546173159-315724a31696";
+  else if (/pasta/.test(n)) id = "photo-1473093295043-cdd812d0e601";
+  else if (/sandwich/.test(n)) id = "photo-1528735602780-2552fd46c7af";
+  else if (/fries|snack/.test(n)) id = "photo-1573080496219-bb080dd4f877";
+  else if (/fish|seafood/.test(n)) id = "photo-1519708227418-c8fd9a32b7a2";
+  else if (/salad/.test(n)) id = "photo-1512621776951-a57141f2eefd";
+  else if (/grill|bbq|roast/.test(n)) id = "photo-1532550907401-a500c9a57435";
+
+  return "https://images.unsplash.com/" + id + "?auto=format&fit=crop&w=900&q=85";
+}
+
 function renderProducts() {
   const search = ($("search").value || "").toLowerCase();
 
@@ -156,30 +176,30 @@ function renderProducts() {
 
   const list = products.filter(p =>
     (category === "All" || p.category === category) &&
-    (p.name + " " + p.category).toLowerCase().includes(search)
+    ((p.name || "") + " " + (p.category || "") + " " + (p.description || ""))
+      .toLowerCase().includes(search)
   );
 
   $("products").innerHTML = list.length ? list.map(p => `
-    <article class="product-card">
-      <div class="product-visual">
-        ${p.image
-          ? `<img src="${esc(p.image || foodoraFoodImage(p.name))}" alt="${esc(p.name)}"
-              onerror="this.style.display='none'">`
-          : esc(p.emoji || "🍽️")}
+    <article class="product">
+      <div class="productPhoto">
+        <img src="${foodoraImage(p)}"
+             alt="${esc(p.name)}"
+             loading="lazy"
+             onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=85'">
+        <span class="photoLabel">FOODORA SPECIAL</span>
       </div>
-      <div class="product-info">
+      <div class="productInfo">
+        <div class="tag">${esc(p.category || "Fresh Food")}</div>
         <h3>${esc(p.name)}</h3>
-        <p>${esc(p.description || "Fresh and delicious.")}</p>
-        <div class="product-bottom">
-          <span class="price">${money(p.price)}</span>
-          <button class="add-button" data-add="${esc(p.id)}"
-            ${Number(p.stock) <= 0 ? "disabled" : ""}>
-            ${Number(p.stock) <= 0 ? "Sold Out" : "+ Add"}
-          </button>
+        <p>${esc(p.description || "Freshly prepared with quality ingredients.")}</p>
+        <div class="productBottom">
+          <span class="price">৳${Number(p.price) || 0}</span>
+          <button class="add" onclick="add('${String(p.id).replace(/'/g, "\\'")}')">+ Add</button>
         </div>
       </div>
     </article>
-  `).join("") : `<p>No food found.</p>`;
+  `).join("") : "<p>No food found. Try another search.</p>";
 }
 
 function addToCart(id) {
