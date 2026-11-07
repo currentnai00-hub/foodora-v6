@@ -1361,3 +1361,201 @@ footer small {
 }
 
 /* END FOODORA V7 */
+
+/* ===== FOODORA V8 SMART PRODUCT SYSTEM ===== */
+
+.product {
+  min-width: 0;
+  border: 1px solid #eee8de;
+  border-radius: 23px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(16,44,35,.06);
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+
+.product:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 18px 42px rgba(16,44,35,.13);
+}
+
+.productPhoto {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #f4eee4;
+}
+
+.productPhoto img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform .5s ease;
+}
+
+.product:hover .productPhoto img {
+  transform: scale(1.07);
+}
+
+.v8-badge,
+.v8-discount {
+  position: absolute;
+  top: 12px;
+  padding: 8px 11px;
+  border-radius: 30px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .5px;
+}
+
+.v8-badge {
+  left: 12px;
+  background: white;
+  color: #17432f;
+}
+
+.v8-badge.bestseller {
+  background: #17432f;
+  color: white;
+}
+
+.v8-discount {
+  right: 12px;
+  background: #f18b3c;
+  color: white;
+}
+
+.productInfo {
+  padding: 18px;
+}
+
+.productInfo h3 {
+  margin: 10px 0 7px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #102c23;
+}
+
+.productInfo > p {
+  min-height: 42px;
+  color: #777d76;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.productInfo .tag {
+  display: inline-block;
+  padding: 6px 11px;
+  background: #f5f1e8;
+  color: #315c45;
+  border-radius: 30px;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.productBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 17px;
+}
+
+.v8-price {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.v8-price .price {
+  font-size: 19px;
+  font-weight: 950;
+  color: #e67e2e;
+}
+
+.v8-price del {
+  color: #999;
+  font-size: 11px;
+}
+
+.product .add {
+  border: none;
+  padding: 11px 18px;
+  background: #153c2c;
+  color: white;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.product .add:hover:not(:disabled) {
+  background: #ed8737;
+  transform: scale(1.04);
+}
+
+.product .add:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}
+
+.chip {
+  cursor: pointer;
+  transition: .2s;
+}
+
+.chip.active {
+  background: #153c2c !important;
+  color: white !important;
+  border-color: #153c2c !important;
+}
+
+.v8-empty {
+  grid-column: 1 / -1;
+  padding: 45px 15px;
+  text-align: center;
+  color: #777;
+}
+
+.v8-empty div {
+  font-size: 42px;
+}
+
+.v8-empty h3 {
+  color: #153c2c;
+}
+
+.product .add:active {
+  transform: scale(.94);
+}
+
+@media(max-width:650px) {
+  .product {
+    border-radius: 16px;
+  }
+
+  .productInfo {
+    padding: 12px;
+  }
+
+  .productInfo h3 {
+    font-size: 14px;
+  }
+
+  .productInfo > p {
+    font-size: 11px;
+  }
+
+  .product .add {
+    padding: 9px 12px;
+    font-size: 11px;
+  }
+
+  .v8-price .price {
+    font-size: 16px;
+  }
+}
+
+/* ===== END FOODORA V8 ===== */

@@ -162,11 +162,11 @@ function foodoraImage(p) {
 }
 
 function renderProducts() {
-  const search = ($("search").value || "").toLowerCase();
+  const search = ($("search").value || "").trim().toLowerCase();
 
   const categories = [
     "All",
-    ...new Set(products.map(p => p.category))
+    ...new Set(products.map(p => p.category).filter(Boolean))
   ];
 
   $("categories").innerHTML = categories.map(c => `
@@ -175,33 +175,78 @@ function renderProducts() {
   `).join("");
 
   const list = products.filter(p =>
+    (p.active !== false) &&
     (category === "All" || p.category === category) &&
-    ((p.name || "") + " " + (p.category || "") + " " + (p.description || ""))
-      .toLowerCase().includes(search)
+    ((p.name || "") + " " + (p.category || "") + " " +
+      (p.description || "")).toLowerCase().includes(search)
   );
 
-  $("products").innerHTML = list.length ? list.map(p => `
-    <article class="product">
-      <div class="productPhoto">
-        <img src="${foodoraImage(p)}"
-             alt="${esc(p.name)}"
-             loading="lazy"
-             onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=85'">
-        <span class="photoLabel">FOODORA SPECIAL</span>
-      </div>
-      <div class="productInfo">
-        <div class="tag">${esc(p.category || "Fresh Food")}</div>
-        <h3>${esc(p.name)}</h3>
-        <p>${esc(p.description || "Freshly prepared with quality ingredients.")}</p>
-        <div class="productBottom">
-          <span class="price">৳${Number(p.price) || 0}</span>
-          <button class="add" onclick="add('${String(p.id).replace(/'/g, "\\'")}')">+ Add</button>
-        </div>
-      </div>
-    </article>
-  `).join("") : "<p>No food found. Try another search.</p>";
-}
+  $("products").innerHTML = list.length ? list.map(p => {
+    const price = Number(p.price) || 0;
+    const oldPrice = Number(
+      p.originalPrice || p.original_price || p.oldPrice || 0
+    );
+    const hasDiscount = oldPrice > price && price > 0;
+    const percent = hasDiscount
+      ? Math.round((oldPrice - price) / oldPrice * 100) : 0;
 
+    const image = p.image && /^https?:\/\//i.test(p.image)
+      ? p.image : foodoraImage(p);
+
+    const bestSeller = p.bestSeller === true ||
+      p.isBestSeller === true || p.featured === true;
+
+    const stock = Number(p.stock);
+    const unavailable = stock <= 0;
+
+    return `
+      <article class="product">
+        <div class="productPhoto">
+          <img src="${esc(image)}"
+               alt="${esc(p.name)}"
+               loading="lazy"
+               decoding="async"
+               onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=85'">
+
+          ${bestSeller
+            ? '<span class="v8-badge bestseller">★ BEST SELLER</span>'
+            : '<span class="v8-badge">FOODORA SPECIAL</span>'}
+
+          ${hasDiscount
+            ? `<span class="v8-discount">${percent}% OFF</span>`
+            : ''}
+        </div>
+
+        <div class="productInfo">
+          <div class="tag">${esc(p.category || "Fresh Food")}</div>
+          <h3>${esc(p.name)}</h3>
+          <p>${esc(p.description || "Freshly prepared with quality ingredients.")}</p>
+
+          <div class="productBottom">
+            <div class="v8-price">
+              <span class="price">${money(price)}</span>
+              ${hasDiscount
+                ? `<del>${money(oldPrice)}</del>`
+                : ''}
+            </div>
+
+            <button class="add"
+              data-add="${esc(p.id)}"
+              ${unavailable ? "disabled" : ""}>
+              ${unavailable ? "Sold Out" : "+ Add"}
+            </button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("") : `
+    <div class="v8-empty">
+      <div>🍽️</div>
+      <h3>No food found</h3>
+      <p>Try another food name or category.</p>
+    </div>
+  `;
+}
 function addToCart(id) {
   const p = products.find(x => String(x.id) === String(id));
   if (!p) return;
@@ -445,3 +490,4 @@ $("cartItems").addEventListener("click", event => {
 });
 
 init();
+
