@@ -1,0 +1,16 @@
+{
+  "name": "foodora-v6",
+  "version": "6.0.0",
+  "private": true,
+  "description": "Foodora food ordering and admin system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  }
+}

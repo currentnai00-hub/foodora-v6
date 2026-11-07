@@ -1,0 +1,24 @@
+[
+  {
+    "id": "1794009092998",
+    "name": "Resmi Burger",
+    "category": "Burger",
+    "price": 250,
+    "emoji": "🍔",
+    "description": "একবার খাইবেন তো বার বার আইবেন 🍔",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": "1794009174207",
+    "name": "Resmi kabab",
+    "category": "Kabab",
+    "price": 170,
+    "emoji": "🍗",
+    "description": "ওরে মজা একবার খাইবেন তো বার বার আইবেন ",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  }
+]

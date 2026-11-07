@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: foodora-v6
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: foodora-v6-db
+          property: connectionString
+      - key: PAYMENT_NUMBER
+        value: "01XXXXXXXXX"
+      - key: PAYMENT_METHODS
+        value: "bKash,Nagad"
+databases:
+  - name: foodora-v6-db
+    plan: free

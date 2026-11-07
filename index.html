@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102c23"><title>Foodora — Fresh food, delivered</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="#menu">Menu</a><a href="#track">Track order</a><a href="#about">About</a></nav><button class="cart-button" id="cartOpen">Cart <b id="cartCount">0</b></button></header>
+<section class="hero"><div class="hero-copy"><p class="eyebrow">GOOD FOOD. GOOD MOOD.</p><h1>Your cravings,<br><em>delivered fresh.</em></h1><p>Freshly prepared favourites, honest prices and doorstep delivery in Chattogram.</p><a class="primary-link" href="#menu">Explore the menu <span>↗</span></a><div class="hero-meta"><span>✦ Freshly prepared</span><span>✦ Quick delivery</span></div></div><div class="hero-art"><div class="hero-orbit"></div><div class="hero-food">🍔</div><div class="floating-tag tag-one">Fresh & tasty</div><div class="floating-tag tag-two">Made with care ✦</div></div></section>
+<main>
+<section class="section" id="menu"><div class="section-head"><div><p class="eyebrow">FROM OUR KITCHEN</p><h2>Explore the menu</h2></div><input id="search" class="search" placeholder="Search food..." aria-label="Search food"></div><div id="categories" class="chips"></div><div id="products" class="product-grid"><p>Loading menu…</p></div></section>
+<section class="track-section" id="track"><div><p class="eyebrow">WHERE IS MY FOOD?</p><h2>Track your order</h2><p>Enter the order ID you received after checkout.</p></div><form id="trackForm" class="track-form"><input id="trackId" placeholder="e.g. FD_123abc" required><button class="primary-button">Track order</button><div id="trackResult" class="notice"></div></form></section>
+<section class="about" id="about"><p class="eyebrow">MADE FOR YOUR MOMENTS</p><h2>Good food brings<br>people together.</h2><p>Foodora makes ordering your everyday favourites simple, delicious and dependable.</p></section>
+</main>
+<footer><a class="brand" href="/">foodora<span>.</span></a><p>Fresh food, delivered with care.</p><small>© <span id="year"></span> Foodora. All rights reserved.</small></footer>
+<div class="drawer-backdrop" id="backdrop"></div><aside class="cart-drawer" id="drawer"><div class="drawer-head"><h2>Your cart</h2><button class="icon-button" id="cartClose">✕</button></div><div id="cartItems" class="cart-items"></div><div class="coupon-row"><input id="coupon" placeholder="Coupon code"><button id="applyCoupon">Apply</button></div><p id="couponMessage" class="muted"></p><div class="totals" id="totals"></div><button class="primary-button full" id="checkoutOpen">Continue to checkout</button></aside>
+<div class="modal-backdrop" id="checkoutModal"><form class="modal" id="checkoutForm"><div class="drawer-head"><h2>Checkout</h2><button type="button" class="icon-button" id="checkoutClose">✕</button></div><label>Your name<input name="name" required maxlength="80"></label><label>Mobile number<input name="phone" required inputmode="numeric" pattern="01[0-9]{9}" placeholder="01XXXXXXXXX"></label><label>Delivery address<textarea name="address" required maxlength="400"></textarea></label><label>Payment method<select name="paymentMethod" id="paymentMethod" required></select></label><label>Transaction ID (if already paid)<input name="transactionId" maxlength="80" placeholder="Optional"></label><p class="payment-help" id="paymentHelp"></p><div id="checkoutMessage" class="notice"></div><button class="primary-button full">Place order</button></form></div>
+<script src="/script.js"></script>
+</body></html>
