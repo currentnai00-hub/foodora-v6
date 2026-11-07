@@ -470,3 +470,128 @@ footer { padding-top:45px; padding-bottom:45px; }
   .trust-item small { font-size:9px; }
   .hero h1 { font-size:46px; }
 }
+
+/* ===== FOODORA PREMIUM CARD UPGRADE ===== */
+
+:root {
+  --fd-green: #123d2e;
+  --fd-orange: #f28b35;
+  --fd-cream: #fffaf3;
+  --fd-shadow: 0 12px 35px rgba(20,45,32,.09);
+}
+
+/* Smooth page */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Premium product cards */
+:is(.product-card,.food-card,.menu-card,.product-item) {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(18,61,46,.08);
+  border-radius: 22px;
+  box-shadow: var(--fd-shadow);
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+
+:is(.product-card,.food-card,.menu-card,.product-item):hover {
+  transform: translateY(-7px);
+  box-shadow: 0 20px 45px rgba(20,45,32,.15);
+}
+
+/* Food image */
+:is(.product-card,.food-card,.menu-card,.product-item) img {
+  width: 100%;
+  object-fit: cover;
+  transition: transform .55s ease;
+}
+
+:is(.product-card,.food-card,.menu-card,.product-item):hover img {
+  transform: scale(1.06);
+}
+
+/* Product title */
+:is(.product-card,.food-card,.menu-card,.product-item)
+:is(h2,h3,h4,.product-name,.food-name) {
+  color: var(--fd-green);
+  font-weight: 800;
+  letter-spacing: -.35px;
+}
+
+/* Price */
+:is(.product-card,.food-card,.menu-card,.product-item)
+:is(.price,.product-price,.food-price) {
+  color: #e77b24;
+  font-weight: 900;
+  font-size: 1.15rem;
+}
+
+/* Buttons */
+button,
+:is(.product-card,.food-card,.menu-card,.product-item) a {
+  transition: all .25s ease;
+}
+
+button:hover {
+  filter: brightness(1.06);
+}
+
+button:active {
+  transform: scale(.97);
+}
+
+/* Category pills */
+:is(.category-btn,.category-button,.filter-btn,.category-chip) {
+  border-radius: 50px;
+  transition: all .25s ease;
+}
+
+:is(.category-btn,.category-button,.filter-btn,.category-chip):hover {
+  background: var(--fd-green);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Premium section headings */
+section h2 {
+  letter-spacing: -.8px;
+}
+
+/* Images loading */
+img {
+  max-width: 100%;
+}
+
+/* Mobile optimization */
+@media(max-width:768px) {
+  :is(.product-card,.food-card,.menu-card,.product-item) {
+    border-radius: 17px;
+  }
+
+  section h2 {
+    font-size: clamp(22px,6vw,32px);
+  }
+
+  button {
+    min-height: 40px;
+  }
+}
+
+/* Accessibility */
+@media(prefers-reduced-motion:reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
+}
+
+/* ===== END FOODORA PREMIUM UPGRADE ===== */
