@@ -1,3 +1,27 @@
+
+function foodoraFoodImage(name) {
+  const n = String(name || "").toLowerCase();
+  const foods = [
+    [/burger|বার্গার/, "photo-1568901346375-23c9450c58cd"],
+    [/pizza|পিজ্জা/, "photo-1565299624946-b28f40a0ae38"],
+    [/chicken|চিকেন|মুরগি/, "photo-1555939594-58d7cb561ad1"],
+    [/biryani|বিরিয়ানি|পোলাও/, "photo-1563379091339-03246963d96c"],
+    [/rice|ভাত|খিচুড়ি/, "photo-1512058564366-18510be2db19"],
+    [/pasta|পাস্তা/, "photo-1473093295043-cdd812d0e601"],
+    [/noodle|নুডলস|রামেন/, "photo-1569718212165-3a8278d5f624"],
+    [/sandwich|স্যান্ডউইচ/, "photo-1528735602780-2552fd46c7af"],
+    [/cake|কেক|dessert|মিষ্টি/, "photo-1578985545062-69928b1d9587"],
+    [/juice|জুস|drink|coffee/, "photo-1544145945-f90425340c7e"],
+    [/fish|মাছ|seafood/, "photo-1519708227418-c8fd9a32b7a2"],
+    [/salad|সালাদ/, "photo-1512621776951-a57141f2eefd"]
+  ];
+  let id = "photo-1546069901-ba9599a7e63c";
+  for (const [pattern, image] of foods) {
+    if (pattern.test(n)) { id = image; break; }
+  }
+  return "https://images.unsplash.com/" + id + "?auto=format&fit=crop&w=900&q=85";
+}
+
 "use strict";
 
 let products = [];
@@ -139,7 +163,7 @@ function renderProducts() {
     <article class="product-card">
       <div class="product-visual">
         ${p.image
-          ? `<img src="${esc(p.image)}" alt="${esc(p.name)}"
+          ? `<img src="${esc(p.image || foodoraFoodImage(p.name))}" alt="${esc(p.name)}"
               onerror="this.style.display='none'">`
           : esc(p.emoji || "🍽️")}
       </div>
