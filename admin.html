@@ -1,1 +1,355 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Foodora Admin</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/admin.css"></head><body class="admin-body"><header class="topbar"><a class="brand" href="/">foodora<span>.</span> <small>ADMIN</small></a><a href="/">← Storefront</a></header><main class="admin-wrap"><section id="loginPanel" class="admin-login"><p class="eyebrow">CONTROL CENTRE</p><h1>Admin dashboard</h1><p>Enter your private admin key to continue.</p><input id="adminKey" type="password" placeholder="Admin key" autocomplete="current-password"><button id="loginBtn" class="primary-button full">Connect securely</button><div id="loginMessage" class="notice"></div></section><section id="dashboard" hidden><div class="admin-title"><div><p class="eyebrow">FOODORA OPERATIONS</p><h1>Dashboard</h1></div><button id="logoutBtn" class="light-button">Log out</button></div><div id="stats" class="stats-grid"></div><div class="admin-tabs"><button class="tab active" data-tab="orders">Orders</button><button class="tab" data-tab="products">Products</button><button class="tab" data-tab="coupons">Coupons</button><button class="tab" data-tab="reviews">Reviews</button></div><section id="ordersTab" class="panel"><h2>Recent orders</h2><div id="ordersTable"></div></section><section id="productsTab" class="panel" hidden><div class="panel-head"><h2>Products & stock</h2><button id="addProductBtn" class="primary-button">+ Add product</button></div><div id="productsTable"></div><form id="productForm" class="admin-form" hidden><h3 id="productFormTitle">Add product</h3><input name="id" placeholder="ID (leave blank for automatic)"><input name="name" placeholder="Product name" required><input name="category" placeholder="Category" required><input name="price" type="number" min="1" placeholder="Price (BDT)" required><input name="stock" type="number" min="0" placeholder="Stock" required><input name="emoji" placeholder="Emoji e.g. 🍔"><input name="image" placeholder="Image URL (optional)"><textarea name="description" placeholder="Description"></textarea><button class="primary-button">Save product</button><button type="button" id="cancelProduct" class="light-button">Cancel</button><div id="productMessage" class="notice"></div></form></section><section id="couponsTab" class="panel" hidden><h2>Coupon management</h2><form id="couponForm" class="coupon-admin"><input name="code" placeholder="CODE" required><select name="type"><option value="percent">Percentage %</option><option value="fixed">Fixed ৳</option></select><input name="value" type="number" min="1" placeholder="Value" required><input name="minOrder" type="number" min="0" placeholder="Minimum order"><button class="primary-button">Save coupon</button></form><div id="couponsTable"></div></section><section id="reviewsTab" class="panel" hidden><h2>Customer reviews</h2><div id="reviewsTable"></div></section></section></main><script src="/admin.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101b18">
+<title>Foodora | Admin Dashboard</title>
+<style>
+:root{--bg:#0b1210;--panel:#121e19;--panel2:#192720;--line:#26382e;--text:#f3f7f3;--muted:#91a49a;--green:#b8f36b;--orange:#ffad65;--red:#ff7777}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px Inter,system-ui,Arial}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:245px;background:#101a16;border-right:1px solid var(--line);padding:24px 16px;position:fixed;inset:0 auto 0 0;z-index:5}
+.brand{font-size:25px;font-weight:900;color:var(--green);padding:8px 12px 28px}
+.brand small{display:block;font-size:10px;letter-spacing:3px;color:var(--muted);margin-top:5px}
+.nav{display:grid;gap:7px}
+.nav button{border:0;background:transparent;color:#a9b9b0;text-align:left;padding:13px;border-radius:11px;font-weight:650}
+.nav button.active,.nav button:hover{background:#24352a;color:var(--green)}
+.main{margin-left:245px;width:calc(100% - 245px);padding:28px;max-width:1600px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:26px}
+h1{font-size:27px;margin:0 0 6px}
+.sub,.muted{color:var(--muted)}
+.actions{display:flex;gap:9px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 15px;border-radius:10px;font-weight:700}
+.btn.primary{background:var(--green);color:#172111;border:0}
+.btn.danger{color:var(--red)}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:19px}
+.card .label{color:var(--muted);font-size:12px;font-weight:700}
+.card .number{font-size:29px;font-weight:850;margin-top:12px}
+.card .icon{font-size:20px;float:right}
+.panel{margin-bottom:18px}
+.panelhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}
+h2{font-size:17px;margin:0}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:15px}
+input,select,textarea{background:#0d1712;color:var(--text);border:1px solid var(--line);padding:11px 12px;border-radius:9px;min-width:0}
+input:focus,select:focus,textarea:focus{outline:1px solid var(--green)}
+.toolbar input{flex:1;min-width:160px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{text-align:left;padding:13px 11px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+td{font-size:13px}
+td select{padding:8px;max-width:160px}
+.pill{display:inline-block;padding:5px 9px;border-radius:30px;background:#26382d;color:var(--green);font-size:11px;font-weight:800}
+.pill.red{background:#482727;color:#ffaaaa}
+.pill.orange{background:#49351f;color:#ffd08b}
+.product{display:flex;gap:10px;align-items:center}
+.emoji{font-size:25px}
+.empty{text-align:center;color:var(--muted);padding:35px}
+.section{display:none}
+.section.active{display:block}
+.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.formgrid label{display:grid;gap:6px;color:var(--muted);font-size:12px}
+.formgrid .full{grid-column:1/-1}
+.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:15px;z-index:20}
+.modal.show{display:flex}
+.modalbox{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;width:min(560px,100%);max-height:90vh;overflow:auto}
+.modalbox h2{margin-bottom:18px}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.loginbox{width:min(410px,100%);background:var(--panel);border:1px solid var(--line);padding:30px;border-radius:20px}
+.loginbox input{width:100%;margin:15px 0}
+.toast{position:fixed;bottom:20px;right:20px;background:#26382d;border:1px solid #49654f;padding:13px 18px;border-radius:12px;display:none;z-index:50}
+.mobilebar{display:none}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){
+.sidebar{width:100%;height:auto;position:sticky;top:0;padding:9px;border-right:0;border-bottom:1px solid var(--line)}
+.brand{font-size:19px;padding:5px 8px 10px}.brand small{display:none}
+.nav{display:flex;overflow:auto;gap:5px}.nav button{white-space:nowrap;padding:10px;font-size:12px}
+.layout{display:block}.main{margin:0;width:100%;padding:17px 12px}
+.top{align-items:flex-start}.top h1{font-size:22px}
+.cards{gap:9px}.card{padding:13px}.card .number{font-size:23px}
+.card .label{font-size:11px}.formgrid{grid-template-columns:1fr}
+.formgrid .full{grid-column:auto}
+}
+</style>
+</head>
+<body>
+
+<div id="login" class="login">
+ <div class="loginbox">
+  <div class="brand">Foodora <small>ADMIN CONTROL CENTER</small></div>
+  <h2>Welcome back</h2>
+  <p class="muted">Sign in to manage your store.</p>
+  <input id="adminKey" type="password" placeholder="Enter Admin Key" autocomplete="current-password">
+  <button class="btn primary" style="width:100%" onclick="login()">Sign In →</button>
+  <p id="loginError" class="muted"></p>
+ </div>
+</div>
+
+<div id="app" class="layout" style="display:none">
+<aside class="sidebar">
+ <div class="brand">Foodora <small>ADMIN CONTROL CENTER</small></div>
+ <nav class="nav">
+  <button class="active" data-tab="overview">▦ Overview</button>
+  <button data-tab="orders">▤ Orders</button>
+  <button data-tab="customers">♙ Customers</button>
+  <button data-tab="products">▣ Products</button>
+  <button data-tab="coupons">％ Coupons</button>
+  <button data-tab="reviews">☆ Reviews</button>
+ </nav>
+</aside>
+
+<main class="main">
+ <header class="top">
+  <div><h1 id="pageTitle">Dashboard Overview</h1><div class="sub">Welcome to your Foodora store management.</div></div>
+  <div class="actions">
+   <button class="btn" onclick="refreshAll()">↻ Refresh</button>
+   <button class="btn danger" onclick="logout()">Logout</button>
+  </div>
+ </header>
+
+ <section id="overview" class="section active">
+  <div class="cards">
+   <div class="card"><span class="icon">📦</span><div class="label">TOTAL ORDERS</div><div class="number" id="sOrders">—</div></div>
+   <div class="card"><span class="icon">💰</span><div class="label">TOTAL REVENUE</div><div class="number" id="sRevenue">—</div></div>
+   <div class="card"><span class="icon">⏳</span><div class="label">PENDING ORDERS</div><div class="number" id="sPending">—</div></div>
+   <div class="card"><span class="icon">🍔</span><div class="label">ACTIVE PRODUCTS</div><div class="number" id="sProducts">—</div></div>
+   <div class="card"><span class="icon">📅</span><div class="label">TODAY'S ORDERS</div><div class="number" id="sToday">—</div></div>
+   <div class="card"><span class="icon">⚠️</span><div class="label">LOW STOCK</div><div class="number" id="sStock">—</div></div>
+   <div class="card"><span class="icon">🛍️</span><div class="label">TOTAL PRODUCTS</div><div class="number" id="sAllProducts">—</div></div>
+   <div class="card"><span class="icon">👥</span><div class="label">CUSTOMERS</div><div class="number" id="sCustomers">—</div></div>
+  </div>
+  <div class="panel">
+   <div class="panelhead"><h2>Recent Orders</h2><button class="btn" onclick="tab('orders')">View all →</button></div>
+   <div id="recentOrders" class="tablewrap"></div>
+  </div>
+ </section>
+
+ <section id="orders" class="section">
+  <div class="panel">
+   <div class="panelhead"><h2>Order Management</h2><span class="muted" id="orderCount"></span></div>
+   <div class="toolbar"><input id="orderSearch" placeholder="Search order / customer / phone..." oninput="renderOrders()">
+    <select id="orderFilter" onchange="renderOrders()"><option value="">All statuses</option><option>Pending</option><option>Confirmed</option><option>Preparing</option><option>Out for delivery</option><option>Delivered</option><option>Cancelled</option></select>
+   </div>
+   <div id="ordersTable" class="tablewrap"></div>
+  </div>
+ </section>
+
+ <section id="customers" class="section">
+  <div class="panel">
+   <div class="panelhead"><h2>Customer Directory</h2><span class="muted" id="customerCount"></span></div>
+   <div class="toolbar"><input id="customerSearch" placeholder="Search customer..." oninput="renderCustomers()"></div>
+   <div id="customersTable" class="tablewrap"></div>
+  </div>
+ </section>
+
+ <section id="products" class="section">
+  <div class="panel">
+   <div class="panelhead"><h2>Product Management</h2><button class="btn primary" onclick="openProduct()">＋ Add Product</button></div>
+   <div class="toolbar"><input id="productSearch" placeholder="Search products..." oninput="renderProducts()">
+    <select id="productFilter" onchange="renderProducts()"><option value="">All products</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+   </div>
+   <div id="productsTable" class="tablewrap"></div>
+  </div>
+ </section>
+
+ <section id="coupons" class="section">
+  <div class="panel">
+   <div class="panelhead"><h2>Coupon Management</h2></div>
+   <form id="couponForm" class="formgrid">
+    <label>Coupon Code<input name="code" required placeholder="WELCOME10"></label>
+    <label>Discount Type<select name="type"><option value="percent">Percentage (%)</option><option value="fixed">Fixed amount (৳)</option></select></label>
+    <label>Discount Value<input name="value" type="number" min="1" required></label>
+    <label>Minimum Order (৳)<input name="minOrder" type="number" min="0" value="0"></label>
+    <div class="full"><button class="btn primary">Save Coupon</button></div>
+   </form>
+  </div>
+  <div class="panel"><h2 style="margin-bottom:15px">All Coupons</h2><div id="couponsTable" class="tablewrap"></div></div>
+ </section>
+
+ <section id="reviews" class="section">
+  <div class="panel">
+   <div class="panelhead"><h2>Customer Reviews</h2></div>
+   <div id="reviewsTable" class="tablewrap"></div>
+  </div>
+ </section>
+</main>
+</div>
+
+<div class="modal" id="productModal">
+ <div class="modalbox">
+  <div class="panelhead"><h2 id="productModalTitle">Add Product</h2><button class="btn" onclick="closeProduct()">✕</button></div>
+  <form id="productForm" class="formgrid">
+   <input type="hidden" name="id">
+   <label class="full">Product Name<input name="name" required maxlength="120"></label>
+   <label>Category<input name="category" required placeholder="Burgers"></label>
+   <label>Price (৳)<input name="price" type="number" min="1" required></label>
+   <label>Stock<input name="stock" type="number" min="0" value="20"></label>
+   <label>Emoji<input name="emoji" maxlength="8" value="🍔"></label>
+   <label class="full">Image URL<input name="image" type="url" placeholder="https://..."></label>
+   <label class="full">Description<textarea name="description" rows="3"></textarea></label>
+   <label class="full">Status<select name="active"><option value="true">Active</option><option value="false">Inactive</option></select></label>
+   <div class="full actions"><button class="btn primary" type="submit">Save Product</button><button type="button" class="btn" onclick="closeProduct()">Cancel</button></div>
+  </form>
+ </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+let KEY=sessionStorage.getItem("foodora_admin_key")||"";
+let products=[],orders=[],coupons=[],reviews=[],summary={};
+const statuses=["Pending","Confirmed","Preparing","Out for delivery","Delivered","Cancelled"];
+const payments=["Awaiting payment","Pending verification","Verified","Rejected"];
+const money=n=>"৳"+Number(n||0).toLocaleString("en-BD");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const val=(o,...keys)=>{for(const k of keys)if(o?.[k]!=null&&o[k]!=="")return o[k];return ""};
+function toast(s){$("toast").textContent=s;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2600)}
+async function api(url,options={}){
+ const res=await fetch(url,{...options,headers:{"Content-Type":"application/json","x-admin-key":KEY,...(options.headers||{})}});
+ const data=await res.json().catch(()=>({}));
+ if(!res.ok)throw Error(data.error||"Request failed ("+res.status+")");
+ return data;
+}
+async function login(){
+ const key=$("adminKey").value.trim();if(!key)return;
+ KEY=key;
+ try{await api("/api/admin/summary");sessionStorage.setItem("foodora_admin_key",KEY);showApp();await refreshAll()}
+ catch(e){KEY="";$("loginError").textContent=e.message}
+}
+function logout(){sessionStorage.removeItem("foodora_admin_key");KEY="";$("app").style.display="none";$("login").style.display="grid";$("adminKey").value=""}
+function showApp(){$("login").style.display="none";$("app").style.display="flex"}
+function tab(name){
+ document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
+ $(name).classList.add("active");
+ document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.tab===name));
+ $("pageTitle").textContent=({overview:"Dashboard Overview",orders:"Order Management",customers:"Customer Management",products:"Product Management",coupons:"Coupon Management",reviews:"Customer Reviews"})[name];
+}
+document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>tab(b.dataset.tab)));
+function statusSelect(value,kind,id){
+ const list=kind==="payment"?payments:statuses;
+ return `<select onchange="updateOrder('${esc(id)}','${kind}',this.value)">${list.map(x=>`<option ${x===value?"selected":""}>${esc(x)}</option>`).join("")}</select>`;
+}
+function badge(s){let cls=s==="Delivered"||s==="Verified"?"":s==="Cancelled"||s==="Rejected"?"red":"orange";return `<span class="pill ${cls}">${esc(s||"—")}</span>`}
+function orderCustomer(o){return val(o,"customerName","name","customer","fullName")||val(o,"phone","mobile")||"Customer"}
+function orderPhone(o){return val(o,"phone","mobile","customerPhone","contact")}
+function orderDate(o){let d=val(o,"createdAt","date","created_at");return d?new Date(d).toLocaleString():"—"}
+function orderItems(o){let a=o.items;if(Array.isArray(a))return a.map(x=>(x.name||x.title||"Item")+" × "+(x.quantity||x.qty||1)).join(", ");return typeof a==="string"?a:"—"}
+function orderTotal(o){return val(o,"total","grandTotal","amount","totalAmount")||0}
+function orderId(o){return val(o,"id","orderId")||"—"}
+async function refreshAll(){
+ try{
+  const results=await Promise.all([
+   api("/api/admin/summary"),api("/api/admin/products"),api("/api/admin/orders"),
+   api("/api/admin/coupons"),api("/api/admin/reviews")
+  ]);
+  [summary,products,orders,coupons,reviews]=results;
+  renderAll();toast("Dashboard updated");
+ }catch(e){toast(e.message);if(e.message.includes("authentication"))logout()}
+}
+function renderAll(){
+ $("sOrders").textContent=summary.orders??orders.length;
+ $("sRevenue").textContent=money(summary.revenue);
+ $("sPending").textContent=orders.filter(o=>o.status==="Pending").length;
+ $("sProducts").textContent=summary.activeProducts??products.filter(p=>p.active!==false).length;
+ $("sToday").textContent=summary.todayOrders??0;
+ $("sStock").textContent=summary.lowStock??products.filter(p=>Number(p.stock)<=5).length;
+ $("sAllProducts").textContent=summary.products??products.length;
+ $("sCustomers").textContent=customerList().length;
+ $("recentOrders").innerHTML=orders.length?table(["Order","Customer","Date","Total","Status"],orders.slice(0,6).map(o=>[esc(orderId(o)),esc(orderCustomer(o)),esc(orderDate(o)),money(orderTotal(o)),badge(o.status)])):'<div class="empty">No orders yet</div>';
+ renderOrders();renderCustomers();renderProducts();renderCoupons();renderReviews();
+}
+function table(headers,rows){
+ if(!rows.length)return '<div class="empty">No records found</div>';
+ return `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c??"—"}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+function renderOrders(){
+ let q=($("orderSearch")?.value||"").toLowerCase(),f=$("orderFilter")?.value||"";
+ let list=orders.filter(o=>(!f||o.status===f)&&JSON.stringify(o).toLowerCase().includes(q));
+ $("orderCount").textContent=list.length+" orders";
+ $("ordersTable").innerHTML=table(["Order / Items","Customer","Phone","Date","Total","Order Status","Payment"],list.map(o=>[
+ `<b>${esc(orderId(o))}</b><div class="muted">${esc(orderItems(o))}</div>`,
+ esc(orderCustomer(o)),esc(orderPhone(o)),esc(orderDate(o)),`<b>${money(orderTotal(o))}</b>`,
+ statusSelect(o.status,"status",orderId(o)),
+ statusSelect(val(o,"paymentStatus","payment_status")||"Awaiting payment","payment",orderId(o))
+ ]));
+}
+async function updateOrder(id,kind,value){
+ try{await api("/api/admin/orders/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify(kind==="status"?{status:value}:{paymentStatus:value})});toast("Order updated");await refreshAll()}
+ catch(e){toast(e.message);renderOrders()}
+}
+function customerList(){
+ const map=new Map();
+ orders.forEach(o=>{
+  const phone=orderPhone(o),name=orderCustomer(o),key=phone||name;
+  if(!key)return;
+  if(!map.has(key))map.set(key,{name,phone,count:0,total:0,last:""});
+  let c=map.get(key);c.count++;c.total+=Number(orderTotal(o)||0);
+  if(orderDate(o)>c.last)c.last=orderDate(o);
+ });
+ return [...map.values()];
+}
+function renderCustomers(){
+ let q=($("customerSearch")?.value||"").toLowerCase();
+ let list=customerList().filter(c=>(c.name+" "+c.phone).toLowerCase().includes(q));
+ $("customerCount").textContent=list.length+" customers";
+ $("customersTable").innerHTML=table(["Customer","Phone","Orders","Total Spent","Last Order"],list.map(c=>[
+ esc(c.name),esc(c.phone),c.count,money(c.total),esc(c.last)
+ ]));
+}
+function renderProducts(){
+ let q=($("productSearch")?.value||"").toLowerCase(),f=$("productFilter")?.value||"";
+ let list=products.filter(p=>(!q||JSON.stringify(p).toLowerCase().includes(q))&&(!f||(f==="active"?p.active!==false:p.active===false)));
+ $("productsTable").innerHTML=table(["Product","Category","Price","Stock","Status","Actions"],list.map(p=>[
+ `<div class="product"><span class="emoji">${esc(p.emoji||"🍽️")}</span><div><b>${esc(p.name)}</b><div class="muted">${esc(p.description||"")}</div></div></div>`,
+ esc(p.category),money(p.price),Number(p.stock??0),badge(p.active===false?"Inactive":"Active"),
+ `<button class="btn" onclick="editProduct('${esc(p.id)}')">Edit</button> <button class="btn danger" onclick="deleteProduct('${esc(p.id)}')">Deactivate</button>`
+ ]));
+}
+function openProduct(p){
+ const f=$("productForm");f.reset();
+ $("productModalTitle").textContent=p?"Edit Product":"Add Product";
+ f.elements.id.value=p?.id||"";
+ ["name","category","price","stock","emoji","image","description"].forEach(k=>f.elements[k].value=p?.[k]??({stock:20,emoji:"🍔"}[k]??""));
+ f.elements.active.value=String(p?.active!==false);
+ $("productModal").classList.add("show");
+}
+function closeProduct(){$("productModal").classList.remove("show")}
+function editProduct(id){let p=products.find(x=>String(x.id)===String(id));if(p)openProduct(p)}
+$("productForm").addEventListener("submit",async e=>{
+ e.preventDefault();let f=e.currentTarget,d=Object.fromEntries(new FormData(f).entries());
+ d.price=Number(d.price);d.stock=Number(d.stock);d.active=d.active==="true";
+ let id=d.id;delete d.id;
+ try{await api(id?"/api/admin/products/"+encodeURIComponent(id):"/api/admin/products",{method:id?"PATCH":"POST",body:JSON.stringify(d)});closeProduct();toast("Product saved");await refreshAll()}
+ catch(e){toast(e.message)}
+});
+async function deleteProduct(id){
+ if(!confirm("Deactivate this product?"))return;
+ try{await api("/api/admin/products/"+encodeURIComponent(id),{method:"DELETE"});toast("Product deactivated");await refreshAll()}
+ catch(e){toast(e.message)}
+}
+function renderCoupons(){
+ $("couponsTable").innerHTML=table(["Code","Type","Value","Minimum Order","Status","Expiry"],coupons.map(c=>[
+ `<b>${esc(c.code)}</b>`,esc(c.type),c.type==="percent"?esc(c.value)+"%":money(c.value),money(c.minOrder),badge(c.active===false?"Inactive":"Active"),esc(c.expiresAt||"No expiry")
+ ]));
+}
+$("couponForm").addEventListener("submit",async e=>{
+ e.preventDefault();let d=Object.fromEntries(new FormData(e.currentTarget).entries());
+ d.value=Number(d.value);d.minOrder=Number(d.minOrder);
+ try{await api("/api/admin/coupons",{method:"POST",body:JSON.stringify(d)});e.currentTarget.reset();toast("Coupon saved");await refreshAll()}
+ catch(e){toast(e.message)}
+});
+function renderReviews(){
+ $("reviewsTable").innerHTML=table(["Customer","Product ID","Rating","Review","Date"],reviews.map(r=>[
+ esc(val(r,"name","customerName")||"Customer"),esc(val(r,"productId","product_id")),`⭐ ${esc(r.rating||0)}/5`,esc(r.comment),esc(val(r,"createdAt","created_at")?new Date(val(r,"createdAt","created_at")).toLocaleString():"—")
+ ]));
+}
+$("adminKey").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
+if(KEY){showApp();api("/api/admin/summary").then(()=>refreshAll()).catch(()=>logout())}
+</script>
+</body>
+</html>
