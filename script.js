@@ -93,7 +93,8 @@ function updatePaymentHelp() {
   const method = $("paymentMethod");
   const help = $("paymentHelp");
   if (!method || !help) return;
-  const number = config.paymentNumbers?.[method.value] || "নম্বর সেট করা হয়নি";
+  const key = method.value.toLowerCase() === "bkash" ? "bKash" : method.value;
+  const number = config.paymentNumbers?.[key] || "নম্বর সেট করা হয়নি";
   help.textContent = method.value + " payment number: " + number +
     ". You can pay after confirming your order.";
 }
