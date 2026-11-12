@@ -93,22 +93,10 @@ function updatePaymentHelp() {
   const method = $("paymentMethod");
   const help = $("paymentHelp");
   if (!method || !help) return;
-  const isCOD = ["cash on delivery", "cod"].includes(method.value.toLowerCase());
   const key = method.value.toLowerCase() === "bkash" ? "bKash" : method.value;
   const number = config.paymentNumbers?.[key] || "নম্বর সেট করা হয়নি";
-  const box = $("paymentBox");
-  const sender = document.querySelector('[name="senderNumber"]');
-  const txn = document.querySelector('[name="transactionId"]');
-  if (box) box.hidden = isCOD;
-  if ($("codHelp")) $("codHelp").hidden = !isCOD;
-  if ($("senderNumberLabel")) $("senderNumberLabel").hidden = isCOD;
-  if ($("transactionIdLabel")) $("transactionIdLabel").hidden = isCOD;
-  if ($("paymentNumber")) $("paymentNumber").textContent = number;
-  if (sender) sender.required = !isCOD;
-  if (txn) txn.required = !isCOD;
-  help.textContent = isCOD
-    ? "Cash on Delivery: order পৌঁছালে নগদ টাকা দিন।"
-    : method.value + " Personal payment number:";
+  help.textContent = method.value + " payment number: " + number +
+    ". You can pay after confirming your order.";
 }
 
 async function init() {
@@ -406,7 +394,6 @@ async function placeOrder(event) {
         address: data.get("address"),
         paymentMethod: data.get("paymentMethod"),
         transactionId: data.get("transactionId"),
-        senderNumber: data.get("senderNumber"),
         couponCode: appliedCoupon?.code || "",
         items: cart.map(p => ({id: p.id, qty: p.qty}))
       })
@@ -442,26 +429,7 @@ async function placeOrder(event) {
   }
 }
 
-async function trackOrder(event) {
-  event.preventDefault();
 
-  const id = $("trackId").value.trim();
-  const output = $("trackResult");
-  output.textContent = "Checking order...";
-
-  try {
-    const order = await api("/api/orders/" + encodeURIComponent(id));
-
-    output.textContent =
-      "Order: " + order.id +
-      " | Status: " + order.status +
-      " | Payment: " + (order.paymentStatus === "Verified" ? "Payment Successful" : order.paymentStatus) +
-      " | Total: " + money(order.total);
-
-  } catch (error) {
-    output.textContent = error.message;
-  }
-}
 
 $("cartOpen").addEventListener("click", openCart);
 $("cartClose").addEventListener("click", closeCart);
@@ -469,23 +437,6 @@ $("backdrop").addEventListener("click", closeCart);
 $("checkoutOpen").addEventListener("click", openCheckout);
 $("checkoutClose").addEventListener("click", closeCheckout);
 $("checkoutForm").addEventListener("submit", placeOrder);
-$("copyPaymentNumber")?.addEventListener("click", async () => {
-  const number = $("paymentNumber")?.textContent || "";
-  if (!number || number === "নম্বর সেট করা হয়নি") {
-    alert("Payment number is not set.");
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(number);
-    alert("Payment number copied: " + number);
-  } catch {
-    alert("Copy failed. Please copy manually: " + number);
-  }
-});
-$("trackForm").addEventListener("submit", event => {
-  console.log("TRACK FORM SUBMITTED");
-  trackOrder(event);
-});
 $("search").addEventListener("input", renderProducts);
 $("applyCoupon").addEventListener("click", applyCoupon);
 
