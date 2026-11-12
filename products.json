@@ -20,5 +20,115 @@
     "stock": 20,
     "active": true,
     "image": ""
+  },
+  {
+    "id": "1794504504955",
+    "name": "Pizza",
+    "category": "Pizza",
+    "price": 299,
+    "emoji": "🍕",
+    "description": "Delicious Regular Pizza",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": "1794504504957",
+    "name": "Chicken Chaap",
+    "category": "Chicken",
+    "price": 180,
+    "emoji": "🍗",
+    "description": "Special Chicken Chaap",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": "1794504504958",
+    "name": "Chicken Chowmein",
+    "category": "Chinese",
+    "price": 160,
+    "emoji": "🍜",
+    "description": "Tasty Chicken Chowmein",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": "1794504504959",
+    "name": "Grilled Chicken",
+    "category": "Chicken",
+    "price": 180,
+    "emoji": "🍗",
+    "description": "Juicy Grilled Chicken (1 piece)",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": "1794504504960",
+    "name": "Chicken Boti Kabab",
+    "category": "Kabab",
+    "price": 180,
+    "emoji": "🍢",
+    "description": "Special Chicken Boti Kabab",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": "1794504504961",
+    "name": "Chicken Fried Rice",
+    "category": "Rice",
+    "price": 180,
+    "emoji": "🍚",
+    "description": "Delicious Chicken Fried Rice",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": "1794504504962",
+    "name": "Boiled Omelette",
+    "category": "Egg",
+    "price": 40,
+    "emoji": "🥚",
+    "description": "Fresh Egg Omelette",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": "1794504504963",
+    "name": "Chicken Soup",
+    "category": "Soup",
+    "price": 120,
+    "emoji": "🍲",
+    "description": "Hot Chicken Soup",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": "1794504504964",
+    "name": "Vegetable Soup",
+    "category": "Soup",
+    "price": 80,
+    "emoji": "🥣",
+    "description": "Fresh Vegetable Soup",
+    "stock": 20,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": "1794504504965",
+    "name": "Thai Soup",
+    "category": "Soup",
+    "price": 160,
+    "emoji": "🍜",
+    "description": "Special Thai Soup",
+    "stock": 20,
+    "active": true,
+    "image": ""
   }
 ]

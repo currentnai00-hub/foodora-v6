@@ -144,21 +144,33 @@ async function init() {
 
 function foodoraImage(p) {
   const n = ((p.name || "") + " " + (p.category || "")).toLowerCase();
+
+  const photos = [
+    [/burger/, "photo-1568901346375-23c9450c58cd"],
+    [/pizza/, "photo-1571407970349-bc81e7e96d47"],
+    [/chaap|chap|kabab|kebab|boti/, "photo-1544025162-d76694265947"],
+    [/chowmein|chow mein|noodle/, "photo-1569718212165-3a8278d5f624"],
+    [/grill|bbq|roast/, "photo-1532550907401-a500c9a57435"],
+    [/fried rice/, "photo-1512058564366-18510be2db19"],
+    [/omelette|omelet|egg/, "photo-1525351484163-7529414344d8"],
+    [/thai soup/, "photo-1547592180-85f173990554"],
+    [/chicken soup/, "photo-1547592180-85f173990554"],
+    [/vegetable soup|soup/, "photo-1476718406336-bb5a9690ee2a"],
+    [/chicken/, "photo-1626082927389-6cd097cdc6ec"],
+    [/rice/, "photo-1512058564366-18510be2db19"]
+  ];
+
   let id = "photo-1546069901-ba9599a7e63c";
 
-  if (/burger/.test(n)) id = "photo-1568901346375-23c9450c58cd";
-  else if (/pizza/.test(n)) id = "photo-1571407970349-bc81e7e96d47";
-  else if (/chicken|wings|nugget/.test(n)) id = "photo-1626082927389-6cd097cdc6ec";
-  else if (/cake|dessert|donut|ice cream/.test(n)) id = "photo-1578985545062-69928b1d9587";
-  else if (/shake|drink|juice|coffee/.test(n)) id = "photo-1546173159-315724a31696";
-  else if (/pasta/.test(n)) id = "photo-1473093295043-cdd812d0e601";
-  else if (/sandwich/.test(n)) id = "photo-1528735602780-2552fd46c7af";
-  else if (/fries|snack/.test(n)) id = "photo-1573080496219-bb080dd4f877";
-  else if (/fish|seafood/.test(n)) id = "photo-1519708227418-c8fd9a32b7a2";
-  else if (/salad/.test(n)) id = "photo-1512621776951-a57141f2eefd";
-  else if (/grill|bbq|roast/.test(n)) id = "photo-1532550907401-a500c9a57435";
+  for (const [pattern, photo] of photos) {
+    if (pattern.test(n)) {
+      id = photo;
+      break;
+    }
+  }
 
-  return "https://images.unsplash.com/" + id + "?auto=format&fit=crop&w=900&q=85";
+  return "https://images.unsplash.com/" + id +
+    "?auto=format&fit=crop&w=900&q=85";
 }
 
 function renderProducts() {
