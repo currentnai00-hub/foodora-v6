@@ -12,7 +12,11 @@ const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const COUPONS_FILE = path.join(DATA_DIR, "coupons.json");
 const ADMIN_KEY = process.env.ADMIN_KEY || "";
-const PAYMENT_NUMBER = process.env.PAYMENT_NUMBER || "01XXXXXXXXX";
+const LEGACY_PAYMENT_NUMBER = process.env.PAYMENT_NUMBER || "01XXXXXXXXX";
+const PAYMENT_NUMBERS = {
+  bKash: process.env.BKASH_NUMBER || LEGACY_PAYMENT_NUMBER,
+  Nagad: process.env.NAGAD_NUMBER || LEGACY_PAYMENT_NUMBER
+};
 const PAYMENT_METHODS = (process.env.PAYMENT_METHODS || "bKash,Nagad").split(",").map(x => x.trim()).filter(Boolean);
 const DELIVERY_FEE = Math.max(0, Number(process.env.DELIVERY_FEE || 60));
 const FREE_DELIVERY_FROM = Math.max(0, Number(process.env.FREE_DELIVERY_FROM || 999));
@@ -156,7 +160,7 @@ function couponDiscount(coupon, subtotal) {
 }
 
 app.get("/api/health", (req,res) => res.json({ ok:true, app:"Foodora V6", database:usePg ? "postgresql" : "local-json", time:new Date().toISOString() }));
-app.get("/api/config", (req,res) => res.json({ paymentNumber:PAYMENT_NUMBER, paymentMethods:PAYMENT_METHODS, deliveryFee:DELIVERY_FEE, freeDeliveryFrom:FREE_DELIVERY_FROM }));
+app.get("/api/config", (req,res) => res.json({ paymentNumbers:PAYMENT_NUMBERS, paymentMethods:PAYMENT_METHODS, deliveryFee:DELIVERY_FEE, freeDeliveryFrom:FREE_DELIVERY_FROM }));
 app.get("/api/products", async (req,res) => {
   try { res.json(await getProducts(true)); } catch(e) { res.status(500).json({error:"Could not load products"}); }
 });
@@ -240,7 +244,8 @@ app.post("/api/orders", async (req,res) => {
       writeJson(PRODUCTS_FILE,latest);
       const orders=readJson(ORDERS_FILE,[]); orders.unshift(order); writeJson(ORDERS_FILE,orders);
     }
-    res.status(201).json({ok:true,order:{id:order.id,total:order.total,status:order.status,paymentStatus:order.paymentStatus},payment:{method:paymentMethod,number:PAYMENT_NUMBER,instructions:`Send ৳${total} to ${PAYMENT_NUMBER} using ${paymentMethod} (manual payment). Then share the Transaction ID.`}});
+    const selectedPaymentNumber = PAYMENT_NUMBERS[paymentMethod];
+    res.status(201).json({ok:true,order:{id:order.id,total:order.total,status:order.status,paymentStatus:order.paymentStatus},payment:{method:paymentMethod,number:selectedPaymentNumber,instructions:`Send ৳${total} to ${selectedPaymentNumber} using ${paymentMethod} (manual payment). Then share the Transaction ID.`}});
   } catch(e) { console.error(e); res.status(500).json({error:e.message || "Order could not be placed"}); }
 });
 app.get("/api/orders/:id", async (req,res) => {

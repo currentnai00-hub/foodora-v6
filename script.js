@@ -28,7 +28,7 @@ let products = [];
 let cart = [];
 let category = "All";
 let config = {
-  paymentNumber: "01XXXXXXXXX",
+  paymentNumbers: { bKash: "01XXXXXXXXX", Nagad: "01XXXXXXXXX" },
   paymentMethods: ["bKash", "Nagad"],
   deliveryFee: 60,
   freeDeliveryFrom: 999
@@ -89,6 +89,15 @@ function total() {
   return subtotal() - discount() + delivery();
 }
 
+function updatePaymentHelp() {
+  const method = $("paymentMethod");
+  const help = $("paymentHelp");
+  if (!method || !help) return;
+  const number = config.paymentNumbers?.[method.value] || "নম্বর সেট করা হয়নি";
+  help.textContent = method.value + " payment number: " + number +
+    ". You can pay after confirming your order.";
+}
+
 async function init() {
   try {
     const [menu, settings] = await Promise.all([
@@ -122,12 +131,8 @@ async function init() {
       ).join("");
     }
 
-    const help = $("paymentHelp");
-    if (help) {
-      help.textContent =
-        "Payment number: " + config.paymentNumber +
-        ". You can pay after confirming your order.";
-    }
+    if (payment) payment.addEventListener("change", updatePaymentHelp);
+    updatePaymentHelp();
 
     $("year").textContent = new Date().getFullYear();
 
