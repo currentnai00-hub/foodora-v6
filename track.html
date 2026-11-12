@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1425">
+<title>Track your order | Foodora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/track.css?v=1">
+</head>
+<body>
+<header class="track-top"><a class="brand" href="/">foodora<span>.</span></a><a class="back" href="/">← Back to store</a></header>
+<main class="wrap">
+  <div class="intro"><p class="eyebrow">FOODORA · ORDER TRACKING</p><h1>Track your order</h1><p>Stay updated on your food delivery, every step of the way.</p></div>
+  <section class="panel search-panel">
+    <h2>Find your order</h2><p class="hint">Enter the Order ID and mobile number used at checkout.</p>
+    <form id="trackingForm" novalidate>
+      <label for="orderId">Order ID</label><input id="orderId" name="orderId" autocomplete="off" placeholder="e.g. FD_a1b2c3d4e5" required maxlength="60">
+      <label for="phone">Checkout phone number</label><input id="phone" name="phone" inputmode="numeric" autocomplete="tel" placeholder="01XXXXXXXXX" required maxlength="14">
+      <button id="trackButton" type="submit">TRACK MY ORDER <span>→</span></button>
+      <p id="message" class="message" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+  <section id="result" class="panel result-panel" hidden aria-live="polite">
+    <div class="status-head"><div><span class="section-label">ORDER STATUS</span><h2 id="statusTitle">Order received</h2></div><span id="statusBadge" class="status-badge">Pending</span></div>
+    <div class="progress-title">Delivery progress</div><div id="timeline" class="timeline"></div>
+    <div class="details-title">Order details</div><div id="details" class="details"></div>
+    <div class="details-title products-title">Products in your order</div><div id="items" class="items"></div>
+    <p class="privacy-note">For your privacy, order information is shown only after both your Order ID and checkout phone number match.</p>
+  </section>
+  <footer>FOODORA · FRESH FOOD, DELIVERED WITH CARE</footer>
+</main>
+<script src="/track.js?v=1" defer></script>
+</body></html>
