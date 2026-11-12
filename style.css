@@ -1559,3 +1559,11 @@ footer small {
 }
 
 /* ===== END FOODORA V8 ===== */
+
+
+/* Manual payment verification */
+.payment-box{background:#eef1e9;border:1px solid #cbd5c0;border-radius:10px;padding:16px;margin:12px 0;display:flex;flex-direction:column;gap:10px}
+.payment-box[hidden]{display:none}
+#paymentNumber{font-size:25px;font-weight:800;letter-spacing:1px;color:#172b20;overflow-wrap:anywhere}
+#copyPaymentNumber{align-self:flex-start;cursor:pointer}
+#senderNumberLabel[hidden],#transactionIdLabel[hidden],#codHelp[hidden]{display:none}

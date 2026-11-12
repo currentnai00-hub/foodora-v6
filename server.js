@@ -17,7 +17,7 @@ const PAYMENT_NUMBERS = {
   bKash: process.env.BKASH_NUMBER || LEGACY_PAYMENT_NUMBER,
   Nagad: process.env.NAGAD_NUMBER || LEGACY_PAYMENT_NUMBER
 };
-const PAYMENT_METHODS = (process.env.PAYMENT_METHODS || "bKash,Nagad").split(",").map(x => x.trim()).filter(Boolean);
+const PAYMENT_METHODS = [...new Set([...(process.env.PAYMENT_METHODS || "bKash,Nagad").split(",").map(x => x.trim()).filter(Boolean), "Cash on Delivery"])];
 const DELIVERY_FEE = Math.max(0, Number(process.env.DELIVERY_FEE || 60));
 const FREE_DELIVERY_FROM = Math.max(0, Number(process.env.FREE_DELIVERY_FROM || 999));
 const usePg = Boolean(process.env.DATABASE_URL);
@@ -88,7 +88,7 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS orders (
       id TEXT PRIMARY KEY, customer_name TEXT NOT NULL, phone TEXT NOT NULL,
       address TEXT NOT NULL, payment_method TEXT NOT NULL,
-      transaction_id TEXT DEFAULT '', payment_status TEXT DEFAULT 'Unverified',
+      transaction_id TEXT DEFAULT '', sender_number TEXT DEFAULT '', payment_status TEXT DEFAULT 'Unverified',
       status TEXT DEFAULT 'Pending', items JSONB NOT NULL,
       subtotal INTEGER NOT NULL, discount INTEGER NOT NULL DEFAULT 0,
       delivery_fee INTEGER NOT NULL DEFAULT 0, total INTEGER NOT NULL,
@@ -104,6 +104,7 @@ async function initDb() {
       rating INTEGER NOT NULL, comment TEXT DEFAULT '', created_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS sender_number TEXT DEFAULT ''");
   const count = await pool.query("SELECT COUNT(*)::int AS n FROM products");
   if (count.rows[0].n === 0) {
     const old = readJson(path.join(ROOT, "products.json"), defaultProducts());
@@ -141,7 +142,7 @@ async function getProducts(activeOnly = false) {
 async function getOrders() {
   if (usePg) {
     const r = await pool.query("SELECT * FROM orders ORDER BY created_at DESC");
-    return r.rows.map(o => ({ id:o.id,name:o.customer_name,phone:o.phone,address:o.address,paymentMethod:o.payment_method,transactionId:o.transaction_id,paymentStatus:o.payment_status,status:o.status,items:o.items,subtotal:o.subtotal,discount:o.discount,deliveryFee:o.delivery_fee,total:o.total,couponCode:o.coupon_code,createdAt:o.created_at }));
+    return r.rows.map(o => ({ id:o.id,name:o.customer_name,phone:o.phone,address:o.address,paymentMethod:o.payment_method,transactionId:o.transaction_id,senderNumber:o.sender_number,paymentStatus:o.payment_status,status:o.status,items:o.items,subtotal:o.subtotal,discount:o.discount,deliveryFee:o.delivery_fee,total:o.total,couponCode:o.coupon_code,createdAt:o.created_at }));
   }
   return readJson(ORDERS_FILE, []);
 }
@@ -198,10 +199,13 @@ app.post("/api/coupons/validate", async (req,res) => {
 });
 app.post("/api/orders", async (req,res) => {
   const name=clean(req.body.name,80), phone=clean(req.body.phone,25), address=clean(req.body.address,400);
-  const paymentMethod=clean(req.body.paymentMethod,30), transactionId=clean(req.body.transactionId,80);
+  const paymentMethod=clean(req.body.paymentMethod,30), transactionId=clean(req.body.transactionId,80), senderNumber=clean(req.body.senderNumber,25);
   const input=Array.isArray(req.body.items) ? req.body.items : [];
+  const isCOD = paymentMethod.toLowerCase() === "cash on delivery" || paymentMethod.toLowerCase() === "cod";
   if (!name || !/^01[0-9]{9}$/.test(phone) || !address || !PAYMENT_METHODS.includes(paymentMethod) || !input.length)
     return res.status(400).json({error:"Name, valid BD phone, address, payment method and cart items are required"});
+  if (!isCOD && (!/^01[0-9]{9}$/.test(senderNumber) || !transactionId))
+    return res.status(400).json({error:"bKash/Nagad payment-এর Sender Number এবং Transaction ID দিন।"});
   try {
     const products=await getProducts(true), normalized=[];
     for (const item of input) {
@@ -224,7 +228,7 @@ app.post("/api/orders", async (req,res) => {
     const discount=couponDiscount(coupon,subtotal);
     const deliveryFee=subtotal-discount>=FREE_DELIVERY_FROM ? 0 : DELIVERY_FEE;
     const total=subtotal-discount+deliveryFee;
-    const order={id:id("FD"),name,phone,address,paymentMethod,transactionId,paymentStatus:transactionId?"Pending verification":"Awaiting payment",status:"Pending",items:normalized,subtotal,discount,deliveryFee,total,couponCode:code,createdAt:new Date().toISOString()};
+    const order={id:id("FD"),name,phone,address,paymentMethod,transactionId,senderNumber,paymentStatus:isCOD?"Awaiting payment":"Pending verification",status:"Pending",items:normalized,subtotal,discount,deliveryFee,total,couponCode:code,createdAt:new Date().toISOString()};
     if (usePg) {
       const client=await pool.connect();
       try {
@@ -233,9 +237,9 @@ app.post("/api/orders", async (req,res) => {
           const r=await client.query("UPDATE products SET stock=stock-$1 WHERE id=$2 AND stock >= $1",[item.qty,item.id]);
           if (!r.rowCount) throw new Error("Stock changed; please refresh your cart");
         }
-        await client.query(`INSERT INTO orders(id,customer_name,phone,address,payment_method,transaction_id,payment_status,status,items,subtotal,discount,delivery_fee,total,coupon_code)
-          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-          [order.id,name,phone,address,paymentMethod,transactionId,order.paymentStatus,order.status,JSON.stringify(normalized),subtotal,discount,deliveryFee,total,code]);
+        await client.query(`INSERT INTO orders(id,customer_name,phone,address,payment_method,transaction_id,sender_number,payment_status,status,items,subtotal,discount,delivery_fee,total,coupon_code)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+          [order.id,name,phone,address,paymentMethod,transactionId,senderNumber,order.paymentStatus,order.status,JSON.stringify(normalized),subtotal,discount,deliveryFee,total,code]);
         await client.query("COMMIT");
       } catch(e) { await client.query("ROLLBACK"); throw e; } finally { client.release(); }
     } else {
@@ -245,7 +249,7 @@ app.post("/api/orders", async (req,res) => {
       const orders=readJson(ORDERS_FILE,[]); orders.unshift(order); writeJson(ORDERS_FILE,orders);
     }
     const selectedPaymentNumber = PAYMENT_NUMBERS[paymentMethod];
-    res.status(201).json({ok:true,order:{id:order.id,total:order.total,status:order.status,paymentStatus:order.paymentStatus},payment:{method:paymentMethod,number:selectedPaymentNumber,instructions:`Send ৳${total} to ${selectedPaymentNumber} using ${paymentMethod} (manual payment). Then share the Transaction ID.`}});
+    res.status(201).json({ok:true,order:{id:order.id,total:order.total,status:order.status,paymentStatus:order.paymentStatus},payment:{method:paymentMethod,number:selectedPaymentNumber,instructions:isCOD?"Cash on Delivery selected. Pay cash when your order arrives.":`Payment submitted for verification. Admin will verify your ${paymentMethod} payment before showing Payment Successful.`}});
   } catch(e) { console.error(e); res.status(500).json({error:e.message || "Order could not be placed"}); }
 });
 app.get("/api/orders/:id", async (req,res) => {
