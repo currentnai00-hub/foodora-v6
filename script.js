@@ -482,7 +482,10 @@ $("copyPaymentNumber")?.addEventListener("click", async () => {
     alert("Copy failed. Please copy manually: " + number);
   }
 });
-$("trackForm").addEventListener("submit", trackOrder);
+$("trackForm").addEventListener("submit", event => {
+  console.log("TRACK FORM SUBMITTED");
+  trackOrder(event);
+});
 $("search").addEventListener("input", renderProducts);
 $("applyCoupon").addEventListener("click", applyCoupon);
 
