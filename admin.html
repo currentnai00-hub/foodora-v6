@@ -133,7 +133,7 @@ td select{padding:8px;max-width:160px}
   <div class="panel">
    <div class="panelhead"><h2>Order Management</h2><span class="muted" id="orderCount"></span></div>
    <div class="toolbar"><input id="orderSearch" placeholder="Search order / customer / phone..." oninput="renderOrders()">
-    <select id="orderFilter" onchange="renderOrders()"><option value="">All statuses</option><option>Pending</option><option>Confirmed</option><option>Preparing</option><option>Out for delivery</option><option>Delivered</option><option>Cancelled</option></select>
+    <select id="orderFilter" onchange="renderOrders()"><option value="">All statuses</option><option>Pending</option><option>Confirmed</option><option>Preparing</option><option>Shipped</option><option>Out for delivery</option><option>Delivered</option><option>Cancelled</option></select>
    </div>
    <div id="ordersTable" class="tablewrap"></div>
   </div>
@@ -203,7 +203,7 @@ td select{padding:8px;max-width:160px}
 const $=id=>document.getElementById(id);
 let KEY=sessionStorage.getItem("foodora_admin_key")||"";
 let products=[],orders=[],coupons=[],reviews=[],summary={};
-const statuses=["Pending","Confirmed","Preparing","Out for delivery","Delivered","Cancelled"];
+const statuses=["Pending","Confirmed","Preparing","Shipped","Out for delivery","Delivered","Cancelled"];
 const payments=["Awaiting payment","Pending verification","Verified","Rejected"];
 const money=n=>"৳"+Number(n||0).toLocaleString("en-BD");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
