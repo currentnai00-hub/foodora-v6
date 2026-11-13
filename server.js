@@ -46,6 +46,62 @@ function writeJson(file, value) {
 function id(prefix) { return prefix + "_" + crypto.randomBytes(5).toString("hex"); }
 function clean(s, max = 180) { return String(s ?? "").trim().slice(0, max); }
 function money(n) { return Math.max(0, Math.round(Number(n) || 0)); }
+
+async function sendTelegramOrderNotification(order) {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN || "";
+  const chatId = process.env.TELEGRAM_CHAT_ID || "";
+
+  if (!botToken || !chatId) {
+    console.warn("Telegram credentials are missing.");
+    return;
+  }
+
+  const itemLines = order.items.map(item =>
+    `• ${item.name} × ${item.qty} — ৳${item.price * item.qty}`
+  ).join("\n");
+
+  const message = [
+    "🛒 NEW FOODORA ORDER",
+    "",
+    `Order ID: ${order.id}`,
+    `Customer: ${order.name}`,
+    `Phone: ${order.phone}`,
+    `Address: ${order.address}`,
+    "",
+    "Items:",
+    itemLines,
+    "",
+    `Subtotal: ৳${order.subtotal}`,
+    `Discount: ৳${order.discount}`,
+    `Delivery fee: ৳${order.deliveryFee}`,
+    `TOTAL: ৳${order.total}`,
+    "",
+    `Payment: ${order.paymentMethod}`,
+    `Payment status: ${order.paymentStatus}`,
+    `Order status: ${order.status}`
+  ].join("\n").slice(0, 4000);
+
+  const response = await fetch(
+    `https://api.telegram.org/bot${botToken}/sendMessage`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        disable_web_page_preview: true
+      }),
+      signal: AbortSignal.timeout(8000)
+    }
+  );
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok || !result.ok) {
+    throw new Error(result.description || "Telegram notification failed");
+  }
+}
+
 function adminOnly(req, res, next) {
   const supplied = req.get("x-admin-key") || "";
   if (!ADMIN_KEY || supplied.length !== ADMIN_KEY.length ||
@@ -244,6 +300,11 @@ app.post("/api/orders", async (req,res) => {
       writeJson(PRODUCTS_FILE,latest);
       const orders=readJson(ORDERS_FILE,[]); orders.unshift(order); writeJson(ORDERS_FILE,orders);
     }
+    
+    sendTelegramOrderNotification(order).catch(err => {
+      console.error("Telegram order notification failed:", err.message);
+    });
+
     const isCashOnDelivery =
       paymentMethod.toLowerCase() === "cash on delivery";
 
@@ -279,7 +340,6 @@ app.get("/api/orders/:id", async (req,res) => {
       return res.status(400).json({error:"Enter your Order ID and the 11-digit checkout phone number."});
     const orders=await getOrders();
     const o=orders.find(x=>String(x.id).toLowerCase()===orderId);
-    // Keep order details private: both the order ID and checkout phone must match.
     if (!o || String(o.phone || "").replace(/\D/g, "") !== phone)
       return res.status(404).json({error:"We couldn't find an order with those details. Check your Order ID and phone number."});
     res.set("Cache-Control", "no-store");
@@ -344,7 +404,6 @@ app.patch("/api/admin/orders/:id",adminOnly,async(req,res)=>{
       if(!r.rowCount)return res.status(404).json({error:"Order not found"});
       if(status==="Cancelled") {
         const o=(await pool.query("SELECT items FROM orders WHERE id=$1",[req.params.id])).rows[0];
-        // Stock restoration on cancellation is handled only once below using a guarded status transition.
       }
       return res.json({ok:true,...r.rows[0]});
     }
