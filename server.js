@@ -244,8 +244,31 @@ app.post("/api/orders", async (req,res) => {
       writeJson(PRODUCTS_FILE,latest);
       const orders=readJson(ORDERS_FILE,[]); orders.unshift(order); writeJson(ORDERS_FILE,orders);
     }
-    const selectedPaymentNumber = PAYMENT_NUMBERS[paymentMethod];
-    res.status(201).json({ok:true,order:{id:order.id,total:order.total,status:order.status,paymentStatus:order.paymentStatus},payment:{method:paymentMethod,number:selectedPaymentNumber,instructions:`Send ৳${total} to ${selectedPaymentNumber} using ${paymentMethod} (manual payment). Then share the Transaction ID.`}});
+    const isCashOnDelivery =
+      paymentMethod.toLowerCase() === "cash on delivery";
+
+    const selectedPaymentNumber = isCashOnDelivery
+      ? null
+      : PAYMENT_NUMBERS[paymentMethod];
+
+    const instructions = isCashOnDelivery
+      ? "Pay cash when your order is delivered."
+      : `Send ৳${total} to ${selectedPaymentNumber} using ${paymentMethod} (manual payment). Then share the Transaction ID.`;
+
+    res.status(201).json({
+      ok: true,
+      order: {
+        id: order.id,
+        total: order.total,
+        status: order.status,
+        paymentStatus: order.paymentStatus
+      },
+      payment: {
+        method: paymentMethod,
+        number: selectedPaymentNumber,
+        instructions
+      }
+    });
   } catch(e) { console.error(e); res.status(500).json({error:e.message || "Order could not be placed"}); }
 });
 app.get("/api/orders/:id", async (req,res) => {
