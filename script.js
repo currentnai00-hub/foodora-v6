@@ -1,51 +1,46 @@
-
-function foodoraFoodImage(name) {
-  const n = String(name || "").toLowerCase();
-  const foods = [
-    [/burger|বার্গার/, "photo-1568901346375-23c9450c58cd"],
-    [/pizza|পিজ্জা/, "photo-1565299624946-b28f40a0ae38"],
-    [/chicken|চিকেন|মুরগি/, "photo-1555939594-58d7cb561ad1"],
-    [/biryani|বিরিয়ানি|পোলাও/, "photo-1563379091339-03246963d96c"],
-    [/rice|ভাত|খিচুড়ি/, "photo-1512058564366-18510be2db19"],
-    [/pasta|পাস্তা/, "photo-1473093295043-cdd812d0e601"],
-    [/noodle|নুডলস|রামেন/, "photo-1569718212165-3a8278d5f624"],
-    [/sandwich|স্যান্ডউইচ/, "photo-1528735602780-2552fd46c7af"],
-    [/cake|কেক|dessert|মিষ্টি/, "photo-1578985545062-69928b1d9587"],
-    [/juice|জুস|drink|coffee/, "photo-1544145945-f90425340c7e"],
-    [/fish|মাছ|seafood/, "photo-1519708227418-c8fd9a32b7a2"],
-    [/salad|সালাদ/, "photo-1512621776951-a57141f2eefd"]
-  ];
-  let id = "photo-1546069901-ba9599a7e63c";
-  for (const [pattern, image] of foods) {
-    if (pattern.test(n)) { id = image; break; }
-  }
-  return "https://images.unsplash.com/" + id + "?auto=format&fit=crop&w=900&q=85";
-}
-
 "use strict";
+
+/* =========================================
+   FOODORA V6 — CUSTOMER WEBSITE
+   Cart, Coupon, Search, Stock, Checkout
+   bKash / Nagad Copy Number + COD
+========================================= */
 
 let products = [];
 let cart = [];
 let category = "All";
+
 let config = {
-  paymentNumbers: { bKash: "01XXXXXXXXX", Nagad: "01XXXXXXXXX" },
+  paymentNumbers: {
+    bKash: "01XXXXXXXXX",
+    Nagad: "01XXXXXXXXX"
+  },
   paymentMethods: ["bKash", "Nagad"],
   deliveryFee: 60,
   freeDeliveryFrom: 999
 };
+
 let appliedCoupon = null;
 
 const $ = id => document.getElementById(id);
 
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;",
-    '"':"&quot;", "'":"&#39;"
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
   })[c]);
 }
 
 function money(value) {
   return "৳" + Number(value || 0).toLocaleString("en-BD");
+}
+
+function isCOD(method) {
+  return String(method || "").trim().toLowerCase() ===
+    "cash on delivery";
 }
 
 async function api(url, options = {}) {
@@ -66,6 +61,10 @@ async function api(url, options = {}) {
   return data;
 }
 
+/* =========================================
+   CART STORAGE
+========================================= */
+
 function saveCart() {
   try {
     localStorage.setItem("foodora_cart", JSON.stringify(cart));
@@ -73,31 +72,121 @@ function saveCart() {
 }
 
 function subtotal() {
-  return cart.reduce((sum, p) => sum + Number(p.price) * p.qty, 0);
+  return cart.reduce(
+    (sum, p) => sum + Number(p.price) * p.qty,
+    0
+  );
 }
 
 function discount() {
-  return Math.min(subtotal(), Number(appliedCoupon?.discount || 0));
+  return Math.min(
+    subtotal(),
+    Number(appliedCoupon?.discount || 0)
+  );
 }
 
 function delivery() {
   return subtotal() - discount() >= config.freeDeliveryFrom
-    ? 0 : config.deliveryFee;
+    ? 0
+    : config.deliveryFee;
 }
 
 function total() {
   return subtotal() - discount() + delivery();
 }
 
+/* =========================================
+   PAYMENT METHODS
+========================================= */
+
 function updatePaymentHelp() {
-  const method = $("paymentMethod");
+  const methodInput = $("paymentMethod");
   const help = $("paymentHelp");
-  if (!method || !help) return;
-  const key = method.value.toLowerCase() === "bkash" ? "bKash" : method.value;
-  const number = config.paymentNumbers?.[key] || "নম্বর সেট করা হয়নি";
-  help.textContent = method.value + " payment number: " + number +
+  const copyButton = $("copyPaymentNumber");
+
+  if (!methodInput || !help) return;
+
+  const method = methodInput.value;
+
+  if (copyButton) {
+    copyButton.style.display = "none";
+    copyButton.dataset.number = "";
+  }
+
+  if (isCOD(method)) {
+    help.textContent =
+      "Cash on Delivery: Pay cash when your order is delivered.";
+    return;
+  }
+
+  const key = method.toLowerCase() === "bkash"
+    ? "bKash"
+    : method;
+
+  const number = String(
+    config.paymentNumbers?.[key] || ""
+  ).trim();
+
+  if (!number || number === "01XXXXXXXXX") {
+    help.textContent =
+      method + " payment number is not configured. Please contact us.";
+    return;
+  }
+
+  help.textContent =
+    method + " payment number: " + number +
     ". You can pay after confirming your order.";
+
+  if (copyButton) {
+    copyButton.style.display = "block";
+    copyButton.dataset.number = number;
+    copyButton.textContent = "Copy " + method + " Number";
+    copyButton.disabled = false;
+  }
 }
+
+async function copyPaymentNumber() {
+  const button = $("copyPaymentNumber");
+  if (!button) return;
+
+  const number = button.dataset.number;
+  if (!number) return;
+
+  const originalText = button.textContent;
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(number);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = number;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      const copied = document.execCommand("copy");
+      textarea.remove();
+
+      if (!copied) throw new Error("Copy failed");
+    }
+
+    button.textContent = "✓ Copied!";
+    button.disabled = true;
+
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.disabled = false;
+    }, 1800);
+
+  } catch (error) {
+    alert("Copy failed. Please copy this number manually:\n" + number);
+  }
+}
+
+/* =========================================
+   INITIALIZATION
+========================================= */
 
 async function init() {
   try {
@@ -106,50 +195,119 @@ async function init() {
       api("/api/config")
     ]);
 
-    products = menu;
-    config = {...config, ...settings};
+    products = Array.isArray(menu) ? menu : [];
+    config = { ...config, ...settings };
 
     try {
-      const saved = JSON.parse(localStorage.getItem("foodora_cart") || "[]");
+      const saved = JSON.parse(
+        localStorage.getItem("foodora_cart") || "[]"
+      );
+
       if (Array.isArray(saved)) {
         cart = saved.map(item => {
-          const p = products.find(x => String(x.id) === String(item.id));
-          if (!p) return null;
-          return {...p, qty: Math.min(
+          const product = products.find(
+            p => String(p.id) === String(item.id)
+          );
+
+          if (!product) return null;
+
+          const quantity = Math.min(
             Math.max(1, Number(item.qty) || 1),
-            Number(p.stock) || 0
-          )};
-        }).filter(x => x && x.qty > 0);
+            Number(product.stock) || 0
+          );
+
+          return quantity > 0
+            ? { ...product, qty: quantity }
+            : null;
+        }).filter(Boolean);
       }
     } catch (_) {
       cart = [];
     }
 
     const payment = $("paymentMethod");
+
     if (payment) {
-      payment.innerHTML = config.paymentMethods.map(m =>
-        `<option value="${esc(m)}">${esc(m)}</option>`
+      const methods = Array.isArray(config.paymentMethods)
+        ? config.paymentMethods
+        : [];
+
+      payment.innerHTML = methods.map(method =>
+        `<option value="${esc(method)}">${esc(method)}</option>`
       ).join("");
     }
 
-    if (payment) payment.addEventListener("change", updatePaymentHelp);
+    if (payment) {
+      payment.removeEventListener("change", updatePaymentHelp);
+      payment.addEventListener("change", updatePaymentHelp);
+    }
+
+    const copyButton = $("copyPaymentNumber");
+
+    if (copyButton) {
+      copyButton.removeEventListener("click", copyPaymentNumber);
+      copyButton.addEventListener("click", copyPaymentNumber);
+    }
+
     updatePaymentHelp();
 
-    $("year").textContent = new Date().getFullYear();
+    if ($("year")) {
+      $("year").textContent = new Date().getFullYear();
+    }
 
     renderProducts();
     updateCart();
 
   } catch (error) {
-    $("products").textContent =
-      "Menu loading failed. Please refresh the page.";
+    if ($("products")) {
+      $("products").textContent =
+        "Menu loading failed. Please refresh the page.";
+    }
+
     console.error("Foodora initialization:", error);
   }
 }
 
+/* =========================================
+   PRODUCT IMAGES
+========================================= */
 
-function foodoraImage(p) {
-  const n = ((p.name || "") + " " + (p.category || "")).toLowerCase();
+function foodoraFoodImage(name) {
+  const n = String(name || "").toLowerCase();
+
+  const foods = [
+    [/burger|বার্গার/, "photo-1568901346375-23c9450c58cd"],
+    [/pizza|পিজ্জা/, "photo-1565299624946-b28f40a0ae38"],
+    [/chicken|চিকেন|মুরগি/, "photo-1555939594-58d7cb561ad1"],
+    [/biryani|বিরিয়ানি|পোলাও/, "photo-1563379091339-03246963d96c"],
+    [/rice|ভাত|খিচুড়ি/, "photo-1512058564366-18510be2db19"],
+    [/pasta|পাস্তা/, "photo-1473093295043-cdd812d0e601"],
+    [/noodle|নুডলস|রামেন/, "photo-1569718212165-3a8278d5f624"],
+    [/sandwich|স্যান্ডউইচ/, "photo-1528735602780-2552fd46c7af"],
+    [/cake|কেক|dessert|মিষ্টি/, "photo-1578985545062-69928b1d9587"],
+    [/juice|জুস|drink|coffee/, "photo-1544145945-f90425340c7e"],
+    [/fish|মাছ|seafood/, "photo-1519708227418-c8fd9a32b7a2"],
+    [/salad|সালাদ/, "photo-1512621776951-a57141f2eefd"]
+  ];
+
+  let id = "photo-1546069901-ba9599a7e63c";
+
+  for (const [pattern, image] of foods) {
+    if (pattern.test(n)) {
+      id = image;
+      break;
+    }
+  }
+
+  return "https://images.unsplash.com/" +
+    id + "?auto=format&fit=crop&w=900&q=85";
+}
+
+function foodoraImage(product) {
+  const n = (
+    (product.name || "") + " " +
+    (product.category || "")
+  ).toLowerCase();
 
   const photos = [
     [/burger/, "photo-1568901346375-23c9450c58cd"],
@@ -159,8 +317,7 @@ function foodoraImage(p) {
     [/grill|bbq|roast/, "photo-1532550907401-a500c9a57435"],
     [/fried rice/, "photo-1512058564366-18510be2db19"],
     [/omelette|omelet|egg/, "photo-1525351484163-7529414344d8"],
-    [/thai soup/, "photo-1547592180-85f173990554"],
-    [/chicken soup/, "photo-1547592180-85f173990554"],
+    [/thai soup|chicken soup/, "photo-1547592180-85f173990554"],
     [/vegetable soup|soup/, "photo-1476718406336-bb5a9690ee2a"],
     [/chicken/, "photo-1626082927389-6cd097cdc6ec"],
     [/rice/, "photo-1512058564366-18510be2db19"]
@@ -175,12 +332,19 @@ function foodoraImage(p) {
     }
   }
 
-  return "https://images.unsplash.com/" + id +
-    "?auto=format&fit=crop&w=900&q=85";
+  return "https://images.unsplash.com/" +
+    id + "?auto=format&fit=crop&w=900&q=85";
 }
 
+/* =========================================
+   PRODUCT DISPLAY
+========================================= */
+
 function renderProducts() {
-  const search = ($("search").value || "").trim().toLowerCase();
+  const searchInput = $("search");
+  if (!$("products") || !searchInput) return;
+
+  const search = (searchInput.value || "").trim().toLowerCase();
 
   const categories = [
     "All",
@@ -193,134 +357,182 @@ function renderProducts() {
   `).join("");
 
   const list = products.filter(p =>
-    (p.active !== false) &&
+    p.active !== false &&
     (category === "All" || p.category === category) &&
-    ((p.name || "") + " " + (p.category || "") + " " +
-      (p.description || "")).toLowerCase().includes(search)
+    (
+      (p.name || "") + " " +
+      (p.category || "") + " " +
+      (p.description || "")
+    ).toLowerCase().includes(search)
   );
 
-  $("products").innerHTML = list.length ? list.map(p => {
-    const price = Number(p.price) || 0;
-    const oldPrice = Number(
-      p.originalPrice || p.original_price || p.oldPrice || 0
-    );
-    const hasDiscount = oldPrice > price && price > 0;
-    const percent = hasDiscount
-      ? Math.round((oldPrice - price) / oldPrice * 100) : 0;
+  $("products").innerHTML = list.length
+    ? list.map(p => {
+        const price = Number(p.price) || 0;
 
-    const image = p.image && /^https?:\/\//i.test(p.image)
-      ? p.image : foodoraImage(p);
+        const oldPrice = Number(
+          p.originalPrice ||
+          p.original_price ||
+          p.oldPrice || 0
+        );
 
-    const bestSeller = p.bestSeller === true ||
-      p.isBestSeller === true || p.featured === true;
+        const hasDiscount = oldPrice > price && price > 0;
 
-    const stock = Number(p.stock);
-    const unavailable = stock <= 0;
+        const percent = hasDiscount
+          ? Math.round((oldPrice - price) / oldPrice * 100)
+          : 0;
 
-    return `
-      <article class="product">
-        <div class="productPhoto">
-          <img src="${esc(image)}"
-               alt="${esc(p.name)}"
-               loading="lazy"
-               decoding="async"
-               onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=85'">
+        const image = p.image &&
+          /^https?:\/\//i.test(p.image)
+          ? p.image
+          : foodoraImage(p);
 
-          ${bestSeller
-            ? '<span class="v8-badge bestseller">★ BEST SELLER</span>'
-            : '<span class="v8-badge">FOODORA SPECIAL</span>'}
+        const bestSeller =
+          p.bestSeller === true ||
+          p.isBestSeller === true ||
+          p.featured === true;
 
-          ${hasDiscount
-            ? `<span class="v8-discount">${percent}% OFF</span>`
-            : ''}
-        </div>
+        const unavailable = Number(p.stock) <= 0;
 
-        <div class="productInfo">
-          <div class="tag">${esc(p.category || "Fresh Food")}</div>
-          <h3>${esc(p.name)}</h3>
-          <p>${esc(p.description || "Freshly prepared with quality ingredients.")}</p>
+        return `
+          <article class="product">
+            <div class="productPhoto">
+              <img src="${esc(image)}"
+                alt="${esc(p.name)}"
+                loading="lazy"
+                decoding="async"
+                onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=85'">
 
-          <div class="productBottom">
-            <div class="v8-price">
-              <span class="price">${money(price)}</span>
+              ${bestSeller
+                ? '<span class="v8-badge bestseller">★ BEST SELLER</span>'
+                : '<span class="v8-badge">FOODORA SPECIAL</span>'}
+
               ${hasDiscount
-                ? `<del>${money(oldPrice)}</del>`
-                : ''}
+                ? `<span class="v8-discount">${percent}% OFF</span>`
+                : ""}
             </div>
 
-            <button class="add"
-              data-add="${esc(p.id)}"
-              ${unavailable ? "disabled" : ""}>
-              ${unavailable ? "Sold Out" : "+ Add"}
-            </button>
-          </div>
-        </div>
-      </article>
+            <div class="productInfo">
+              <div class="tag">${esc(p.category || "Fresh Food")}</div>
+              <h3>${esc(p.name)}</h3>
+              <p>${esc(p.description || "Freshly prepared with quality ingredients.")}</p>
+
+              <div class="productBottom">
+                <div class="v8-price">
+                  <span class="price">${money(price)}</span>
+                  ${hasDiscount ? `<del>${money(oldPrice)}</del>` : ""}
+                </div>
+
+                <button class="add"
+                  data-add="${esc(p.id)}"
+                  ${unavailable ? "disabled" : ""}>
+                  ${unavailable ? "Sold Out" : "+ Add"}
+                </button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("")
+    : `
+      <div class="v8-empty">
+        <div>🍽️</div>
+        <h3>No food found</h3>
+        <p>Try another food name or category.</p>
+      </div>
     `;
-  }).join("") : `
-    <div class="v8-empty">
-      <div>🍽️</div>
-      <h3>No food found</h3>
-      <p>Try another food name or category.</p>
-    </div>
-  `;
 }
+
+/* =========================================
+   ADD TO CART
+========================================= */
+
 function addToCart(id) {
-  const p = products.find(x => String(x.id) === String(id));
-  if (!p) return;
+  const product = products.find(
+    p => String(p.id) === String(id)
+  );
 
-  const old = cart.find(x => String(x.id) === String(id));
+  if (!product) return;
 
-  if (Number(p.stock) <= 0) {
+  const old = cart.find(
+    p => String(p.id) === String(id)
+  );
+
+  if (Number(product.stock) <= 0) {
     alert("This product is out of stock.");
     return;
   }
 
   if (old) {
-    if (old.qty >= Number(p.stock)) {
+    if (old.qty >= Number(product.stock)) {
       alert("Maximum available stock reached.");
       return;
     }
+
     old.qty++;
   } else {
-    cart.push({...p, qty: 1});
+    cart.push({ ...product, qty: 1 });
   }
 
   appliedCoupon = null;
-  $("couponMessage").textContent = "";
-  $("coupon").value = "";
+
+  if ($("couponMessage")) $("couponMessage").textContent = "";
+  if ($("coupon")) $("coupon").value = "";
+
   updateCart();
 }
 
+/* =========================================
+   CART DISPLAY
+========================================= */
+
 function updateCart() {
-  const count = cart.reduce((s, p) => s + p.qty, 0);
+  if (!$("cartItems")) return;
+
+  const count = cart.reduce((sum, p) => sum + p.qty, 0);
+
   $("cartCount").textContent = count;
 
-  $("cartItems").innerHTML = cart.length ? cart.map(p => `
-    <div class="cart-line">
-      <div>
-        <b>${esc(p.name)}</b>
-        <p>${money(p.price)} each</p>
-      </div>
-      <div class="qty-controls">
-        <button data-qty="${esc(p.id)}" data-change="-1">−</button>
-        <b>${p.qty}</b>
-        <button data-qty="${esc(p.id)}" data-change="1">+</button>
-        <button data-remove="${esc(p.id)}">✕</button>
-      </div>
-    </div>
-  `).join("") : `<div class="empty">Your cart is empty. Add some delicious food!</div>`;
+  $("cartItems").innerHTML = cart.length
+    ? cart.map(p => `
+        <div class="cart-line">
+          <div>
+            <b>${esc(p.name)}</b>
+            <p>${money(p.price)} each</p>
+          </div>
+
+          <div class="qty-controls">
+            <button data-qty="${esc(p.id)}" data-change="-1">−</button>
+            <b>${p.qty}</b>
+            <button data-qty="${esc(p.id)}" data-change="1">+</button>
+            <button data-remove="${esc(p.id)}">✕</button>
+          </div>
+        </div>
+      `).join("")
+    : `<div class="empty">Your cart is empty. Add some delicious food!</div>`;
 
   $("totals").innerHTML = `
-    <div class="total-line"><span>Subtotal</span><b>${money(subtotal())}</b></div>
-    <div class="total-line"><span>Discount</span><b>−${money(discount())}</b></div>
-    <div class="total-line"><span>Delivery</span><b>${money(delivery())}</b></div>
-    <div class="total-line"><strong>Total</strong><strong>${money(total())}</strong></div>
+    <div class="total-line">
+      <span>Subtotal</span><b>${money(subtotal())}</b>
+    </div>
+    <div class="total-line">
+      <span>Discount</span><b>−${money(discount())}</b>
+    </div>
+    <div class="total-line">
+      <span>Delivery</span><b>${money(delivery())}</b>
+    </div>
+    <div class="total-line">
+      <strong>Total</strong><strong>${money(total())}</strong>
+    </div>
   `;
 
   $("checkoutOpen").disabled = !cart.length;
+
   saveCart();
 }
+
+/* =========================================
+   CART DRAWER
+========================================= */
 
 function openCart() {
   updateCart();
@@ -333,16 +545,31 @@ function closeCart() {
   $("backdrop").classList.remove("show");
 }
 
+/* =========================================
+   CHECKOUT
+========================================= */
+
 function openCheckout() {
-  if (!cart.length) return alert("Please add food first.");
+  if (!cart.length) {
+    alert("Please add food first.");
+    return;
+  }
+
   closeCart();
+
   $("checkoutMessage").textContent = "";
   $("checkoutModal").classList.add("show");
+
+  updatePaymentHelp();
 }
 
 function closeCheckout() {
   $("checkoutModal").classList.remove("show");
 }
+
+/* =========================================
+   COUPON
+========================================= */
 
 async function applyCoupon() {
   const code = $("coupon").value.trim();
@@ -355,12 +582,20 @@ async function applyCoupon() {
   try {
     const result = await api("/api/coupons/validate", {
       method: "POST",
-      body: JSON.stringify({code, subtotal: subtotal()})
+      body: JSON.stringify({
+        code,
+        subtotal: subtotal()
+      })
     });
 
-    appliedCoupon = {code: result.code, discount: result.discount};
+    appliedCoupon = {
+      code: result.code,
+      discount: result.discount
+    };
+
     $("couponMessage").textContent =
       "Coupon applied! You saved " + money(result.discount);
+
     updateCart();
 
   } catch (error) {
@@ -369,6 +604,10 @@ async function applyCoupon() {
     updateCart();
   }
 }
+
+/* =========================================
+   PLACE ORDER
+========================================= */
 
 async function placeOrder(event) {
   event.preventDefault();
@@ -379,8 +618,17 @@ async function placeOrder(event) {
   }
 
   const form = $("checkoutForm");
-  const button = form.querySelector("button[type='submit'], button:not([type])");
+
+  const button = form.querySelector(
+    "button[type='submit'], button:not([type])"
+  );
+
+  if (!button) return;
+
   const data = new FormData(form);
+  const paymentMethod = String(
+    data.get("paymentMethod") || ""
+  );
 
   button.disabled = true;
   button.textContent = "Placing order...";
@@ -392,30 +640,46 @@ async function placeOrder(event) {
         name: data.get("name"),
         phone: data.get("phone"),
         address: data.get("address"),
-        paymentMethod: data.get("paymentMethod"),
+        paymentMethod,
         transactionId: data.get("transactionId"),
         couponCode: appliedCoupon?.code || "",
-        items: cart.map(p => ({id: p.id, qty: p.qty}))
+        items: cart.map(p => ({
+          id: p.id,
+          qty: p.qty
+        }))
       })
     });
 
     const order = result.order || {};
 
-    $("checkoutMessage").textContent =
+    let instructions = "";
+
+    if (isCOD(paymentMethod)) {
+      instructions = "Please pay cash when your order is delivered.";
+    } else {
+      instructions = result.payment?.instructions || "";
+    }
+
+    const successMessage =
       "Order successful! Order ID: " + order.id +
-      ". " + (result.payment?.instructions || "");
+      ". " + instructions;
+
+    $("checkoutMessage").textContent = successMessage;
 
     alert(
       "Order successful!\n" +
       "Order ID: " + order.id + "\n" +
-      "Total: " + money(order.total) + "\n\n" +
-      (result.payment?.instructions || "")
+      "Total: " + money(order.total) +
+      (instructions ? "\n\n" + instructions : "")
     );
 
     cart = [];
     appliedCoupon = null;
+
     form.reset();
+
     localStorage.removeItem("foodora_cart");
+
     updateCart();
     closeCheckout();
 
@@ -429,31 +693,41 @@ async function placeOrder(event) {
   }
 }
 
-
+/* =========================================
+   EVENT LISTENERS
+========================================= */
 
 $("cartOpen").addEventListener("click", openCart);
 $("cartClose").addEventListener("click", closeCart);
 $("backdrop").addEventListener("click", closeCart);
+
 $("checkoutOpen").addEventListener("click", openCheckout);
 $("checkoutClose").addEventListener("click", closeCheckout);
+
 $("checkoutForm").addEventListener("submit", placeOrder);
+
 $("search").addEventListener("input", renderProducts);
 $("applyCoupon").addEventListener("click", applyCoupon);
 
 $("checkoutModal").addEventListener("click", event => {
-  if (event.target === $("checkoutModal")) closeCheckout();
+  if (event.target === $("checkoutModal")) {
+    closeCheckout();
+  }
 });
 
 $("categories").addEventListener("click", event => {
   const button = event.target.closest("[data-category]");
   if (!button) return;
+
   category = button.dataset.category;
   renderProducts();
 });
 
 $("products").addEventListener("click", event => {
   const button = event.target.closest("[data-add]");
-  if (button) addToCart(button.dataset.add);
+  if (button) {
+    addToCart(button.dataset.add);
+  }
 });
 
 $("cartItems").addEventListener("click", event => {
@@ -461,31 +735,49 @@ $("cartItems").addEventListener("click", event => {
   const change = event.target.closest("[data-qty]");
 
   if (remove) {
-    cart = cart.filter(p => String(p.id) !== remove.dataset.remove);
+    cart = cart.filter(
+      p => String(p.id) !== remove.dataset.remove
+    );
+
     appliedCoupon = null;
     updateCart();
     return;
   }
 
   if (change) {
-    const p = cart.find(x => String(x.id) === change.dataset.qty);
-    if (!p) return;
+    const productInCart = cart.find(
+      p => String(p.id) === change.dataset.qty
+    );
+
+    if (!productInCart) return;
 
     const amount = Number(change.dataset.change);
-    const product = products.find(x => String(x.id) === String(p.id));
 
-    if (amount > 0 && p.qty >= Number(product?.stock || 0)) {
+    const product = products.find(
+      p => String(p.id) === String(productInCart.id)
+    );
+
+    if (
+      amount > 0 &&
+      productInCart.qty >= Number(product?.stock || 0)
+    ) {
       alert("Maximum stock reached.");
       return;
     }
 
-    p.qty += amount;
-    if (p.qty <= 0) cart = cart.filter(x => x !== p);
+    productInCart.qty += amount;
+
+    if (productInCart.qty <= 0) {
+      cart = cart.filter(p => p !== productInCart);
+    }
 
     appliedCoupon = null;
     updateCart();
   }
 });
 
-init();
+/* =========================================
+   START FOODORA
+========================================= */
 
+init();
