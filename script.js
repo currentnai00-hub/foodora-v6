@@ -713,7 +713,11 @@ async function placeOrder(event) {
     appliedCoupon = null;
     localStorage.removeItem("foodora_cart");
     updateCart();
-    await init();
+    try {
+      const refreshedProducts = await api("/api/products");
+      products = Array.isArray(refreshedProducts) ? refreshedProducts : products;
+      renderProducts();
+    } catch (_) { /* Order creation already succeeded; keep the confirmation visible. */ }
     $("checkoutFields").hidden = true;
     message.textContent = "";
     const panel = $("checkoutResult");
