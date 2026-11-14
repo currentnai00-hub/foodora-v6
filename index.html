@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#102c23"><title>Foodora — পছন্দের খাবার, পৌঁছে যাবে ঘরে</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/style.css?v=foodora-account-v1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/style.css?v=foodora-welcome-offers-v1">
 </head>
 <body>
 <header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="#menu">মেনু</a><a href="#offers">অফার</a><a href="/track">অর্ডার ট্র্যাক</a><a href="/account">আমার অ্যাকাউন্ট</a><a href="#about">আমাদের সম্পর্কে</a></nav><button class="cart-button" id="cartOpen">কার্ট <b id="cartCount">0</b></button></header>
@@ -51,5 +51,17 @@
 class="primary-button full" style="display:none;">
 নম্বর কপি করুন
 </button><div id="checkoutMessage" class="notice" role="alert" aria-live="assertive"></div><button type="submit" id="placeOrderButton" class="primary-button full">অর্ডার নিশ্চিত করুন</button></div><div id="checkoutResult" class="checkout-result" hidden aria-live="polite"></div></form></div>
-<script src="/script.js?v=foodora-account-v1"></script>
+<div class="welcome-backdrop" id="welcomeBackdrop" hidden>
+  <section class="welcome-modal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <button type="button" class="welcome-close" id="welcomeClose" aria-label="বন্ধ করুন">×</button>
+    <p class="welcome-kicker">WELCOME TO FOODORA</p>
+    <h2 id="welcomeTitle">স্বাগতম Foodora-তে!</h2>
+    <p class="welcome-intro" id="welcomeIntro">আপনার পছন্দের খাবার এখন আরও আনন্দের অফারে।</p>
+    <div class="welcome-offer-highlight" id="welcomeDelivery"></div>
+    <div class="welcome-coupon-list" id="welcomeCoupons"></div>
+    <p class="welcome-footnote" id="welcomeFootnote">অর্ডার করার আগে কুপনের শর্ত দেখে নিন।</p>
+    <button type="button" class="welcome-cta" id="welcomeShop">অফারগুলো দেখুন</button>
+  </section>
+</div>
+<script src="/script.js?v=foodora-welcome-offers-v1"></script>
 </body></html>
