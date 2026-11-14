@@ -284,6 +284,8 @@ app.get("/api/products/:id/reviews", async (req,res) => {
   } catch { res.status(500).json({error:"Could not load reviews"}); }
 });
 app.post("/api/products/:id/reviews", async (req,res) => {
+  if(!requestIsSameOrigin(req))return res.status(403).json({error:"অনুগ্রহ করে Foodora ওয়েবসাইট থেকেই রিভিউ জমা দিন।"});
+  if(customerAuthRateLimited(req))return res.status(429).json({error:"অনেকবার চেষ্টা করা হয়েছে। ১৫ মিনিট পরে আবার চেষ্টা করুন।"});
   if(!usePg)return res.status(503).json({error:"Verified reviews require PostgreSQL."});
   const rating=Number(req.body.rating),comment=clean(req.body.comment,500);
   const orderId=clean(req.body.orderId,60);
