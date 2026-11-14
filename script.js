@@ -19,8 +19,9 @@ let config = {
     Nagad: "01XXXXXXXXX"
   },
   paymentMethods: ["bKash", "Nagad"],
-  deliveryFee: 60,
-  freeDeliveryFrom: 999
+  deliveryFee: 70,
+  freeDeliveryFrom: 999,
+  areas: []
 };
 
 let appliedCoupon = null;
@@ -227,6 +228,9 @@ async function init() {
     } catch (_) {
       cart = [];
     }
+
+    const areaSelect=$("deliveryArea");
+    if(areaSelect){areaSelect.innerHTML=`<option value="">এলাকা নির্বাচন করুন</option>`+(Array.isArray(config.areas)?config.areas:[]).map(area=>`<option value="${esc(area.id)}">${esc(area.name)}</option>`).join("");}
 
     const payment = $("paymentMethod");
 
@@ -678,6 +682,7 @@ async function placeOrder(event) {
         name: data.get("name"),
         phone: data.get("phone"),
         address: data.get("address"),
+        deliveryArea: data.get("deliveryArea"),
         paymentMethod,
         transactionId: data.get("transactionId"),
         couponCode: appliedCoupon?.code || "",

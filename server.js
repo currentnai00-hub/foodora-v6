@@ -11,6 +11,8 @@ const DATA_DIR = path.join(ROOT, "data");
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const COUPONS_FILE = path.join(DATA_DIR, "coupons.json");
+const SETTINGS_FILE = path.join(DATA_DIR, "site-settings.json");
+const DEFAULT_DELIVERY_SETTINGS = { deliveryFee:70, freeDeliveryFrom:999, areas:[{id:"amirabad",name:"আমিরাবাদ ইউনিয়ন",active:true},{id:"padua",name:"পদুয়া ইউনিয়ন",active:true},{id:"chunti",name:"চুনতি",active:true},{id:"adhunagar",name:"আধুনগর",active:true}] };
 const ADMIN_KEY = process.env.ADMIN_KEY || "";
 const LEGACY_PAYMENT_NUMBER = process.env.PAYMENT_NUMBER || "01XXXXXXXXX";
 const PAYMENT_NUMBERS = {
@@ -137,6 +139,7 @@ function normalProduct(p) {
 
 async function initDb() {
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY, value JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
     CREATE TABLE IF NOT EXISTS products (
       id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL,
       price INTEGER NOT NULL, stock INTEGER NOT NULL DEFAULT 0,
@@ -162,6 +165,7 @@ async function initDb() {
       rating INTEGER NOT NULL, comment TEXT DEFAULT '', created_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  await pool.query("INSERT INTO site_settings(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING",["delivery",JSON.stringify(DEFAULT_DELIVERY_SETTINGS)]);
   const count = await pool.query("SELECT COUNT(*)::int AS n FROM products");
   if (count.rows[0].n === 0) {
     const old = readJson(path.join(ROOT, "products.json"), defaultProducts());
@@ -182,6 +186,7 @@ async function initDb() {
 }
 function initJson() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+  ensureFile(SETTINGS_FILE, DEFAULT_DELIVERY_SETTINGS);
   const oldProducts = readJson(path.join(ROOT, "products.json"), defaultProducts());
   const products = readJson(PRODUCTS_FILE, Array.isArray(oldProducts) && oldProducts.length ? oldProducts.map(normalProduct) : defaultProducts());
   writeJson(PRODUCTS_FILE, products.map(normalProduct));
@@ -211,6 +216,23 @@ async function couponFor(code) {
   }
   return readJson(COUPONS_FILE, []).find(c => c.code.toUpperCase() === code.toUpperCase() && c.active !== false) || null;
 }
+async function getDeliverySettings() {
+  let value;
+  if(usePg){const r=await pool.query("SELECT value FROM site_settings WHERE key=$1",["delivery"]);value=r.rows[0]?.value;}
+  else value=readJson(SETTINGS_FILE,DEFAULT_DELIVERY_SETTINGS);
+  const source=value&&typeof value==="object"?value:DEFAULT_DELIVERY_SETTINGS;
+  const areas=Array.isArray(source.areas)?source.areas:DEFAULT_DELIVERY_SETTINGS.areas;
+  return {deliveryFee:money(source.deliveryFee??70),freeDeliveryFrom:money(source.freeDeliveryFrom??999),areas:areas.filter(a=>a&&a.active!==false&&clean(a.id,40)&&clean(a.name,80)).map(a=>({id:clean(a.id,40),name:clean(a.name,80),active:true}))};
+}
+async function saveDeliverySettings(value){
+  const deliveryFee=money(value.deliveryFee),freeDeliveryFrom=money(value.freeDeliveryFrom),input=Array.isArray(value.areas)?value.areas:[],seen=new Set();
+  const areas=input.map(a=>({id:clean(a.id,40).toLowerCase().replace(/[^a-z0-9_-]/g,""),name:clean(a.name,80),active:a.active!==false})).filter(a=>{if(!a.id||!a.name||seen.has(a.id))return false;seen.add(a.id);return true;});
+  if(!areas.length||areas.length>100)throw new Error("At least one delivery area is required (maximum 100).");
+  const settings={deliveryFee,freeDeliveryFrom,areas};
+  if(usePg)await pool.query("INSERT INTO site_settings(key,value,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=NOW()",["delivery",JSON.stringify(settings)]);
+  else writeJson(SETTINGS_FILE,settings);
+  return settings;
+}
 function couponDiscount(coupon, subtotal) {
   if (!coupon || subtotal < Number(coupon.min_order ?? coupon.minOrder ?? 0)) return 0;
   const value = Number(coupon.value) || 0;
@@ -218,7 +240,7 @@ function couponDiscount(coupon, subtotal) {
 }
 
 app.get("/api/health", (req,res) => res.json({ ok:true, app:"Foodora V6", database:usePg ? "postgresql" : "local-json", time:new Date().toISOString() }));
-app.get("/api/config", (req,res) => res.json({ paymentNumbers:PAYMENT_NUMBERS, paymentMethods:PAYMENT_METHODS, deliveryFee:DELIVERY_FEE, freeDeliveryFrom:FREE_DELIVERY_FROM }));
+app.get("/api/config",async(req,res)=>{try{const delivery=await getDeliverySettings();res.set("Cache-Control","no-store");res.json({paymentNumbers:PAYMENT_NUMBERS,paymentMethods:PAYMENT_METHODS,...delivery});}catch{res.status(500).json({error:"Store settings unavailable"});}});
 app.get("/api/products", async (req,res) => {
   try { res.json(await getProducts(true)); } catch(e) { res.status(500).json({error:"Could not load products"}); }
 });
@@ -256,11 +278,15 @@ app.post("/api/coupons/validate", async (req,res) => {
 });
 app.post("/api/orders", async (req,res) => {
   const name=clean(req.body.name,80), phone=clean(req.body.phone,25), address=clean(req.body.address,400);
+  const deliveryAreaId=clean(req.body.deliveryArea,40);
   const paymentMethod=clean(req.body.paymentMethod,30), transactionId=clean(req.body.transactionId,80);
   const input=Array.isArray(req.body.items) ? req.body.items : [];
   if (!name || !/^01[0-9]{9}$/.test(phone) || !address || !PAYMENT_METHODS.includes(paymentMethod) || !input.length)
     return res.status(400).json({error:"Name, valid BD phone, address, payment method and cart items are required"});
   try {
+    const deliverySettings=await getDeliverySettings();
+    const deliveryArea=deliverySettings.areas.find(area=>area.id===deliveryAreaId);
+    if(!deliveryArea)return res.status(400).json({error:"এই এলাকায় আপাতত ডেলিভারি চালু নেই। তালিকা থেকে এলাকা নির্বাচন করুন।"});
     const products=await getProducts(true), normalized=[];
     for (const item of input) {
       const p=products.find(x=>x.id===item.id);
@@ -280,9 +306,10 @@ app.post("/api/orders", async (req,res) => {
     const coupon=await couponFor(code);
     if (code && !coupon) return res.status(400).json({error:"Coupon invalid or expired"});
     const discount=couponDiscount(coupon,subtotal);
-    const deliveryFee=subtotal-discount>=FREE_DELIVERY_FROM ? 0 : DELIVERY_FEE;
+    const deliveryFee=subtotal-discount>=deliverySettings.freeDeliveryFrom ? 0 : deliverySettings.deliveryFee;
+    const fullAddress=deliveryArea.name+" — "+address;
     const total=subtotal-discount+deliveryFee;
-    const order={id:id("FD"),name,phone,address,paymentMethod,transactionId,paymentStatus:transactionId?"Pending verification":"Awaiting payment",status:"Pending",items:normalized,subtotal,discount,deliveryFee,total,couponCode:code,createdAt:new Date().toISOString()};
+    const order={id:id("FD"),name,phone,address:fullAddress,deliveryArea:deliveryArea.name,paymentMethod,transactionId,paymentStatus:transactionId?"Pending verification":"Awaiting payment",status:"Pending",items:normalized,subtotal,discount,deliveryFee,total,couponCode:code,createdAt:new Date().toISOString()};
     if (usePg) {
       const client=await pool.connect();
       try {
@@ -293,7 +320,7 @@ app.post("/api/orders", async (req,res) => {
         }
         await client.query(`INSERT INTO orders(id,customer_name,phone,address,payment_method,transaction_id,payment_status,status,items,subtotal,discount,delivery_fee,total,coupon_code)
           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-          [order.id,name,phone,address,paymentMethod,transactionId,order.paymentStatus,order.status,JSON.stringify(normalized),subtotal,discount,deliveryFee,total,code]);
+          [order.id,name,phone,fullAddress,paymentMethod,transactionId,order.paymentStatus,order.status,JSON.stringify(normalized),subtotal,discount,deliveryFee,total,code]);
         await client.query("COMMIT");
       } catch(e) { await client.query("ROLLBACK"); throw e; } finally { client.release(); }
     } else {
@@ -378,6 +405,8 @@ app.get("/api/orders/:id", async (req,res) => {
 });
 
 // Admin APIs
+app.get("/api/admin/delivery-settings",adminOnly,async(req,res)=>{try{res.set("Cache-Control","no-store");res.json(await getDeliverySettings());}catch{res.status(500).json({error:"Delivery settings unavailable"});}});
+app.put("/api/admin/delivery-settings",adminOnly,async(req,res)=>{try{const settings=await saveDeliverySettings(req.body||{});res.json({ok:true,...settings});}catch(e){res.status(400).json({error:e.message||"Delivery settings could not be saved"});}});
 app.get("/api/admin/summary",adminOnly,async(req,res)=>{
   try {
     const [products,orders]=await Promise.all([getProducts(),getOrders()]);
