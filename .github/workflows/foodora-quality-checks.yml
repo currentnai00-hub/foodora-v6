@@ -1,0 +1,47 @@
+name: Foodora quality checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/customer-order-tracking-admin-dashboard]
+
+jobs:
+  syntax-and-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check backend JavaScript syntax
+        run: node --check server.js
+      - name: Check customer tracking JavaScript syntax
+        run: node --check track.js
+      - name: Extract and check admin dashboard JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("admin.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S)
+          if not scripts:
+              raise SystemExit("No inline admin script found")
+          Path("/tmp/admin-inline.js").write_text(scripts[-1], encoding="utf-8")
+          PY
+          node --check /tmp/admin-inline.js
+      - name: Check tracking privacy and analytics safeguards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          server = Path("server.js").read_text(encoding="utf-8")
+          tracking = Path("track.js").read_text(encoding="utf-8")
+          assert 'app.post("/api/orders/track"' in server
+          assert 'adminOnly' in server[server.find('app.get("/api/admin/analytics"'):server.find('app.get("/api/admin/products"')]
+          assert 'fetch("/api/orders/track"' in tracking
+          assert '?phone=' not in tracking
+          assert 'Order complete' in tracking
+          print("Tracking and analytics safeguards present.")
+          PY
