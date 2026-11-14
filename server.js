@@ -133,6 +133,10 @@ function normalProduct(p) {
     emoji: clean(p.emoji || "🍽️", 8),
     description: clean(p.description, 500),
     image: clean(p.image, 1000),
+    mealTime: ["breakfast","lunch","dinner","all"].includes(p.mealTime) ? p.mealTime : "all",
+    dietaryTags: Array.isArray(p.dietaryTags) ? [...new Set(p.dietaryTags.map(x=>clean(x,30).toLowerCase()).filter(x=>["vegetarian","sugar-free"].includes(x)))].slice(0,2) : [],
+    spicyLevel: ["mild","medium","hot"].includes(p.spicyLevel) ? p.spicyLevel : "medium",
+    featured: p.featured === true || p.featured === "true",
     active: p.active !== false
   };
 }
@@ -144,8 +148,14 @@ async function initDb() {
       id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL,
       price INTEGER NOT NULL, stock INTEGER NOT NULL DEFAULT 0,
       emoji TEXT DEFAULT '🍽️', description TEXT DEFAULT '', image TEXT DEFAULT '',
-      active BOOLEAN DEFAULT TRUE, created_at TIMESTAMPTZ DEFAULT NOW()
+      active BOOLEAN DEFAULT TRUE, created_at TIMESTAMPTZ DEFAULT NOW(),
+      meal_time TEXT DEFAULT 'all', dietary_tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+      spicy_level TEXT DEFAULT 'medium', featured BOOLEAN DEFAULT FALSE
     );
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS meal_time TEXT DEFAULT 'all';
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS dietary_tags JSONB NOT NULL DEFAULT '[]'::jsonb;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS spicy_level TEXT DEFAULT 'medium';
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS featured BOOLEAN DEFAULT FALSE;
     CREATE TABLE IF NOT EXISTS orders (
       id TEXT PRIMARY KEY, customer_name TEXT NOT NULL, phone TEXT NOT NULL,
       address TEXT NOT NULL, payment_method TEXT NOT NULL,
@@ -173,9 +183,9 @@ async function initDb() {
     for (const raw of products) {
       const p = normalProduct(raw);
       await pool.query(
-        `INSERT INTO products(id,name,category,price,stock,emoji,description,image,active)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(id) DO NOTHING`,
-        [p.id,p.name,p.category,p.price,p.stock,p.emoji,p.description,p.image,p.active]
+        `INSERT INTO products(id,name,category,price,stock,emoji,description,image,active,meal_time,dietary_tags,spicy_level,featured)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$13) ON CONFLICT(id) DO NOTHING`,
+        [p.id,p.name,p.category,p.price,p.stock,p.emoji,p.description,p.image,p.active,p.mealTime,JSON.stringify(p.dietaryTags),p.spicyLevel,p.featured]
       );
     }
   }
@@ -196,7 +206,7 @@ function initJson() {
 async function getProducts(activeOnly = false) {
   if (usePg) {
     const r = await pool.query(`SELECT * FROM products ${activeOnly ? "WHERE active=true" : ""} ORDER BY created_at DESC`);
-    return r.rows.map(p => ({ id:p.id,name:p.name,category:p.category,price:p.price,stock:p.stock,emoji:p.emoji,description:p.description,image:p.image,active:p.active }));
+    return r.rows.map(p => ({ id:p.id,name:p.name,category:p.category,price:p.price,stock:p.stock,emoji:p.emoji,description:p.description,image:p.image,mealTime:p.meal_time||"all",dietaryTags:Array.isArray(p.dietary_tags)?p.dietary_tags:[],spicyLevel:p.spicy_level||"medium",featured:p.featured===true,active:p.active }));
   }
   const rows = readJson(PRODUCTS_FILE, defaultProducts());
   return activeOnly ? rows.filter(p => p.active !== false) : rows;
@@ -468,7 +478,7 @@ app.post("/api/admin/products",adminOnly,async(req,res)=>{
   const p=normalProduct(req.body);
   if(!p.name || !p.price) return res.status(400).json({error:"Product name and price required"});
   try {
-    if(usePg) await pool.query(`INSERT INTO products(id,name,category,price,stock,emoji,description,image,active) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[p.id,p.name,p.category,p.price,p.stock,p.emoji,p.description,p.image,p.active]);
+    if(usePg) await pool.query(`INSERT INTO products(id,name,category,price,stock,emoji,description,image,active,meal_time,dietary_tags,spicy_level,featured) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$13)`,[p.id,p.name,p.category,p.price,p.stock,p.emoji,p.description,p.image,p.active,p.mealTime,JSON.stringify(p.dietaryTags),p.spicyLevel,p.featured]);
     else {const a=readJson(PRODUCTS_FILE,[]);a.unshift(p);writeJson(PRODUCTS_FILE,a);}
     res.status(201).json(p);
   }catch(e){res.status(500).json({error:"Product could not be added"});}
@@ -479,7 +489,7 @@ app.patch("/api/admin/products/:id",adminOnly,async(req,res)=>{
       const old=(await pool.query("SELECT * FROM products WHERE id=$1",[req.params.id])).rows[0];
       if(!old)return res.status(404).json({error:"Not found"});
       const p=normalProduct({...old,...req.body,id:old.id});
-      await pool.query("UPDATE products SET name=$1,category=$2,price=$3,stock=$4,emoji=$5,description=$6,image=$7,active=$8 WHERE id=$9",[p.name,p.category,p.price,p.stock,p.emoji,p.description,p.image,p.active,p.id]);
+      await pool.query("UPDATE products SET name=$1,category=$2,price=$3,stock=$4,emoji=$5,description=$6,image=$7,active=$8,meal_time=$9,dietary_tags=$10::jsonb,spicy_level=$11,featured=$12 WHERE id=$13",[p.name,p.category,p.price,p.stock,p.emoji,p.description,p.image,p.active,p.mealTime,JSON.stringify(p.dietaryTags),p.spicyLevel,p.featured,p.id]);
       return res.json(p);
     }
     const a=readJson(PRODUCTS_FILE,[]),i=a.findIndex(x=>x.id===req.params.id);
