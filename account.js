@@ -26,7 +26,8 @@ async function loadDashboard(customer){
       const items=Array.isArray(order.items)?order.items:[];
       const itemText=items.map(item=>safe(item.name)+" × "+Number(item.qty||0)).join(" · ");
       const date=order.createdAt?new Date(order.createdAt).toLocaleString("bn-BD",{dateStyle:"medium",timeStyle:"short"}):"";
-      return '<article class="account-order"><div class="account-order-top"><strong class="account-order-id">অর্ডার #'+safe(order.id)+'</strong><span class="account-order-status">'+safe(order.status||"Pending")+'</span></div><div class="account-order-meta">'+safe(date)+' · পেমেন্ট: '+safe(order.paymentStatus||"—")+'</div><div class="account-order-items">'+itemText+'</div><div class="account-order-total">মোট '+money(order.total)+'</div><a href="/account/order/'+encodeURIComponent(order.id)+'" class="account-detail-link">বিস্তারিত দেখুন →</a></article>';
+      const reviewLinks=order.status==="Delivered"?items.map(item=>'<a class="account-detail-link" href="/food/'+encodeURIComponent(item.id)+'?orderId='+encodeURIComponent(order.id)+'#reviews">'+safe(item.name)+'-এর রিভিউ দিন →</a>').join(" "):"";
+      return '<article class="account-order"><div class="account-order-top"><strong class="account-order-id">অর্ডার #'+safe(order.id)+'</strong><span class="account-order-status">'+safe(order.status||"Pending")+'</span></div><div class="account-order-meta">'+safe(date)+' · পেমেন্ট: '+safe(order.paymentStatus||"—")+'</div><div class="account-order-items">'+itemText+'</div><div class="account-order-total">মোট '+money(order.total)+'</div><a href="/account/order/'+encodeURIComponent(order.id)+'" class="account-detail-link">বিস্তারিত দেখুন →</a>'+(reviewLinks?'<div class="account-order-reviews"><strong>আপনার অর্ডার পৌঁছে গেছে—আপনার মতামত জানান:</strong><div>'+reviewLinks+'</div></div>':"")+'</article>';
     }).join("");
   }catch(error){box.innerHTML='<p class="account-empty">'+safe(error.message)+'</p>';}
 }

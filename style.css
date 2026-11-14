@@ -1875,3 +1875,5 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 .order-detail-info{background:#f8f8f4;border-radius:14px;padding:15px;margin-top:18px;line-height:1.8}
 .order-detail-error{padding:22px;text-align:center;color:#7a3c2e}
 @media(max-width:560px){.order-detail-page{padding:28px 12px}.order-detail-card{padding:18px;border-radius:16px}}
+
+.account-order-reviews{margin-top:14px;padding:13px;border-radius:12px;background:#f4faf6;color:#17613d}.account-order-reviews>strong{display:block;margin-bottom:9px}.account-order-reviews>div{display:flex;flex-wrap:wrap;gap:8px}

@@ -79,6 +79,7 @@
   $("details").innerHTML=rows.map(([key,value,total])=>`<div class="detail-row ${total?"total":""}"><span>${key}</span><strong>${esc(value)}</strong></div>`).join("");
   const items=Array.isArray(o.items)?o.items:[];
   $("items").innerHTML=items.length?items.map(item=>`<div class="item-row"><span>${esc(item.name||"Food item")} × ${Number(item.qty||1)}</span><strong>${money(Number(item.price||0)*Number(item.qty||1))}</strong></div>`).join(""):'<p class="hint">No product details available.</p>';
+  const invites=$("reviewInvites");if(invites){const links=status==="Delivered"?items.map(item=>`<a href="/food/${encodeURIComponent(item.id)}?orderId=${encodeURIComponent(o.id)}#reviews">${esc(item.name||"পণ্য")} — রিভিউ দিন →</a>`).join(""):"";invites.hidden=!links;invites.innerHTML=links?`<h3>আপনার অর্ডার পৌঁছে গেছে! ⭐</h3><p>প্রতিটি খাবার সম্পর্কে আপনার সৎ মতামত জানান।</p><div>${links}</div>`:"";}
  }
  window.addEventListener("beforeunload",()=>{if(pollTimer)clearInterval(pollTimer)});
 })();
