@@ -362,7 +362,7 @@ function renderProducts() {
 
   $("categories").innerHTML = categories.map(c => `
     <button class="chip ${category === c ? "active" : ""}"
-      data-category="${esc(c)}">${esc(c)}</button>
+      data-category="${esc(c)}">${esc(c === "All" ? "সব খাবার" : c)}</button>
   `).join("");
 
   let list = products.filter(p =>
@@ -411,7 +411,7 @@ function renderProducts() {
         return `
           <article class="product">
             <div class="productPhoto">
-              <button type="button" class="favorite-button ${favorites.has(String(p.id)) ? "is-favorite" : ""}" data-favorite="${esc(p.id)}" aria-label="${favorites.has(String(p.id)) ? "Remove from" : "Add to"} favorites" aria-pressed="${favorites.has(String(p.id))}">${favorites.has(String(p.id)) ? "♥" : "♡"}</button>
+              <button type="button" class="favorite-button ${favorites.has(String(p.id)) ? "is-favorite" : ""}" data-favorite="${esc(p.id)}" aria-label="${favorites.has(String(p.id)) ? "পছন্দ থেকে সরান" : "পছন্দে যোগ করুন"}" aria-pressed="${favorites.has(String(p.id))}">${favorites.has(String(p.id)) ? "♥" : "♡"}</button>
               <a class="product-detail-link" href="/food/${encodeURIComponent(String(p.id))}" aria-label="View ${esc(p.name)} details"><img src="${esc(image)}"
                 alt="${esc(p.name)}"
                 loading="lazy"
@@ -420,8 +420,8 @@ function renderProducts() {
 
               </a>
               ${bestSeller
-                ? '<span class="v8-badge bestseller">★ BEST SELLER</span>'
-                : '<span class="v8-badge">FOODORA SPECIAL</span>'}
+                ? '<span class="v8-badge bestseller">★ জনপ্রিয়</span>'
+                : '<span class="v8-badge">ফুডোরা স্পেশাল</span>'}
 
               ${hasDiscount
                 ? `<span class="v8-discount">${percent}% OFF</span>`
@@ -442,7 +442,7 @@ function renderProducts() {
                 <button class="add"
                   data-add="${esc(p.id)}"
                   ${unavailable ? "disabled" : ""}>
-                  ${unavailable ? "Sold Out" : "+ Add"}
+                  ${unavailable ? "স্টক শেষ" : "+ যোগ করুন"}
                 </button>
               </div>
             </div>
@@ -452,8 +452,8 @@ function renderProducts() {
     : `
       <div class="v8-empty">
         <div>🍽️</div>
-        <h3>${favoritesOnly ? "No favourites yet" : "No food found"}</h3>
-        <p>${favoritesOnly ? "Tap the heart on a food item to save it here." : "Try another food name or category."}</p>
+        <h3>${favoritesOnly ? "এখনো পছন্দের খাবার যোগ করেননি" : "কোনো খাবার পাওয়া যায়নি"}</h3>
+        <p>${favoritesOnly ? "যে খাবারটি পছন্দ, তার হার্ট চিহ্নে চাপ দিন।" : "অন্য নাম বা ক্যাটাগরি দিয়ে খুঁজে দেখুন।"}</p>
       </div>
     `;
 }
