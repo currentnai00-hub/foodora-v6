@@ -64,6 +64,12 @@ td select{padding:8px;max-width:160px}
 .loginbox input{width:100%;margin:15px 0}
 .toast{position:fixed;bottom:20px;right:20px;background:#26382d;border:1px solid #49654f;padding:13px 18px;border-radius:12px;display:none;z-index:50}
 .mobilebar{display:none}
+.sales-chart,.status-breakdown{display:grid;gap:15px}
+.sales-day,.status-row{display:grid;gap:7px}
+.sales-meta,.status-row>div:first-child{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.sales-meta span,.status-row span{color:var(--muted);font-size:12px}
+.sales-track{height:10px;border-radius:20px;background:#26382e;overflow:hidden}
+.sales-track span{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#b8f36b,#ffad65)}
 @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){
 .sidebar{width:100%;height:auto;position:sticky;top:0;padding:9px;border-right:0;border-bottom:1px solid var(--line)}
@@ -100,6 +106,7 @@ td select{padding:8px;max-width:160px}
   <button data-tab="products">▣ Products</button>
   <button data-tab="coupons">％ Coupons</button>
   <button data-tab="reviews">☆ Reviews</button>
+  <button data-tab="analytics">▥ Analytics</button>
  </nav>
 </aside>
 
@@ -130,6 +137,22 @@ td select{padding:8px;max-width:160px}
   </div>
  </section>
 
+ <section id="analytics" class="section">
+  <div class="cards">
+   <div class="card"><span class="icon">📈</span><div class="label">7-DAY REVENUE</div><div class="number" id="aRevenue">৳0</div></div>
+   <div class="card"><span class="icon">📦</span><div class="label">7-DAY ORDERS</div><div class="number" id="aOrders">0</div></div>
+   <div class="card"><span class="icon">📊</span><div class="label">ORDER STATUSES</div><div class="number" id="aStatuses">0</div></div>
+   <div class="card"><span class="icon">🧾</span><div class="label">ALL-TIME ORDERS</div><div class="number" id="aAllOrders">0</div></div>
+  </div>
+  <div class="panel">
+   <div class="panelhead"><div><h2>Sales · Last 7 days</h2><div class="muted">Revenue excludes cancelled orders.</div></div><button class="btn" onclick="refreshAll()">↻ Refresh analytics</button></div>
+   <div id="salesChart" class="sales-chart"></div>
+  </div>
+  <div class="panel">
+   <div class="panelhead"><div><h2>Order status breakdown</h2><div class="muted">All recorded orders</div></div><button class="btn primary" onclick="exportOrdersCsv()">↓ Export orders CSV</button></div>
+   <div id="statusBreakdown" class="status-breakdown"></div>
+  </div>
+ </section>
  <section id="orders" class="section">
   <div class="panel">
    <div class="panelhead"><h2>Order Management</h2><span class="muted" id="orderCount"></span></div>
@@ -203,7 +226,7 @@ td select{padding:8px;max-width:160px}
 <script>
 const $=id=>document.getElementById(id);
 let KEY=sessionStorage.getItem("foodora_admin_key")||"";
-let products=[],orders=[],coupons=[],reviews=[],summary={};
+let products=[],orders=[],coupons=[],reviews=[],summary={},analytics={days:[],statuses:{}};
 let orderPollTimer=null, knownOrderIds=null, orderPollBusy=false;
 const statuses=["Pending","Confirmed","Preparing","Shipped","Out for delivery","Delivered","Cancelled"];
 const payments=["Awaiting payment","Pending verification","Verified","Rejected"];
@@ -229,7 +252,7 @@ function tab(name){
  document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
  $(name).classList.add("active");
  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.tab===name));
- $("pageTitle").textContent=({overview:"Dashboard Overview",orders:"Order Management",customers:"Customer Management",products:"Product Management",coupons:"Coupon Management",reviews:"Customer Reviews"})[name];
+ $("pageTitle").textContent=({overview:"Dashboard Overview",orders:"Order Management",customers:"Customer Management",products:"Product Management",coupons:"Coupon Management",reviews:"Customer Reviews",analytics:"Sales Analytics"})[name];
 }
 document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>tab(b.dataset.tab)));
 function statusSelect(value,kind,id){
@@ -247,9 +270,9 @@ async function refreshAll(){
  try{
   const results=await Promise.all([
    api("/api/admin/summary"),api("/api/admin/products"),api("/api/admin/orders"),
-   api("/api/admin/coupons"),api("/api/admin/reviews")
+   api("/api/admin/coupons"),api("/api/admin/reviews"),api("/api/admin/analytics")
   ]);
-  [summary,products,orders,coupons,reviews]=results;
+  [summary,products,orders,coupons,reviews,analytics]=results;
   if(knownOrderIds===null)knownOrderIds=new Set(orders.map(o=>String(orderId(o))).filter(id=>id!=="—"));
   renderAll();
   startOrderPolling();
@@ -291,6 +314,43 @@ async function checkForNewOrders(){
   if(String(e.message||"").toLowerCase().includes("authentication"))logout();
  }finally{orderPollBusy=false}
 }
+function renderAnalytics(){
+ const days=Array.isArray(analytics.days)?analytics.days:[];
+ const statuses=analytics.statuses||{};
+ $("aRevenue").textContent=money(analytics.totalRevenue||0);
+ $("aOrders").textContent=Number(analytics.totalOrders||0);
+ $("aStatuses").textContent=Object.keys(statuses).length;
+ $("aAllOrders").textContent=orders.length;
+ const max=Math.max(1,...days.map(d=>Number(d.revenue||0)));
+ $("salesChart").innerHTML=days.length?days.map(d=>{
+  const revenue=Number(d.revenue||0),width=Math.max(0,Math.min(100,revenue/max*100));
+  return `<div class="sales-day"><div class="sales-meta"><b>${esc(d.label)}</b><span>${money(revenue)} · ${Number(d.orders||0)} orders</span></div><div class="sales-track"><span style="width:${width.toFixed(1)}%"></span></div></div>`;
+ }).join(""):'<div class="empty">No sales data available</div>';
+ const entries=Object.entries(statuses).sort((a,b)=>b[1]-a[1]);
+ const total=entries.reduce((sum,item)=>sum+Number(item[1]||0),0);
+ $("statusBreakdown").innerHTML=entries.length?entries.map(([name,count])=>{
+  const width=total?Math.max(0,Math.min(100,Number(count)/total*100)):0;
+  return `<div class="status-row"><div><b>${esc(name)}</b><span>${Number(count)} · ${width.toFixed(0)}%</span></div><div class="sales-track"><span style="width:${width.toFixed(1)}%"></span></div></div>`;
+ }).join(""):'<div class="empty">No orders recorded yet</div>';
+}
+function exportOrdersCsv(){
+ const rows=[["Order ID","Customer","Phone","Order status","Payment status","Payment method","Total BDT","Created at","Items"]];
+ const safe=value=>{
+  const text=String(value??"");
+  return /^[=+\-@]/.test(text)?"'"+text:text;
+ };
+ orders.forEach(o=>rows.push([
+  orderId(o),orderCustomer(o),orderPhone(o),o.status||"",val(o,"paymentStatus","payment_status"),
+  val(o,"paymentMethod","payment_method"),orderTotal(o),val(o,"createdAt","created_at"),
+  orderItems(o)
+ ]));
+ const csv=rows.map(row=>row.map(value=>'"'+safe(value).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+ const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+ const url=URL.createObjectURL(blob),link=document.createElement("a");
+ link.href=url;link.download="foodora-orders-"+new Date().toISOString().slice(0,10)+".csv";
+ document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+ toast("Orders CSV exported");
+}
 function renderAll(){
  $("sOrders").textContent=summary.orders??orders.length;
  $("sRevenue").textContent=money(summary.revenue);
@@ -301,7 +361,7 @@ function renderAll(){
  $("sAllProducts").textContent=summary.products??products.length;
  $("sCustomers").textContent=customerList().length;
  $("recentOrders").innerHTML=orders.length?table(["Order","Customer","Date","Total","Status"],orders.slice(0,6).map(o=>[esc(orderId(o)),esc(orderCustomer(o)),esc(orderDate(o)),money(orderTotal(o)),badge(o.status)])):'<div class="empty">No orders yet</div>';
- renderOrders();renderCustomers();renderProducts();renderCoupons();renderReviews();
+ renderOrders();renderCustomers();renderProducts();renderCoupons();renderReviews();renderAnalytics();
 }
 function table(headers,rows){
  if(!rows.length)return '<div class="empty">No records found</div>';
