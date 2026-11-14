@@ -477,9 +477,16 @@ $("deliveryForm").addEventListener("submit",async e=>{
  catch(e){toast(e.message)}
 });
 function renderReviews(){
- $("reviewsTable").innerHTML=table(["Customer","Product ID","Rating","Review","Date"],reviews.map(r=>[
- esc(val(r,"name","customerName")||"Customer"),esc(val(r,"productId","product_id")),`⭐ ${esc(r.rating||0)}/5`,esc(r.comment),esc(val(r,"createdAt","created_at")?new Date(val(r,"createdAt","created_at")).toLocaleString():"—")
+ $("reviewsTable").innerHTML=table(["Customer","Product ID","Rating","Review","Purchase","Status","Actions"],reviews.map(r=>[
+  esc(val(r,"name","customerName")||"Customer"),esc(val(r,"productId","product_id")),"⭐ "+esc(r.rating||0)+"/5",esc(r.comment),
+  r.verifiedPurchase?"✓ Verified":"Legacy / Unverified",badge(r.status||"approved"),
+  (r.status==="pending"?'<button class="btn primary" onclick="moderateReview(\''+esc(r.id)+'\',\'approved\')">Approve</button> ':"")+
+  (r.status!=="rejected"?'<button class="btn danger" onclick="moderateReview(\''+esc(r.id)+'\',\'rejected\')">Reject</button>':"—")
  ]));
+}
+async function moderateReview(id,status){
+ try{await api("/api/admin/reviews/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({status})});toast(status==="approved"?"Review approved":"Review rejected");await refreshAll();}
+ catch(e){toast(e.message)}
 }
 $("adminKey").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
 if(KEY){showApp();api("/api/admin/summary").then(()=>refreshAll()).catch(()=>logout())}

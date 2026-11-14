@@ -151,3 +151,6 @@
  .food-promise span{font-size:11px}
  .food-detail-section{padding:22px}
 }
+
+/* Verified customer review labels */
+.verified-review{display:inline-flex;align-items:center;margin-left:8px;padding:3px 8px;border-radius:999px;background:#e8f3ec;color:#17613d;font-size:.75rem;font-weight:700}.review-login-note{color:#52635b;font-size:.92rem;line-height:1.7}.review-login-note a{color:#17613d;font-weight:700;text-decoration:underline}
