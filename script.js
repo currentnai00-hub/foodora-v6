@@ -138,7 +138,7 @@ function updatePaymentHelp() {
 
   if (isCOD(method)) {
     help.textContent =
-      "Cash on Delivery: Pay cash when your order is delivered.";
+      "ক্যাশ অন ডেলিভারি: খাবার পৌঁছালে নগদ টাকা পরিশোধ করুন।";
     return;
   }
 
@@ -152,13 +152,13 @@ function updatePaymentHelp() {
 
   if (!number || number === "01XXXXXXXXX") {
     help.textContent =
-      method + " payment number is not configured. Please contact us.";
+      method + " নম্বরটি এখনো সেট করা হয়নি। অনুগ্রহ করে আমাদের সঙ্গে যোগাযোগ করুন।";
     return;
   }
 
   help.textContent =
-    method + " payment number: " + number +
-    ". You can pay after confirming your order.";
+    method + " পেমেন্ট নম্বর: " + number +
+    "। অর্ডার নিশ্চিত করার পর পেমেন্ট করতে পারবেন।";
 
   if (copyButton) {
     copyButton.style.display = "block";
@@ -194,7 +194,7 @@ async function copyPaymentNumber() {
       if (!copied) throw new Error("Copy failed");
     }
 
-    button.textContent = "✓ Copied!";
+    button.textContent = "✓ কপি হয়েছে";
     button.disabled = true;
 
     setTimeout(() => {
@@ -203,7 +203,7 @@ async function copyPaymentNumber() {
     }, 1800);
 
   } catch (error) {
-    alert("Copy failed. Please copy this number manually:\n" + number);
+    alert("কপি করা যায়নি। নম্বরটি নিজে কপি করুন:\n" + number);
   }
 }
 
@@ -623,7 +623,7 @@ function resetCheckoutView() {
 
 function openCheckout() {
   if (!cart.length) {
-    alert("Please add food first.");
+    alert("আগে কার্টে খাবার যোগ করুন।");
     return;
   }
 
