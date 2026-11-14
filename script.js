@@ -262,12 +262,24 @@ function renderWelcomeCoupons(offers) {
     return '<div class="welcome-coupon"><div class="welcome-coupon-copy"><span class="welcome-coupon-code">' + esc(offer.code) + ' · ' + esc(value) + '</span><span class="welcome-coupon-desc">' + esc(min) + '</span></div><button type="button" data-copy-coupon="' + esc(offer.code) + '">কোড কপি</button></div>';
   }).join("");
 }
+function updateWelcomeDateTime() {
+  const el = $("welcomeDateTime");
+  if (!el) return;
+  const now = new Date();
+  const date = new Intl.DateTimeFormat("bn-BD", {
+    timeZone: "Asia/Dhaka", weekday: "long", year: "numeric", month: "long", day: "numeric"
+  }).format(now);
+  const time = new Intl.DateTimeFormat("bn-BD", {
+    timeZone: "Asia/Dhaka", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true
+  }).format(now);
+  el.textContent = "আজ " + date + " · সময় " + time + " (বাংলাদেশ সময়)";
+}
 async function showWelcomeIfNeeded() {
   const backdrop = $("welcomeBackdrop");
   if (!backdrop) return;
   try {
     const seenAt = Number(localStorage.getItem("foodora_welcome_seen") || 0);
-    if (seenAt && Date.now() - seenAt < 7 * 24 * 60 * 60 * 1000) return;
+    if (seenAt && Date.now() - seenAt < 24 * 60 * 60 * 1000) return;
   } catch (_) {}
   let customer = null, offerData = {offers:[]}, liveConfig = config, productData = [];
   const results = await Promise.allSettled([
@@ -280,6 +292,7 @@ async function showWelcomeIfNeeded() {
   if (results[1].status === "fulfilled") offerData = results[1].value;
   if (results[2].status === "fulfilled") liveConfig = {...config,...results[2].value};
   if (results[3].status === "fulfilled") productData = Array.isArray(results[3].value) ? results[3].value : (results[3].value.products || []);
+  updateWelcomeDateTime();
   const title = $("welcomeTitle");
   const intro = $("welcomeIntro");
   if (title) title.textContent = customer?.name ? "স্বাগতম, " + customer.name + "!" : "স্বাগতম Foodora-তে!";
@@ -296,6 +309,7 @@ async function showWelcomeIfNeeded() {
   }
   renderWelcomeCoupons(Array.isArray(offerData.offers) ? offerData.offers : []);
   renderWelcomeCatalog(productData);
+  updateWelcomeDateTime();
   backdrop.hidden = false;
 }
 
