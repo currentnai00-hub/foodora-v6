@@ -1650,3 +1650,56 @@ footer small {
   background: #fff0f0;
   color: #d83b50;
 }
+
+
+/* FOODORA BENGALI HOMEPAGE PREMIUM V1 */
+:root{--bn-green:#12372b;--bn-orange:#df8247;--bn-cream:#faf8f2}
+html[lang="bn"] body,html[lang="bn"] button,html[lang="bn"] input,html[lang="bn"] select,html[lang="bn"] textarea{font-family:'Hind Siliguri',sans-serif}
+html[lang="bn"] .hero h1,html[lang="bn"] .section h2,html[lang="bn"] .track-section h2,html[lang="bn"] .about h2,html[lang="bn"] .drawer-head h2{font-family:'Noto Serif Bengali','Hind Siliguri',serif;letter-spacing:0;line-height:1.35}
+html[lang="bn"] .hero{min-height:570px;padding-top:82px;padding-bottom:82px;background:linear-gradient(120deg,#eef0e7 0%,#e5ebdf 100%)}
+html[lang="bn"] .hero h1{font-size:clamp(38px,5.2vw,66px);letter-spacing:0}
+html[lang="bn"] .hero-copy>p:not(.eyebrow){font-size:16px;line-height:1.9}
+html[lang="bn"] .eyebrow{letter-spacing:.5px;font-size:12px}
+html[lang="bn"] .primary-link,html[lang="bn"] .cart-button,html[lang="bn"] .primary-button{font-family:'Hind Siliguri',sans-serif;font-size:15px}
+html[lang="bn"] .trust-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:24px 8%;background:#fff;border-bottom:1px solid var(--line)}
+html[lang="bn"] .trust-item{display:flex;align-items:center;gap:12px;min-width:0}
+html[lang="bn"] .trust-item>span{display:grid;place-items:center;width:42px;height:42px;flex:none;border-radius:14px;background:#eef2e9;color:var(--bn-green);font-size:20px}
+html[lang="bn"] .trust-item b,html[lang="bn"] .trust-item small{display:block}
+html[lang="bn"] .trust-item b{font-size:15px;color:var(--bn-green)}
+html[lang="bn"] .trust-item small{font-size:12px;color:#7b847d}
+html[lang="bn"] .section{padding-top:92px;padding-bottom:92px}
+html[lang="bn"] .section h2,html[lang="bn"] .track-section h2{font-size:clamp(29px,4vw,42px)}
+html[lang="bn"] .menu-subtitle{color:#7b847d;font-size:15px}
+html[lang="bn"] .search,html[lang="bn"] .sort-label,html[lang="bn"] .menu-filter{font-family:'Hind Siliguri',sans-serif;font-size:14px}
+html[lang="bn"] .offer-banner{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:40px;margin:0 8% 85px;padding:48px 6%;border-radius:28px;background:#eee9dc;overflow:hidden}
+html[lang="bn"] .offer-copy h2{font:700 clamp(30px,4vw,45px)/1.45 'Noto Serif Bengali','Hind Siliguri',serif;color:var(--bn-green);margin:12px 0}
+html[lang="bn"] .offer-copy>p:not(.eyebrow){font-size:15px;line-height:1.8;color:#6e786f}
+html[lang="bn"] .offer-link{display:inline-block;margin-top:14px;color:var(--bn-green);font-weight:700;text-decoration:none}
+html[lang="bn"] .offer-art{height:280px;border-radius:22px;overflow:hidden}
+html[lang="bn"] .offer-art img{width:100%;height:100%;object-fit:cover}
+html[lang="bn"] .track-section{padding-top:62px;padding-bottom:62px}
+html[lang="bn"] .track-section p:not(.eyebrow),html[lang="bn"] .about>p:last-child{font-size:15px;line-height:1.9}
+html[lang="bn"] .about{padding:95px 20px}
+html[lang="bn"] .about h2{font-size:clamp(32px,4vw,48px)}
+html[lang="bn"] footer{font-family:'Hind Siliguri',sans-serif}
+html[lang="bn"] .modal label{font-size:14px}
+html[lang="bn"] .modal input,html[lang="bn"] .modal textarea,html[lang="bn"] .modal select{font-family:'Hind Siliguri',sans-serif;font-size:15px}
+html[lang="bn"] .drawer-head h2{font-size:24px}
+@media(max-width:760px){
+ html[lang="bn"] .trust-strip{grid-template-columns:repeat(2,minmax(0,1fr));padding:20px 6%;gap:18px 12px}
+ html[lang="bn"] .hero{padding-top:55px}
+ html[lang="bn"] .hero h1{font-size:clamp(36px,9vw,52px)}
+ html[lang="bn"] .offer-banner{grid-template-columns:1fr;margin:0 5% 55px;padding:28px 6%;gap:22px}
+ html[lang="bn"] .offer-art{height:210px}
+ html[lang="bn"] .section{padding-top:62px;padding-bottom:62px}
+ html[lang="bn"] .track-section h2{font-size:30px}
+}
+@media(max-width:420px){
+ html[lang="bn"] .topbar{gap:8px}
+ html[lang="bn"] .brand{font-size:25px}
+ html[lang="bn"] nav{gap:9px}
+ html[lang="bn"] nav a{font-size:10px}
+ html[lang="bn"] .cart-button{font-size:12px;padding:9px 10px}
+ html[lang="bn"] .trust-item b{font-size:13px}
+ html[lang="bn"] .trust-item small{font-size:10px}
+}
