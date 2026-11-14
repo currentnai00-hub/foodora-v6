@@ -16,6 +16,8 @@
   const id=$("orderId").value.trim(),phone=$("phone").value.replace(/\D/g,"");
   const msg=$("message"),result=$("result");
   msg.textContent="";result.hidden=true;
+  if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+  activeId="";activePhone="";lastStatus="";
   if(!id||!/^01[0-9]{9}$/.test(phone)){msg.textContent="Please enter a valid Order ID and 11-digit Bangladeshi mobile number.";return;}
   activeId=id;activePhone=phone;button.disabled=true;button.textContent="CHECKING YOUR ORDER…";
   try{
@@ -31,7 +33,7 @@
   busy=true;
   if(refreshButton)refreshButton.disabled=true;
   try{
-   const response=await fetch(`/api/orders/${encodeURIComponent(activeId)}?phone=${encodeURIComponent(activePhone)}`,{headers:{Accept:"application/json"},cache:"no-store"});
+   const response=await fetch("/api/orders/track",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({orderId:activeId,phone:activePhone}),cache:"no-store"});
    const data=await response.json().catch(()=>({}));
    if(!response.ok)throw new Error(data.error||"Could not find this order.");
    const changed=lastStatus&&lastStatus!==data.status;
