@@ -1899,3 +1899,22 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 .welcome-cta{width:100%;min-height:48px;border:0;border-radius:13px;background:#d98243;color:#fff;font:700 15px 'Hind Siliguri',sans-serif;cursor:pointer;box-shadow:0 7px 17px rgba(217,130,67,.2)}
 .welcome-cta:hover{background:#bd6d35}
 @media(max-width:480px){.welcome-backdrop{padding:12px}.welcome-modal{border-radius:20px;padding:25px 20px}.welcome-coupon{align-items:flex-start}.welcome-coupon button{padding:7px 9px}}
+
+
+/* WELCOME POPUP LIVE PRODUCT CATALOG */
+.welcome-catalog{margin-top:18px;padding-top:16px;border-top:1px solid #e4e8df}
+.welcome-catalog-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;color:#173b2d;font-size:14px}
+.welcome-catalog-heading span{flex:0 0 auto;padding:3px 8px;border-radius:20px;background:#e8eee4;color:#55705b;font-size:10px}
+.welcome-category{margin:13px 0}
+.welcome-category h4{display:flex;align-items:center;gap:7px;margin:0 0 9px;color:#31543d;font-size:13px}
+.welcome-category h4 span{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:20px;background:#edf1e9;color:#6c7b6d;font-size:10px}
+.welcome-product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.welcome-product-card{display:flex;align-items:center;gap:9px;min-width:0;padding:8px;border:1px solid #e9e9df;border-radius:12px;background:#fff}
+.welcome-product-visual{display:grid;place-items:center;flex:0 0 52px;width:52px;height:52px;overflow:hidden;border-radius:9px;background:#f4f2e9}
+.welcome-product-visual img{width:100%;height:100%;object-fit:cover}
+.welcome-product-emoji{font-size:25px}
+.welcome-product-info{display:grid;gap:3px;min-width:0}
+.welcome-product-info strong{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;color:#344638;font-size:11px;line-height:1.45}
+.welcome-product-info span{color:#bd713b;font-size:11px;font-weight:800}
+.welcome-catalog-empty{color:#7b8379;font-size:12px}
+@media(max-width:390px){.welcome-product-grid{grid-template-columns:1fr}.welcome-product-visual{flex-basis:48px;width:48px;height:48px}}
