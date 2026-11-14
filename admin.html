@@ -228,6 +228,10 @@ td select{padding:8px;max-width:160px}
    <label>Emoji<input name="emoji" maxlength="8" value="🍔"></label>
    <label class="full">Image URL<input name="image" type="url" placeholder="https://..."></label>
    <label class="full">Description<textarea name="description" rows="3"></textarea></label>
+   <label>Meal Time<select name="mealTime"><option value="all">All day</option><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option></select></label>
+   <label>Spice Level<select name="spicyLevel"><option value="mild">Mild</option><option value="medium">Medium</option><option value="hot">Hot</option></select></label>
+   <label class="full">Dietary Tags<select name="dietaryTags" multiple size="2"><option value="vegetarian">Vegetarian</option><option value="sugar-free">Sugar-free</option></select><small class="muted">Use Ctrl/long-press to select more than one.</small></label>
+   <label class="full">Featured / Popular<select name="featured"><option value="false">Regular</option><option value="true">Featured / Popular</option></select></label>
    <label class="full">Status<select name="active"><option value="true">Active</option><option value="false">Inactive</option></select></label>
    <div class="full actions"><button class="btn primary" type="submit">Save Product</button><button type="button" class="btn" onclick="closeProduct()">Cancel</button></div>
   </form>
@@ -428,6 +432,10 @@ function openProduct(p){
  $("productModalTitle").textContent=p?"Edit Product":"Add Product";
  f.elements.id.value=p?.id||"";
  ["name","category","price","stock","emoji","image","description"].forEach(k=>f.elements[k].value=p?.[k]??({stock:20,emoji:"🍔"}[k]??""));
+ f.elements.mealTime.value=p?.mealTime||"all";
+ f.elements.spicyLevel.value=p?.spicyLevel||"medium";
+ f.elements.featured.value=String(p?.featured===true);
+ [...f.elements.dietaryTags.options].forEach(option=>option.selected=(p?.dietaryTags||[]).includes(option.value));
  f.elements.active.value=String(p?.active!==false);
  $("productModal").classList.add("show");
 }
@@ -435,7 +443,8 @@ function closeProduct(){$("productModal").classList.remove("show")}
 function editProduct(id){let p=products.find(x=>String(x.id)===String(id));if(p)openProduct(p)}
 $("productForm").addEventListener("submit",async e=>{
  e.preventDefault();let f=e.currentTarget,d=Object.fromEntries(new FormData(f).entries());
- d.price=Number(d.price);d.stock=Number(d.stock);d.active=d.active==="true";
+ d.dietaryTags=[...f.elements.dietaryTags.selectedOptions].map(option=>option.value);
+ d.price=Number(d.price);d.stock=Number(d.stock);d.active=d.active==="true";d.featured=d.featured==="true";
  let id=d.id;delete d.id;
  try{await api(id?"/api/admin/products/"+encodeURIComponent(id):"/api/admin/products",{method:id?"PATCH":"POST",body:JSON.stringify(d)});closeProduct();toast("Product saved");await refreshAll()}
  catch(e){toast(e.message)}
