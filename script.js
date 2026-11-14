@@ -605,6 +605,22 @@ function closeCart() {
    CHECKOUT
 ========================================= */
 
+function renderCheckoutSummary() {
+  const panel = $("checkoutSummary");
+  if (!panel) return;
+  const lines = cart.map(item => `<div class="checkout-summary-item"><span>${esc(item.name)} × ${item.qty}</span><b>${money(Number(item.price) * item.qty)}</b></div>`).join("");
+  panel.innerHTML = `<div class="checkout-summary-heading"><strong>অর্ডারের সারাংশ</strong><span>${cart.reduce((n,p)=>n+p.qty,0)}টি আইটেম</span></div>${lines}<div class="checkout-summary-total"><span>সর্বমোট (আনুমানিক)</span><strong>${money(total())}</strong></div>`;
+}
+
+function resetCheckoutView() {
+  if ($("checkoutFields")) $("checkoutFields").hidden = false;
+  if ($("checkoutResult")) { $("checkoutResult").hidden = true; $("checkoutResult").innerHTML = ""; }
+  const message = $("checkoutMessage");
+  if (message) { message.textContent = ""; message.classList.remove("success"); }
+  const button = $("placeOrderButton");
+  if (button) { button.disabled = false; button.textContent = "অর্ডার নিশ্চিত করুন"; }
+}
+
 function openCheckout() {
   if (!cart.length) {
     alert("Please add food first.");
@@ -613,7 +629,8 @@ function openCheckout() {
 
   closeCart();
 
-  $("checkoutMessage").textContent = "";
+  resetCheckoutView();
+  renderCheckoutSummary();
   $("checkoutModal").classList.add("show");
 
   updatePaymentHelp();
@@ -621,6 +638,10 @@ function openCheckout() {
 
 function closeCheckout() {
   $("checkoutModal").classList.remove("show");
+  if ($("checkoutResult") && !$("checkoutResult").hidden) {
+    $("checkoutForm").reset();
+    resetCheckoutView();
+  }
 }
 
 /* =========================================
@@ -667,86 +688,50 @@ async function applyCoupon() {
 
 async function placeOrder(event) {
   event.preventDefault();
-
-  if (!cart.length) {
-    $("checkoutMessage").textContent = "Your cart is empty.";
-    return;
-  }
-
-  const form = $("checkoutForm");
-
-  const button = form.querySelector(
-    "button[type='submit'], button:not([type])"
-  );
-
-  if (!button) return;
-
-  const data = new FormData(form);
-  const paymentMethod = String(
-    data.get("paymentMethod") || ""
-  );
-
+  const form = $("checkoutForm"), message = $("checkoutMessage"), button = $("placeOrderButton");
+  if (!cart.length) { message.textContent = "আপনার কার্ট খালি। আগে খাবার যোগ করুন।"; return; }
+  if (!form.reportValidity()) return;
+  const data = new FormData(form), paymentMethod = String(data.get("paymentMethod") || "");
   button.disabled = true;
-  button.textContent = "Placing order...";
-
+  button.textContent = "অর্ডার নিশ্চিত হচ্ছে…";
+  message.textContent = "আপনার অর্ডারের তথ্য যাচাই করা হচ্ছে…";
   try {
     const result = await api("/api/orders", {
       method: "POST",
       body: JSON.stringify({
-        name: data.get("name"),
-        phone: data.get("phone"),
-        address: data.get("address"),
-        deliveryArea: data.get("deliveryArea"),
-        paymentMethod,
-        transactionId: data.get("transactionId"),
-        couponCode: appliedCoupon?.code || "",
-        items: cart.map(p => ({
-          id: p.id,
-          qty: p.qty
-        }))
+        name: data.get("name"), phone: data.get("phone"), address: data.get("address"),
+        deliveryArea: data.get("deliveryArea"), paymentMethod,
+        transactionId: data.get("transactionId"), couponCode: appliedCoupon?.code || "",
+        items: cart.map(p => ({ id: p.id, qty: p.qty }))
       })
     });
-
     const order = result.order || {};
-
-    let instructions = "";
-
-    if (isCOD(paymentMethod)) {
-      instructions = "Please pay cash when your order is delivered.";
-    } else {
-      instructions = result.payment?.instructions || "";
-    }
-
-    const successMessage =
-      "Order successful! Order ID: " + order.id +
-      ". " + instructions;
-
-    $("checkoutMessage").textContent = successMessage;
-
-    alert(
-      "Order successful!\n" +
-      "Order ID: " + order.id + "\n" +
-      "Total: " + money(order.total) +
-      (instructions ? "\n\n" + instructions : "")
-    );
-
+    const instructions = isCOD(paymentMethod)
+      ? "ডেলিভারির সময় নগদ টাকা পরিশোধ করুন।"
+      : (result.payment?.instructions || "পেমেন্ট নির্দেশনা জানতে আমাদের সঙ্গে যোগাযোগ করুন।");
     cart = [];
     appliedCoupon = null;
-
-    form.reset();
-
     localStorage.removeItem("foodora_cart");
-
     updateCart();
-    closeCheckout();
-
     await init();
-
+    $("checkoutFields").hidden = true;
+    message.textContent = "";
+    const panel = $("checkoutResult");
+    panel.hidden = false;
+    panel.innerHTML = `
+      <div class="checkout-success-mark" aria-hidden="true">✓</div>
+      <p class="checkout-success-eyebrow">অর্ডার সফলভাবে গ্রহণ করা হয়েছে</p>
+      <h3>ধন্যবাদ! আপনার অর্ডারটি পেয়েছি।</h3>
+      <div class="checkout-order-id"><span>আপনার অর্ডার আইডি</span><strong>${esc(order.id || "—")}</strong></div>
+      <p class="checkout-final-total">মোট: <strong>${money(order.total)}</strong></p>
+      <p class="checkout-payment-instructions">${esc(instructions)}</p>
+      <a class="primary-button full checkout-track-link" href="/track">অর্ডার ট্র্যাক করুন</a>
+      <button type="button" class="checkout-done-button" id="checkoutDone">বন্ধ করুন</button>`;
+    $("checkoutDone").addEventListener("click", closeCheckout);
   } catch (error) {
-    $("checkoutMessage").textContent = error.message;
-  } finally {
+    message.textContent = error.message || "অর্ডার সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।";
     button.disabled = false;
-    button.textContent = "Place order";
+    button.textContent = "আবার চেষ্টা করুন";
   }
 }
 
