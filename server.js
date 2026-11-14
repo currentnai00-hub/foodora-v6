@@ -287,7 +287,7 @@ app.post("/api/products/:id/reviews", async (req,res) => {
   if(!usePg)return res.status(503).json({error:"Verified reviews require PostgreSQL."});
   const rating=Number(req.body.rating),comment=clean(req.body.comment,500);
   const orderId=clean(req.body.orderId,60);
-  const phone=String(req.body.phone||"").replace(/\\D/g,"");
+  const phone=String(req.body.phone||"").replace(/[^0-9]/g,"");
   if(!Number.isInteger(rating)||rating<1||rating>5)return res.status(400).json({error:"১–৫ এর মধ্যে একটি রেটিং দিন।"});
   if(!orderId||!/^01[0-9]{9}$/.test(phone))return res.status(400).json({error:"অর্ডার আইডি ও অর্ডারের সময় ব্যবহৃত ১১ সংখ্যার ফোন নম্বর দিন।"});
   try {
