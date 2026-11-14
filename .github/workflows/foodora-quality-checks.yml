@@ -20,6 +20,8 @@ jobs:
         run: node --check server.js
       - name: Check customer tracking JavaScript syntax
         run: node --check track.js
+      - name: Check customer menu JavaScript syntax
+        run: node --check script.js
       - name: Extract and check admin dashboard JavaScript
         run: |
           python3 - <<'PY'
