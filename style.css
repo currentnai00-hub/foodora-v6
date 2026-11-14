@@ -1783,3 +1783,6 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
  html[lang="bn"] #products .productPhoto{height:190px}
  html[lang="bn"] #products .productInfo{padding:15px}
 }
+
+/* SMART MENU FILTERS */
+.smart-filters{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px;padding:16px;background:#fff;border:1px solid #e9e7df;border-radius:16px}.smart-filters label{display:grid;gap:6px;color:#68736a;font-size:11px;font-weight:700}.smart-filters select,.smart-filters input{min-width:125px;padding:10px 12px;border:1px solid #e3e6de;border-radius:9px;background:#fbfcf9;color:#23392d;font:600 12px 'Hind Siliguri',sans-serif}.menu-product-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.menu-product-tags span{padding:4px 8px;border-radius:20px;background:#f1f5ed;color:#42604a;font-size:10px;font-weight:700}@media(max-width:600px){.smart-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:12px}.smart-filters label{min-width:0}.smart-filters select,.smart-filters input{width:100%;min-width:0}}
