@@ -9,6 +9,9 @@
 let products = [];
 let cart = [];
 let category = "All";
+let favorites = new Set();
+let favoritesOnly = false;
+let sortMode = "recommended";
 
 let config = {
   paymentNumbers: {
@@ -255,7 +258,13 @@ async function init() {
       $("year").textContent = new Date().getFullYear();
     }
 
+    try {
+      const savedFavorites = JSON.parse(localStorage.getItem("foodora_favorites") || "[]");
+      if (Array.isArray(savedFavorites)) favorites = new Set(savedFavorites.map(String));
+    } catch (_) { favorites = new Set(); }
+
     renderProducts();
+    updateFavoriteCount();
     updateCart();
 
   } catch (error) {
@@ -356,8 +365,9 @@ function renderProducts() {
       data-category="${esc(c)}">${esc(c)}</button>
   `).join("");
 
-  const list = products.filter(p =>
+  let list = products.filter(p =>
     p.active !== false &&
+    (!favoritesOnly || favorites.has(String(p.id))) &&
     (category === "All" || p.category === category) &&
     (
       (p.name || "") + " " +
@@ -365,6 +375,10 @@ function renderProducts() {
       (p.description || "")
     ).toLowerCase().includes(search)
   );
+
+  if (sortMode === "price-low") list.sort((a,b) => Number(a.price)-Number(b.price));
+  if (sortMode === "price-high") list.sort((a,b) => Number(b.price)-Number(a.price));
+  if (sortMode === "name") list.sort((a,b) => String(a.name).localeCompare(String(b.name)));
 
   $("products").innerHTML = list.length
     ? list.map(p => {
@@ -396,7 +410,7 @@ function renderProducts() {
 
         return `
           <article class="product">
-            <div class="productPhoto">
+            <div class="productPhoto">\n              <button type="button" class="favorite-button ${favorites.has(String(p.id)) ? "is-favorite" : ""}" data-favorite="${esc(p.id)}" aria-label="${favorites.has(String(p.id)) ? "Remove from" : "Add to"} favorites" aria-pressed="${favorites.has(String(p.id))}">${favorites.has(String(p.id)) ? "♥" : "♡"}</button>
               <img src="${esc(image)}"
                 alt="${esc(p.name)}"
                 loading="lazy"
@@ -446,7 +460,7 @@ function renderProducts() {
    ADD TO CART
 ========================================= */
 
-function addToCart(id) {
+function updateFavoriteCount() {\n  const count = favorites.size;\n  if ($("favoriteCount")) $("favoriteCount").textContent = count;\n  if ($("favoritesToggle")) {\n    $("favoritesToggle").classList.toggle("active", favoritesOnly);\n    $("favoritesToggle").setAttribute("aria-pressed", String(favoritesOnly));\n  }\n}\n\nfunction toggleFavorite(id) {\n  const key = String(id);\n  if (favorites.has(key)) favorites.delete(key);\n  else favorites.add(key);\n  try { localStorage.setItem("foodora_favorites", JSON.stringify([...favorites])); } catch (_) {}\n  updateFavoriteCount();\n  renderProducts();\n}\n\nfunction addToCart(id) {
   const product = products.find(
     p => String(p.id) === String(id)
   );
@@ -706,7 +720,7 @@ $("checkoutClose").addEventListener("click", closeCheckout);
 
 $("checkoutForm").addEventListener("submit", placeOrder);
 
-$("search").addEventListener("input", renderProducts);
+$("search").addEventListener("input", renderProducts);\nif ($("sortMenu")) $("sortMenu").addEventListener("change", event => { sortMode = event.target.value; renderProducts(); });\nif ($("favoritesToggle")) $("favoritesToggle").addEventListener("click", () => { favoritesOnly = !favoritesOnly; updateFavoriteCount(); renderProducts(); });
 $("applyCoupon").addEventListener("click", applyCoupon);
 
 $("checkoutModal").addEventListener("click", event => {
