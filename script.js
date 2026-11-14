@@ -412,12 +412,13 @@ function renderProducts() {
           <article class="product">
             <div class="productPhoto">
               <button type="button" class="favorite-button ${favorites.has(String(p.id)) ? "is-favorite" : ""}" data-favorite="${esc(p.id)}" aria-label="${favorites.has(String(p.id)) ? "Remove from" : "Add to"} favorites" aria-pressed="${favorites.has(String(p.id))}">${favorites.has(String(p.id)) ? "♥" : "♡"}</button>
-              <img src="${esc(image)}"
+              <a class="product-detail-link" href="/food/${encodeURIComponent(String(p.id))}" aria-label="View ${esc(p.name)} details"><img src="${esc(image)}"
                 alt="${esc(p.name)}"
                 loading="lazy"
                 decoding="async"
                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=85'">
 
+              </a>
               ${bestSeller
                 ? '<span class="v8-badge bestseller">★ BEST SELLER</span>'
                 : '<span class="v8-badge">FOODORA SPECIAL</span>'}
@@ -429,7 +430,7 @@ function renderProducts() {
 
             <div class="productInfo">
               <div class="tag">${esc(p.category || "Fresh Food")}</div>
-              <h3>${esc(p.name)}</h3>
+              <h3><a class="product-name-link" href="/food/${encodeURIComponent(String(p.id))}">${esc(p.name)}</a></h3>
               <p>${esc(p.description || "Freshly prepared with quality ingredients.")}</p>
 
               <div class="productBottom">
