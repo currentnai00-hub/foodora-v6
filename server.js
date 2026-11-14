@@ -274,8 +274,9 @@ app.get("/api/products", async (req,res) => {
 app.get("/api/products/:id/reviews", async (req,res) => {
   try {
     if (usePg) {
-      const r = await pool.query("SELECT r.id,r.product_id AS "productId",COALESCE(c.full_name,r.customer_name) AS name,r.rating,r.comment,r.created_at AS "createdAt",r.verified_purchase AS "verifiedPurchase" FROM reviews r LEFT JOIN customers c ON c.id=r.customer_id WHERE r.product_id=$1 AND r.moderation_status='approved' ORDER BY r.created_at DESC LIMIT 30", [req.params.id]);
-      res.set("Cache-Control","no-store"); return res.json(r.rows);
+      const r = await pool.query("SELECT r.id,r.product_id AS productid,COALESCE(c.full_name,r.customer_name) AS name,r.rating,r.comment,r.created_at AS createdat,r.verified_purchase AS verifiedpurchase FROM reviews r LEFT JOIN customers c ON c.id=r.customer_id WHERE r.product_id=$1 AND r.moderation_status='approved' ORDER BY r.created_at DESC LIMIT 30", [req.params.id]);
+      const rows=r.rows.map(x=>({...x,productId:x.productid,createdAt:x.createdat,verifiedPurchase:x.verifiedpurchase}));
+      res.set("Cache-Control","no-store"); return res.json(rows);
     }
     const all = readJson(path.join(DATA_DIR,"reviews.json"), []);
     res.json(all.filter(x => x.productId === req.params.id).slice(-30).reverse());
@@ -691,7 +692,8 @@ app.post("/api/admin/coupons",adminOnly,async(req,res)=>{
 app.get("/api/admin/reviews",adminOnly,async(req,res)=>{
   try {
     if(usePg) {
-      const r=await pool.query("SELECT r.id,r.product_id AS "productId",COALESCE(c.full_name,r.customer_name) AS name,r.rating,r.comment,r.created_at AS "createdAt",r.moderation_status AS status,r.verified_purchase AS "verifiedPurchase",r.order_id AS "orderId" FROM reviews r LEFT JOIN customers c ON c.id=r.customer_id ORDER BY CASE r.moderation_status WHEN 'pending' THEN 0 ELSE 1 END,r.created_at DESC");
+      const r=await pool.query("SELECT r.id,r.product_id AS productid,COALESCE(c.full_name,r.customer_name) AS name,r.rating,r.comment,r.created_at AS createdat,r.moderation_status AS status,r.verified_purchase AS verifiedpurchase,r.order_id AS orderid FROM reviews r LEFT JOIN customers c ON c.id=r.customer_id ORDER BY CASE r.moderation_status WHEN 'pending' THEN 0 ELSE 1 END,r.created_at DESC");
+      return res.json(r.rows.map(x=>({...x,productId:x.productid,createdAt:x.createdat,verifiedPurchase:x.verifiedpurchase,orderId:x.orderid})));
       return res.json(r.rows);
     }
     res.json(readJson(path.join(DATA_DIR,"reviews.json"),[]).map(r=>({...r,status:"approved",verifiedPurchase:false})));
