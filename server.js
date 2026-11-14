@@ -191,6 +191,7 @@ async function initDb() {
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS moderation_status TEXT NOT NULL DEFAULT 'approved';
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS verified_purchase BOOLEAN NOT NULL DEFAULT FALSE;
     CREATE UNIQUE INDEX IF NOT EXISTS reviews_customer_product_unique ON reviews(customer_id, product_id) WHERE customer_id IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS reviews_order_product_unique ON reviews(order_id, product_id) WHERE order_id IS NOT NULL;
   `);
   await pool.query("INSERT INTO site_settings(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING",["delivery",JSON.stringify(DEFAULT_DELIVERY_SETTINGS)]);
   const count = await pool.query("SELECT COUNT(*)::int AS n FROM products");
@@ -283,21 +284,33 @@ app.get("/api/products/:id/reviews", async (req,res) => {
   } catch { res.status(500).json({error:"Could not load reviews"}); }
 });
 app.post("/api/products/:id/reviews", async (req,res) => {
-  if(!requireCustomerDatabase(res))return;
+  if(!usePg)return res.status(503).json({error:"Verified reviews require PostgreSQL."});
   const rating=Number(req.body.rating),comment=clean(req.body.comment,500);
+  const orderId=clean(req.body.orderId,60);
+  const phone=String(req.body.phone||"").replace(/\\D/g,"");
   if(!Number.isInteger(rating)||rating<1||rating>5)return res.status(400).json({error:"১–৫ এর মধ্যে একটি রেটিং দিন।"});
+  if(!orderId||!/^01[0-9]{9}$/.test(phone))return res.status(400).json({error:"অর্ডার আইডি ও অর্ডারের সময় ব্যবহৃত ১১ সংখ্যার ফোন নম্বর দিন।"});
   try {
     const customer=await signedInCustomer(req);
-    if(!customer)return res.status(401).json({error:"রিভিউ দিতে আগে আপনার অ্যাকাউন্টে লগইন করুন।"});
-    const products=await getProducts(true);
+    const result=await pool.query(
+      "SELECT id,customer_id,customer_name,phone,items FROM orders WHERE LOWER(id)=LOWER($1) AND regexp_replace(phone,'[^0-9]','','g')=$2 AND status='Delivered' LIMIT 1",
+      [orderId,phone]
+    );
+    const order=result.rows[0];
+    if(!order)return res.status(403).json({error:"এই অর্ডারটি পাওয়া যায়নি অথবা এখনো Delivered হয়নি। অর্ডার আইডি ও ফোন নম্বর যাচাই করুন।"});
+    if(customer&&order.customer_id&&customer.id!==order.customer_id)return res.status(403).json({error:"এই অর্ডারটি অন্য অ্যাকাউন্টের সঙ্গে যুক্ত।"});
+    const items=Array.isArray(order.items)?order.items:[];
+    if(!items.some(item=>String(item.id)===String(req.params.id)&&Number(item.qty||item.quantity||0)>0))
+      return res.status(403).json({error:"এই পণ্যটি আপনার অর্ডারে নেই।"});
+    const products=await getProducts(false);
     if(!products.some(p=>p.id===req.params.id))return res.status(404).json({error:"Product not found"});
-    const purchased=await pool.query("SELECT id,items FROM orders WHERE customer_id=$1 AND status='Delivered' ORDER BY created_at DESC",[customer.id]);
-    const qualifyingOrder=purchased.rows.find(order=>Array.isArray(order.items)&&order.items.some(item=>String(item.id)===String(req.params.id)&&Number(item.qty||item.quantity||0)>0));
-    if(!qualifyingOrder)return res.status(403).json({error:"এই পণ্যটি ডেলিভারি সম্পন্ন হওয়া অর্ডারে না থাকায় রিভিউ দেওয়া যাবে না।"});
-    await pool.query("INSERT INTO reviews(id,product_id,customer_name,rating,comment,customer_id,order_id,moderation_status,verified_purchase) VALUES($1,$2,$3,$4,$5,$6,$7,'pending',TRUE)",[id("r"),req.params.id,customer.full_name,rating,comment,customer.id,qualifyingOrder.id]);
-    res.status(201).json({ok:true,message:"রিভিউ জমা হয়েছে। অ্যাডমিন অনুমোদনের পর এটি প্রকাশিত হবে।"});
+    await pool.query(
+      "INSERT INTO reviews(id,product_id,customer_name,rating,comment,customer_id,order_id,moderation_status,verified_purchase) VALUES($1,$2,$3,$4,$5,$6,$7,'pending',TRUE)",
+      [id("r"),req.params.id,order.customer_name,rating,comment,order.customer_id||null,order.id]
+    );
+    res.status(201).json({ok:true,message:"ধন্যবাদ! আপনার Verified Purchase রিভিউ জমা হয়েছে। অ্যাডমিন অনুমোদনের পর প্রকাশিত হবে।"});
   } catch(e) {
-    if(e.code==="23505")return res.status(409).json({error:"এই পণ্যের জন্য আপনি ইতিমধ্যে রিভিউ দিয়েছেন।"});
+    if(e.code==="23505")return res.status(409).json({error:"এই অর্ডার/পণ্যের জন্য আপনি ইতিমধ্যে রিভিউ দিয়েছেন।"});
     console.error("Customer review submission failed:",e.message);
     res.status(500).json({error:"রিভিউ জমা দেওয়া যায়নি। আবার চেষ্টা করুন।"});
   }
