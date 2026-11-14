@@ -1918,3 +1918,6 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 .welcome-product-info span{color:#bd713b;font-size:11px;font-weight:800}
 .welcome-catalog-empty{color:#7b8379;font-size:12px}
 @media(max-width:390px){.welcome-product-grid{grid-template-columns:1fr}.welcome-product-visual{flex-basis:48px;width:48px;height:48px}}
+
+/* BANGLADESH LOCAL DATE AND TIME IN WELCOME POPUP */
+.welcome-date-time{margin:-5px 0 12px;color:#718071;font-size:11px;line-height:1.7;font-weight:600}
