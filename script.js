@@ -420,8 +420,8 @@ function renderProducts() {
 
               </a>
               ${bestSeller
-                ? '<span class="v8-badge bestseller">★ BEST SELLER</span>'
-                : '<span class="v8-badge">FOODORA SPECIAL</span>'}
+                ? '<span class="v8-badge bestseller">★ জনপ্রিয়</span>'
+                : '<span class="v8-badge">ফুডোরা স্পেশাল</span>'}
 
               ${hasDiscount
                 ? `<span class="v8-discount">${percent}% OFF</span>`
