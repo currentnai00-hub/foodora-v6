@@ -335,7 +335,7 @@ app.post("/api/customer/register",async(req,res)=>{
   if(!requestIsSameOrigin(req))return res.status(403).json({error:"Request origin not allowed."});
   if(customerAuthRateLimited(req))return res.status(429).json({error:"Too many attempts. Please wait 15 minutes."});
   if(!requireCustomerDatabase(res))return;
-  const fullName=clean(req.body.name,80),phone=String(req.body.phone||"").replace(/\\D/g,""),password=String(req.body.password||"");
+  const fullName=clean(req.body.name,80),phone=String(req.body.phone||"").replace(/\D/g,""),password=String(req.body.password||"");
   if(!fullName||!/^(01)[0-9]{9}$/.test(phone)||password.length<10||password.length>128)
     return res.status(400).json({error:"নাম, সঠিক ১১ সংখ্যার মোবাইল নম্বর এবং ১০–১২৮ অক্ষরের পাসওয়ার্ড দিন।"});
   try{
@@ -357,7 +357,7 @@ app.post("/api/customer/login",async(req,res)=>{
   if(!requestIsSameOrigin(req))return res.status(403).json({error:"Request origin not allowed."});
   if(customerAuthRateLimited(req))return res.status(429).json({error:"Too many attempts. Please wait 15 minutes."});
   if(!requireCustomerDatabase(res))return;
-  const phone=String(req.body.phone||"").replace(/\\D/g,""),password=String(req.body.password||"");
+  const phone=String(req.body.phone||"").replace(/\D/g,""),password=String(req.body.password||"");
   if(!/^(01)[0-9]{9}$/.test(phone)||!password||password.length>128)return res.status(400).json({error:"মোবাইল নম্বর ও পাসওয়ার্ড দিন।"});
   try{
     const result=await pool.query("SELECT id,full_name,phone,password_salt,password_hash FROM customers WHERE phone=$1",[phone]);
@@ -448,9 +448,9 @@ app.post("/api/orders", async (req,res) => {
           const r=await client.query("UPDATE products SET stock=stock-$1 WHERE id=$2 AND stock >= $1",[item.qty,item.id]);
           if (!r.rowCount) throw new Error("Stock changed; please refresh your cart");
         }
-        await client.query(`INSERT INTO orders(id,customer_name,phone,address,payment_method,transaction_id,payment_status,status,items,subtotal,discount,delivery_fee,total,coupon_code)
-          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-          [order.id,name,phone,fullAddress,paymentMethod,transactionId,order.paymentStatus,order.status,JSON.stringify(normalized),subtotal,discount,deliveryFee,total,code]);
+        await client.query(`INSERT INTO orders(id,customer_name,phone,address,payment_method,transaction_id,payment_status,status,items,subtotal,discount,delivery_fee,total,coupon_code,customer_id)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+          [order.id,name,phone,fullAddress,paymentMethod,transactionId,order.paymentStatus,order.status,JSON.stringify(normalized),subtotal,discount,deliveryFee,total,code,customer?.id||null]);
         await client.query("COMMIT");
       } catch(e) { await client.query("ROLLBACK"); throw e; } finally { client.release(); }
     } else {
