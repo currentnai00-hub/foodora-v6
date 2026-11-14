@@ -8,7 +8,7 @@
 <meta name="description" content="ফুডোরায় টাটকা ও সুস্বাদু খাবার অর্ডার করুন।">
 <link rel="canonical" id="canonicalUrl" href="/">
 <link rel="stylesheet" href="/style.css?v=foodora-tracking-v1">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/product-page.css?v=foodora-verified-reviews-v1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/product-page.css?v=foodora-all-order-reviews-v1">
 </head>
 <body class="food-detail-body">
 <header class="topbar">
@@ -49,7 +49,9 @@
 <div id="reviewList" class="review-list"></div>
 <form id="reviewForm" class="review-form">
 <h3>আপনার অভিজ্ঞতা জানান</h3>
-<p class="review-login-note">রিভিউ দিতে <a href="/account">আপনার অ্যাকাউন্টে লগইন করুন</a>। শুধু ডেলিভারি সম্পন্ন হওয়া অর্ডারের ক্রেতারাই রিভিউ দিতে পারবেন।</p>
+<p class="review-login-note">শুধু Delivered অর্ডারের ক্রেতারা রিভিউ দিতে পারবেন। অর্ডার আইডি ও অর্ডারের সময় ব্যবহৃত ফোন নম্বর দিন।</p>
+<label>অর্ডার আইডি<input name="orderId" required maxlength="60" placeholder="যেমন: FD_1234567890"></label>
+<label>অর্ডারের ফোন নম্বর<input name="phone" type="tel" inputmode="numeric" autocomplete="tel" pattern="01[0-9]{9}" maxlength="11" required placeholder="01XXXXXXXXX"></label>
 <label>Rating<select name="rating" required><option value="5">★★★★★ — Excellent</option><option value="4">★★★★ — Very good</option><option value="3">★★★ — Good</option><option value="2">★★ — Fair</option><option value="1">★ — Poor</option></select></label>
 <label>আপনার মতামত<textarea name="comment" maxlength="500" placeholder="আপনার মতামত লিখুন (ঐচ্ছিক)"></textarea></label>
 <button class="primary-button" type="submit">রিভিউ জমা দিন</button>
