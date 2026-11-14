@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const { Pool } = require("pg");
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = Number(process.env.PORT || 8080);
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
@@ -174,6 +175,17 @@ async function initDb() {
       id TEXT PRIMARY KEY, product_id TEXT NOT NULL, customer_name TEXT NOT NULL,
       rating INTEGER NOT NULL, comment TEXT DEFAULT '', created_at TIMESTAMPTZ DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS customers (
+      id TEXT PRIMARY KEY, full_name TEXT NOT NULL, phone TEXT UNIQUE NOT NULL,
+      password_salt TEXT NOT NULL, password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS customer_sessions (
+      token_hash TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS customer_sessions_customer_idx ON customer_sessions(customer_id);
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
   `);
   await pool.query("INSERT INTO site_settings(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING",["delivery",JSON.stringify(DEFAULT_DELIVERY_SETTINGS)]);
   const count = await pool.query("SELECT COUNT(*)::int AS n FROM products");
@@ -286,6 +298,114 @@ app.post("/api/coupons/validate", async (req,res) => {
     res.json({code,discount:couponDiscount(c,subtotal)});
   } catch { res.status(500).json({error:"Coupon validation failed"}); }
 });
+
+const CUSTOMER_COOKIE = "foodora_customer_session";
+const CUSTOMER_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
+const customerAuthAttempts = new Map();
+function customerCookieOptions(maxAge) {
+  return { httpOnly:true, secure:process.env.NODE_ENV==="production", sameSite:"lax", path:"/", maxAge };
+}
+function requestIsSameOrigin(req) {
+  const origin=req.get("origin");
+  if(!origin)return false;
+  try{return new URL(origin).host===req.get("host");}catch{return false;}
+}
+function customerAuthRateLimited(req) {
+  const key=String(req.ip||req.socket?.remoteAddress||"unknown");
+  const now=Date.now(), entry=customerAuthAttempts.get(key);
+  if(!entry||now-entry.start>15*60*1000){customerAuthAttempts.set(key,{start:now,count:1});return false;}
+  entry.count++;
+  return entry.count>8;
+}
+async function signedInCustomer(req) {
+  if(!usePg)return null;
+  const raw=String(req.headers.cookie||"").split(";").map(x=>x.trim()).find(x=>x.startsWith(CUSTOMER_COOKIE+"="))?.slice(CUSTOMER_COOKIE.length+1);
+  if(!raw||!/^[a-f0-9]{64}$/.test(raw))return null;
+  const tokenHash=crypto.createHash("sha256").update(raw).digest("hex");
+  const result=await pool.query(
+    `SELECT c.id,c.full_name,c.phone FROM customer_sessions s
+     JOIN customers c ON c.id=s.customer_id
+     WHERE s.token_hash=$1 AND s.expires_at>NOW() LIMIT 1`,[tokenHash]);
+  return result.rows[0]||null;
+}
+function requireCustomerDatabase(res) {
+  if(!usePg){res.status(503).json({error:"Customer accounts require the PostgreSQL database."});return false;}
+  return true;
+}
+app.post("/api/customer/register",async(req,res)=>{
+  if(!requestIsSameOrigin(req))return res.status(403).json({error:"Request origin not allowed."});
+  if(customerAuthRateLimited(req))return res.status(429).json({error:"Too many attempts. Please wait 15 minutes."});
+  if(!requireCustomerDatabase(res))return;
+  const fullName=clean(req.body.name,80),phone=String(req.body.phone||"").replace(/\D/g,""),password=String(req.body.password||"");
+  if(!fullName||!/^(01)[0-9]{9}$/.test(phone)||password.length<10||password.length>128)
+    return res.status(400).json({error:"নাম, সঠিক ১১ সংখ্যার মোবাইল নম্বর এবং ১০–১২৮ অক্ষরের পাসওয়ার্ড দিন।"});
+  try{
+    const salt=crypto.randomBytes(16).toString("hex");
+    const passwordHash=await new Promise((resolve,reject)=>crypto.scrypt(password,salt,64,(err,key)=>err?reject(err):resolve(key.toString("hex"))));
+    const customerId=id("cu");
+    await pool.query("INSERT INTO customers(id,full_name,phone,password_salt,password_hash) VALUES($1,$2,$3,$4,$5)",[customerId,fullName,phone,salt,passwordHash]);
+    const token=crypto.randomBytes(32).toString("hex"),tokenHash=crypto.createHash("sha256").update(token).digest("hex");
+    await pool.query("INSERT INTO customer_sessions(token_hash,customer_id,expires_at) VALUES($1,$2,NOW()+INTERVAL '30 days')",[tokenHash,customerId]);
+    res.cookie(CUSTOMER_COOKIE,token,customerCookieOptions(CUSTOMER_SESSION_MS));
+    res.set("Cache-Control","no-store").status(201).json({ok:true,customer:{id:customerId,name:fullName,phone}});
+  }catch(e){
+    if(e.code==="23505")return res.status(409).json({error:"এই মোবাইল নম্বরে ইতিমধ্যে অ্যাকাউন্ট আছে। লগইন করুন।"});
+    console.error("Customer registration failed:",e.message);
+    res.status(500).json({error:"অ্যাকাউন্ট তৈরি করা যায়নি। আবার চেষ্টা করুন।"});
+  }
+});
+app.post("/api/customer/login",async(req,res)=>{
+  if(!requestIsSameOrigin(req))return res.status(403).json({error:"Request origin not allowed."});
+  if(customerAuthRateLimited(req))return res.status(429).json({error:"Too many attempts. Please wait 15 minutes."});
+  if(!requireCustomerDatabase(res))return;
+  const phone=String(req.body.phone||"").replace(/\D/g,""),password=String(req.body.password||"");
+  if(!/^(01)[0-9]{9}$/.test(phone)||!password||password.length>128)return res.status(400).json({error:"মোবাইল নম্বর ও পাসওয়ার্ড দিন।"});
+  try{
+    const result=await pool.query("SELECT id,full_name,phone,password_salt,password_hash FROM customers WHERE phone=$1",[phone]);
+    const customer=result.rows[0];
+    if(!customer)return res.status(401).json({error:"মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়।"});
+    const candidate=await new Promise((resolve,reject)=>crypto.scrypt(password,customer.password_salt,64,(err,key)=>err?reject(err):resolve(key)));
+    const expected=Buffer.from(customer.password_hash,"hex");
+    if(candidate.length!==expected.length||!crypto.timingSafeEqual(candidate,expected))
+      return res.status(401).json({error:"মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়।"});
+    const token=crypto.randomBytes(32).toString("hex"),tokenHash=crypto.createHash("sha256").update(token).digest("hex");
+    await pool.query("INSERT INTO customer_sessions(token_hash,customer_id,expires_at) VALUES($1,$2,NOW()+INTERVAL '30 days')",[tokenHash,customer.id]);
+    res.cookie(CUSTOMER_COOKIE,token,customerCookieOptions(CUSTOMER_SESSION_MS));
+    res.set("Cache-Control","no-store").json({ok:true,customer:{id:customer.id,name:customer.full_name,phone:customer.phone}});
+  }catch(e){console.error("Customer login failed:",e.message);res.status(500).json({error:"লগইন করা যায়নি। আবার চেষ্টা করুন।"});}
+});
+app.post("/api/customer/logout",async(req,res)=>{
+  if(!requestIsSameOrigin(req))return res.status(403).json({error:"Request origin not allowed."});
+  if(usePg){
+    const raw=String(req.headers.cookie||"").split(";").map(x=>x.trim()).find(x=>x.startsWith(CUSTOMER_COOKIE+"="))?.slice(CUSTOMER_COOKIE.length+1);
+    if(raw&&/^[a-f0-9]{64}$/.test(raw)){
+      const hash=crypto.createHash("sha256").update(raw).digest("hex");
+      await pool.query("DELETE FROM customer_sessions WHERE token_hash=$1",[hash]).catch(()=>{});
+    }
+  }
+  res.clearCookie(CUSTOMER_COOKIE,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/"});
+  res.json({ok:true});
+});
+app.get("/api/customer/me",async(req,res)=>{
+  if(!requireCustomerDatabase(res))return;
+  try{const customer=await signedInCustomer(req);res.set("Cache-Control","no-store");if(!customer)return res.status(401).json({error:"লগইন করুন।"});res.json({customer:{id:customer.id,name:customer.full_name,phone:customer.phone}});}
+  catch{res.status(500).json({error:"অ্যাকাউন্ট তথ্য পাওয়া যায়নি।"});}
+});
+app.get("/api/customer/orders",async(req,res)=>{
+  if(!requireCustomerDatabase(res))return;
+  try{
+    const customer=await signedInCustomer(req);
+    if(!customer)return res.status(401).json({error:"লগইন করুন।"});
+    const result=await pool.query(
+      `SELECT id,status,payment_status,items,subtotal,discount,delivery_fee,total,created_at
+       FROM orders WHERE customer_id=$1 ORDER BY created_at DESC LIMIT 100`,[customer.id]);
+    res.set("Cache-Control","no-store").json({orders:result.rows.map(o=>({
+      id:o.id,status:o.status,paymentStatus:o.payment_status,items:o.items,
+      subtotal:o.subtotal,discount:o.discount,deliveryFee:o.delivery_fee,total:o.total,createdAt:o.created_at
+    }))});
+  }catch{res.status(500).json({error:"অর্ডার হিস্টোরি পাওয়া যায়নি।"});}
+});
+
 app.post("/api/orders", async (req,res) => {
   const name=clean(req.body.name,80), phone=clean(req.body.phone,25), address=clean(req.body.address,400);
   const deliveryAreaId=clean(req.body.deliveryArea,40);
@@ -319,7 +439,8 @@ app.post("/api/orders", async (req,res) => {
     const deliveryFee=subtotal-discount>=deliverySettings.freeDeliveryFrom ? 0 : deliverySettings.deliveryFee;
     const fullAddress=deliveryArea.name+" — "+address;
     const total=subtotal-discount+deliveryFee;
-    const order={id:id("FD"),name,phone,address:fullAddress,deliveryArea:deliveryArea.name,paymentMethod,transactionId,paymentStatus:transactionId?"Pending verification":"Awaiting payment",status:"Pending",items:normalized,subtotal,discount,deliveryFee,total,couponCode:code,createdAt:new Date().toISOString()};
+    const customer=await signedInCustomer(req);
+    const order={id:id("FD"),name,phone,address:fullAddress,deliveryArea:deliveryArea.name,paymentMethod,transactionId,paymentStatus:transactionId?"Pending verification":"Awaiting payment",status:"Pending",items:normalized,subtotal,discount,deliveryFee,total,couponCode:code,customerId:customer?.id||null,createdAt:new Date().toISOString()};
     if (usePg) {
       const client=await pool.connect();
       try {
@@ -328,9 +449,9 @@ app.post("/api/orders", async (req,res) => {
           const r=await client.query("UPDATE products SET stock=stock-$1 WHERE id=$2 AND stock >= $1",[item.qty,item.id]);
           if (!r.rowCount) throw new Error("Stock changed; please refresh your cart");
         }
-        await client.query(`INSERT INTO orders(id,customer_name,phone,address,payment_method,transaction_id,payment_status,status,items,subtotal,discount,delivery_fee,total,coupon_code)
-          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-          [order.id,name,phone,fullAddress,paymentMethod,transactionId,order.paymentStatus,order.status,JSON.stringify(normalized),subtotal,discount,deliveryFee,total,code]);
+        await client.query(`INSERT INTO orders(id,customer_name,phone,address,payment_method,transaction_id,payment_status,status,items,subtotal,discount,delivery_fee,total,coupon_code,customer_id)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+          [order.id,name,phone,fullAddress,paymentMethod,transactionId,order.paymentStatus,order.status,JSON.stringify(normalized),subtotal,discount,deliveryFee,total,code,customer?.id||null]);
         await client.query("COMMIT");
       } catch(e) { await client.query("ROLLBACK"); throw e; } finally { client.release(); }
     } else {
