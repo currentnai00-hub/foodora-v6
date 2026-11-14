@@ -22,8 +22,8 @@
   activeId=id;activePhone=phone;button.disabled=true;button.textContent="CHECKING YOUR ORDER…";
   try{
    await fetchAndRender(false);
-   if(pollTimer)clearInterval(pollTimer);
-   pollTimer=setInterval(()=>{if(!document.hidden)fetchAndRender(true)},20000);
+   if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+   if(lastStatus!=="Delivered"&&lastStatus!=="Cancelled")pollTimer=setInterval(()=>{if(!document.hidden)fetchAndRender(true)},20000);
    result.hidden=false;result.scrollIntoView({behavior:"smooth",block:"start"});
   }catch(err){msg.textContent=err.message;activeId="";activePhone="";}
   finally{button.disabled=false;button.innerHTML='TRACK MY ORDER <span>→</span>';}
@@ -43,6 +43,10 @@
    const updated=new Date().toLocaleTimeString("en-BD",{hour:"numeric",minute:"2-digit"});
    $("lastUpdated").textContent="Updated "+updated+" · Refreshes automatically every 20 sec";
    if(silent&&changed)$("statusTitle").setAttribute("aria-label","Order status updated: "+lastStatus);
+   if(lastStatus==="Delivered"||lastStatus==="Cancelled"){
+    if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+    $("lastUpdated").textContent="Order complete · Live updates stopped";
+   }
   }catch(err){
    if(!silent)throw err;
    $("lastUpdated").textContent="Could not refresh just now. Retrying in 20 sec.";
