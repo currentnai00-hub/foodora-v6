@@ -1563,3 +1563,51 @@ footer small {
 /* Separate order tracking page CTA */
 .track-section .primary-button{display:inline-block;padding:15px 22px;border-radius:30px;background:#e88948;color:#fff;box-shadow:0 8px 20px #0002}
 .track-section .primary-button:hover{background:#d77939}
+
+
+/* MOBILE UX REFINEMENTS */
+@media (max-width: 650px) {
+  .topbar {
+    min-height: 64px;
+    height: auto;
+    padding: 10px 4%;
+    gap: 9px;
+  }
+  .brand { font-size: 25px; }
+  nav { gap: 10px; }
+  nav a { white-space: nowrap; }
+  .cart-button, .primary-button, .primary-link, .track-form button {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  .section { padding: 52px 4%; }
+  .section-head { gap: 12px; }
+  .search { min-height: 44px; }
+  .chips { gap: 7px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 5px; }
+  .chip { flex: 0 0 auto; min-height: 40px; }
+  .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+  .product-card { min-width: 0; }
+  .product-visual { height: clamp(118px, 34vw, 155px); }
+  .product-info { padding: 12px; }
+  .product-info h3 { font-size: 14px; line-height: 1.35; }
+  .product-info p { font-size: 11px; }
+  .product-bottom { align-items: center; flex-wrap: wrap; }
+  .add-button { min-height: 40px; }
+  #products .productPhoto { height: clamp(125px, 36vw, 160px); }
+  #products .productInfo { padding: 12px; }
+  #products .productInfo h3 { font-size: 15px; }
+  #products .productBottom .add { min-height: 40px; }
+  .track-section { padding: 42px 5%; }
+  .track-form { grid-template-columns: 1fr; }
+  .track-form input, .track-form button { width: 100%; min-height: 44px; }
+  .cart-drawer { width: 100%; padding: 18px; }
+  .modal { padding: 18px; }
+  .modal input, .modal textarea, .modal select { min-height: 44px; }
+}
+@media (max-width: 380px) {
+  .topbar { flex-wrap: wrap; }
+  nav { order: 3; width: 100%; justify-content: space-between; }
+  .product-grid { grid-template-columns: 1fr; }
+  .product-visual { height: 185px; }
+  #products .productPhoto { height: 185px; }
+}

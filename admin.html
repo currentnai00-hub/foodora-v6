@@ -108,6 +108,7 @@ td select{padding:8px;max-width:160px}
   <div><h1 id="pageTitle">Dashboard Overview</h1><div class="sub">Welcome to your Foodora store management.</div></div>
   <div class="actions">
    <button class="btn" onclick="refreshAll()">↻ Refresh</button>
+   <button class="btn" id="enableAlerts" onclick="enableOrderAlerts()">🔔 Enable alerts</button>
    <button class="btn danger" onclick="logout()">Logout</button>
   </div>
  </header>
@@ -203,6 +204,7 @@ td select{padding:8px;max-width:160px}
 const $=id=>document.getElementById(id);
 let KEY=sessionStorage.getItem("foodora_admin_key")||"";
 let products=[],orders=[],coupons=[],reviews=[],summary={};
+let orderPollTimer=null, knownOrderIds=null, orderPollBusy=false;
 const statuses=["Pending","Confirmed","Preparing","Shipped","Out for delivery","Delivered","Cancelled"];
 const payments=["Awaiting payment","Pending verification","Verified","Rejected"];
 const money=n=>"৳"+Number(n||0).toLocaleString("en-BD");
@@ -221,7 +223,7 @@ async function login(){
  try{await api("/api/admin/summary");sessionStorage.setItem("foodora_admin_key",KEY);showApp();await refreshAll()}
  catch(e){KEY="";$("loginError").textContent=e.message}
 }
-function logout(){sessionStorage.removeItem("foodora_admin_key");KEY="";$("app").style.display="none";$("login").style.display="grid";$("adminKey").value=""}
+function logout(){if(orderPollTimer){clearInterval(orderPollTimer);orderPollTimer=null}knownOrderIds=null;sessionStorage.removeItem("foodora_admin_key");KEY="";$("app").style.display="none";$("login").style.display="grid";$("adminKey").value=""}
 function showApp(){$("login").style.display="none";$("app").style.display="flex"}
 function tab(name){
  document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
@@ -248,8 +250,46 @@ async function refreshAll(){
    api("/api/admin/coupons"),api("/api/admin/reviews")
   ]);
   [summary,products,orders,coupons,reviews]=results;
-  renderAll();toast("Dashboard updated");
+  if(knownOrderIds===null)knownOrderIds=new Set(orders.map(o=>String(orderId(o))).filter(id=>id!=="—"));
+  renderAll();
+  startOrderPolling();
+  toast("Dashboard updated");
  }catch(e){toast(e.message);if(e.message.includes("authentication"))logout()}
+}
+async function enableOrderAlerts(){
+ if(!("Notification" in window)){toast("Browser notifications are not supported");return}
+ try{
+  const permission=await Notification.requestPermission();
+  toast(permission==="granted"?"Order alerts enabled":"Notification permission not enabled");
+ }catch(e){toast("Could not enable notifications")}
+}
+function startOrderPolling(){
+ if(orderPollTimer||!KEY)return;
+ orderPollTimer=setInterval(checkForNewOrders,15000);
+}
+async function checkForNewOrders(){
+ if(orderPollBusy||!KEY)return;
+ orderPollBusy=true;
+ try{
+  const fresh=await api("/api/admin/orders?check="+Date.now());
+  if(!Array.isArray(fresh))return;
+  if(knownOrderIds===null){knownOrderIds=new Set(fresh.map(o=>String(orderId(o))).filter(id=>id!=="—"));return}
+  const added=fresh.filter(o=>{const id=String(orderId(o));return id!=="—"&&!knownOrderIds.has(id)});
+  fresh.forEach(o=>{const id=String(orderId(o));if(id!=="—")knownOrderIds.add(id)});
+  if(added.length){
+   await refreshAll();
+   const latest=added[0];
+   const message=added.length===1
+    ? "New order "+orderId(latest)+" from "+orderCustomer(latest)
+    : added.length+" new orders received";
+   toast(message);
+   if("Notification" in window&&Notification.permission==="granted"){
+    new Notification("Foodora — New order",{body:message,tag:"foodora-new-orders"});
+   }
+  }
+ }catch(e){
+  if(String(e.message||"").toLowerCase().includes("authentication"))logout();
+ }finally{orderPollBusy=false}
 }
 function renderAll(){
  $("sOrders").textContent=summary.orders??orders.length;
