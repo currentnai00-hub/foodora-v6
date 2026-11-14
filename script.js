@@ -289,6 +289,13 @@ async function init() {
     renderProducts();
     updateFavoriteCount();
     updateCart();
+    try {
+      const session = await api("/api/customer/me");
+      const nameField = $("checkoutForm")?.elements.namedItem("name");
+      const phoneField = $("checkoutForm")?.elements.namedItem("phone");
+      if (nameField && !nameField.value) nameField.value = session.customer.name;
+      if (phoneField && !phoneField.value) phoneField.value = session.customer.phone;
+    } catch (_) { /* Guest checkout remains available. */ }
 
   } catch (error) {
     if ($("products")) {
