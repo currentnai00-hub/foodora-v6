@@ -220,6 +220,35 @@ function closeWelcome() {
   if (backdrop) backdrop.hidden = true;
   try { localStorage.setItem("foodora_welcome_seen", String(Date.now())); } catch (_) {}
 }
+
+function renderWelcomeCatalog(products) {
+  const wrap = $("welcomeCatalog");
+  if (!wrap) return;
+  const active = Array.isArray(products) ? products.filter(p => p && p.active !== false) : [];
+  if (!active.length) {
+    wrap.innerHTML = '<p class="welcome-catalog-empty">মেনুর আইটেমগুলো এখন লোড করা যাচ্ছে না। মেনু পেজে গিয়ে দেখে নিন।</p>';
+    return;
+  }
+  const groups = new Map();
+  active.forEach(product => {
+    const category = String(product.category || "অন্যান্য");
+    if (!groups.has(category)) groups.set(category, []);
+    groups.get(category).push(product);
+  });
+  wrap.innerHTML = '<div class="welcome-catalog-heading"><strong>আমাদের মেনুতে যা যা পাবেন</strong><span>' + active.length + 'টি আইটেম</span></div>' +
+    Array.from(groups.entries()).map(([category, items]) =>
+      '<section class="welcome-category"><h4>' + esc(category) + ' <span>' + items.length + '</span></h4><div class="welcome-product-grid">' +
+      items.map(product => {
+        const image = typeof product.image === "string" && (/^https?:\/\//i.test(product.image) || /^\/(?!\/)/.test(product.image)) ? product.image : "";
+        const visual = image
+          ? '<img src="' + esc(image) + '" alt="' + esc(product.name || "Foodora item") + '" loading="lazy">'
+          : '<span class="welcome-product-emoji">' + esc(product.emoji || "🍽️") + '</span>';
+        return '<article class="welcome-product-card"><div class="welcome-product-visual">' + visual + '</div><div class="welcome-product-info"><strong>' + esc(product.name || "Food item") + '</strong><span>৳' + money(product.price) + '</span></div></article>';
+      }).join("") +
+      '</div></section>'
+    ).join("");
+}
+
 function renderWelcomeCoupons(offers) {
   const list = $("welcomeCoupons");
   if (!list) return;
@@ -240,15 +269,17 @@ async function showWelcomeIfNeeded() {
     const seenAt = Number(localStorage.getItem("foodora_welcome_seen") || 0);
     if (seenAt && Date.now() - seenAt < 7 * 24 * 60 * 60 * 1000) return;
   } catch (_) {}
-  let customer = null, offerData = {offers:[]}, liveConfig = config;
+  let customer = null, offerData = {offers:[]}, liveConfig = config, productData = [];
   const results = await Promise.allSettled([
     api("/api/customer/me"),
     api("/api/offers"),
-    api("/api/config")
+    api("/api/config"),
+    api("/api/products")
   ]);
   if (results[0].status === "fulfilled") customer = results[0].value.customer;
   if (results[1].status === "fulfilled") offerData = results[1].value;
   if (results[2].status === "fulfilled") liveConfig = {...config,...results[2].value};
+  if (results[3].status === "fulfilled") productData = Array.isArray(results[3].value) ? results[3].value : (results[3].value.products || []);
   const title = $("welcomeTitle");
   const intro = $("welcomeIntro");
   if (title) title.textContent = customer?.name ? "স্বাগতম, " + customer.name + "!" : "স্বাগতম Foodora-তে!";
@@ -264,6 +295,7 @@ async function showWelcomeIfNeeded() {
       : '🚚 বর্তমানে ফ্রি ডেলিভারি শর্ত প্রযোজ্য নয়।';
   }
   renderWelcomeCoupons(Array.isArray(offerData.offers) ? offerData.offers : []);
+  renderWelcomeCatalog(productData);
   backdrop.hidden = false;
 }
 
