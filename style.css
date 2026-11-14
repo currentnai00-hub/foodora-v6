@@ -1703,3 +1703,83 @@ html[lang="bn"] .drawer-head h2{font-size:24px}
  html[lang="bn"] .trust-item b{font-size:13px}
  html[lang="bn"] .trust-item small{font-size:10px}
 }
+
+
+/* FOODORA SIGNATURE MENU & PRODUCT CARDS — BENGALI EDITION */
+html[lang="bn"] #menu{position:relative}
+html[lang="bn"] #menu:before{content:"";display:block;width:54px;height:4px;margin:0 0 22px;border-radius:9px;background:linear-gradient(90deg,#d98243,#e9c49c)}
+html[lang="bn"] #menu .section-head{gap:28px;margin-bottom:25px}
+html[lang="bn"] #menu .section-head>div{max-width:620px}
+html[lang="bn"] #menu .section-head h2{margin:9px 0 7px;font-size:clamp(30px,4vw,43px);line-height:1.45}
+html[lang="bn"] #menu .search{height:48px;min-width:230px;border:1px solid #e7e5dc;border-radius:15px;padding:0 17px;background:#fff;box-shadow:0 7px 22px rgba(23,45,33,.045);outline:none;transition:border-color .2s,box-shadow .2s}
+html[lang="bn"] #menu .search:focus{border-color:#9caf9e;box-shadow:0 0 0 4px rgba(29,75,57,.08)}
+html[lang="bn"] .menu-tools{margin:0 0 22px;padding:13px 15px;border:1px solid #eae8df;border-radius:17px;background:rgba(255,255,255,.72)}
+html[lang="bn"] .menu-filter{border:1px solid #e7e7df;border-radius:12px;background:#fff;padding:10px 15px;color:#345443;box-shadow:0 3px 12px rgba(25,50,35,.035)}
+html[lang="bn"] .menu-filter.active{background:#173b2d;color:#fff;border-color:#173b2d}
+html[lang="bn"] .menu-filter span{background:#f4e9dc;color:#a45d32}
+html[lang="bn"] .sort-label{gap:9px;color:#727c73;font-size:13px}
+html[lang="bn"] .sort-label select{border-radius:11px;padding:10px 13px;background:#fff;font-size:13px}
+html[lang="bn"] #categories{display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto;padding:3px 2px 13px;margin:0 0 19px;scrollbar-width:thin;scrollbar-color:#c8d2c5 transparent}
+html[lang="bn"] #categories .chip{flex:0 0 auto;min-height:39px;padding:8px 17px;border:1px solid #e4e6dd;border-radius:30px;background:#fff;color:#667168;font-size:13px;font-weight:600;box-shadow:0 3px 10px rgba(25,50,35,.025);transition:all .2s ease}
+html[lang="bn"] #categories .chip:hover{border-color:#9eaf9f;color:#173b2d;transform:translateY(-1px)}
+html[lang="bn"] #categories .chip.active{background:#173b2d;border-color:#173b2d;color:#fff;box-shadow:0 6px 15px rgba(23,59,45,.16)}
+html[lang="bn"] #products.product-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+html[lang="bn"] #products .product{position:relative;display:flex;flex-direction:column;min-width:0;border:1px solid rgba(31,56,40,.08);border-radius:23px;background:#fff;box-shadow:0 9px 28px rgba(24,48,36,.055);transition:transform .28s ease,box-shadow .28s ease,border-color .28s ease}
+html[lang="bn"] #products .product:hover{transform:translateY(-6px);border-color:rgba(29,75,57,.18);box-shadow:0 20px 42px rgba(24,48,36,.12)}
+html[lang="bn"] #products .productPhoto{height:224px;background:#eef0e8;isolation:isolate}
+html[lang="bn"] #products .productPhoto>a{display:block;width:100%;height:100%}
+html[lang="bn"] #products .productPhoto img{width:100%;height:100%;object-fit:cover;transition:transform .55s cubic-bezier(.2,.7,.2,1)}
+html[lang="bn"] #products .product:hover .productPhoto img{transform:scale(1.055)}
+html[lang="bn"] #products .favorite-button{top:13px;right:13px;width:41px;height:41px;border:1px solid rgba(23,59,45,.1);background:rgba(255,255,255,.96);color:#a45d58;font-size:24px;box-shadow:0 5px 16px rgba(0,0,0,.15);backdrop-filter:blur(8px);transition:transform .2s,background .2s}
+html[lang="bn"] #products .favorite-button:hover{transform:scale(1.08)}
+html[lang="bn"] #products .favorite-button.is-favorite{background:#fff0ef;color:#d94c58}
+html[lang="bn"] #products .v8-badge{position:absolute;left:13px;top:14px;z-index:2;padding:7px 11px;border-radius:30px;background:rgba(20,49,36,.88);color:#fff;font:600 11px 'Hind Siliguri',sans-serif;letter-spacing:0;backdrop-filter:blur(8px)}
+html[lang="bn"] #products .v8-badge.bestseller{background:#f5e7d6;color:#8c512b}
+html[lang="bn"] #products .v8-discount{position:absolute;left:13px;bottom:13px;z-index:2;padding:6px 10px;border-radius:9px;background:#c94e3c;color:white;font:700 11px 'Hind Siliguri',sans-serif}
+html[lang="bn"] #products .productInfo{display:flex;flex:1;flex-direction:column;padding:18px 19px 19px}
+html[lang="bn"] #products .productInfo .tag{align-self:flex-start;padding:5px 10px;border-radius:30px;background:#f3f1e8;color:#8c653f;font-size:11px;font-weight:600}
+html[lang="bn"] #products .productInfo h3{margin:11px 0 7px;color:#173b2d;font:700 19px/1.5 'Noto Serif Bengali','Hind Siliguri',serif}
+html[lang="bn"] #products .productInfo h3 a{color:inherit;text-decoration:none;text-underline-offset:4px}
+html[lang="bn"] #products .productInfo h3 a:hover{text-decoration:underline}
+html[lang="bn"] #products .productInfo p{min-height:45px;margin:0;color:#7b847d;font-size:13px;line-height:1.75;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+html[lang="bn"] #products .productBottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:16px}
+html[lang="bn"] #products .v8-price{display:flex;flex-direction:column;gap:2px}
+html[lang="bn"] #products .v8-price .price{color:#173b2d;font-size:21px;font-weight:800;letter-spacing:0}
+html[lang="bn"] #products .v8-price del{color:#a2a79f;font-size:12px}
+html[lang="bn"] #products .productBottom .add{min-height:42px;padding:0 17px;border:0;border-radius:12px;background:#173b2d;color:#fff;font:600 14px 'Hind Siliguri',sans-serif;box-shadow:0 5px 13px rgba(23,59,45,.14);transition:background .2s,transform .2s}
+html[lang="bn"] #products .productBottom .add:hover:not(:disabled){background:#d98243;transform:translateY(-2px)}
+html[lang="bn"] #products .productBottom .add:disabled{background:#e7e9e4;color:#929890;box-shadow:none}
+html[lang="bn"] #products .v8-empty{grid-column:1/-1;padding:55px 20px;border:1px dashed #d8ded4;border-radius:22px;background:#fff;text-align:center}
+html[lang="bn"] #products .v8-empty>div{font-size:42px}
+html[lang="bn"] #products .v8-empty h3{margin:12px 0 5px;color:#173b2d;font:700 21px 'Noto Serif Bengali','Hind Siliguri',serif}
+html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
+@media(max-width:900px){
+ html[lang="bn"] #products.product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}
+ html[lang="bn"] #products .productPhoto{height:205px}
+}
+@media(max-width:600px){
+ html[lang="bn"] #menu .section-head{gap:16px}
+ html[lang="bn"] #menu .search{width:100%;min-width:0}
+ html[lang="bn"] .menu-tools{align-items:center;padding:10px;gap:8px}
+ html[lang="bn"] .menu-filter{padding:9px 10px;font-size:12px}
+ html[lang="bn"] .sort-label{gap:5px;font-size:11px}
+ html[lang="bn"] .sort-label select{max-width:135px;padding:9px 7px;font-size:11px}
+ html[lang="bn"] #products.product-grid{gap:12px}
+ html[lang="bn"] #products .product{border-radius:17px}
+ html[lang="bn"] #products .productPhoto{height:155px}
+ html[lang="bn"] #products .favorite-button{top:8px;right:8px;width:35px;height:35px;font-size:21px}
+ html[lang="bn"] #products .v8-badge{left:8px;top:9px;padding:5px 8px;font-size:9px}
+ html[lang="bn"] #products .v8-discount{left:8px;bottom:8px;padding:5px 8px;font-size:9px}
+ html[lang="bn"] #products .productInfo{padding:12px}
+ html[lang="bn"] #products .productInfo h3{font-size:15px;line-height:1.5}
+ html[lang="bn"] #products .productInfo p{font-size:11px;line-height:1.6;min-height:36px}
+ html[lang="bn"] #products .productBottom{gap:5px;padding-top:11px}
+ html[lang="bn"] #products .v8-price .price{font-size:16px}
+ html[lang="bn"] #products .v8-price del{font-size:10px}
+ html[lang="bn"] #products .productBottom .add{min-height:35px;padding:0 10px;border-radius:9px;font-size:12px}
+}
+@media(max-width:360px){
+ html[lang="bn"] #products.product-grid{grid-template-columns:1fr}
+ html[lang="bn"] #products .productPhoto{height:190px}
+ html[lang="bn"] #products .productInfo{padding:15px}
+}
