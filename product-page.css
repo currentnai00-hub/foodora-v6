@@ -86,3 +86,68 @@
  .related-card div{padding:13px}
  .related-card h3{font-size:15px}
 }
+
+
+/* Bengali-first premium editorial layout */
+.food-detail-body,.food-detail-body button,.food-detail-body input,.food-detail-body select,.food-detail-body textarea{
+ font-family:"Hind Siliguri",sans-serif;
+}
+.food-detail-body{font-size:15px;letter-spacing:0}
+.food-detail-body .brand{font-family:"Hind Siliguri",sans-serif;font-weight:700;letter-spacing:-.5px}
+.food-detail-body .topbar nav a,.food-detail-body .cart-button{font-family:"Hind Siliguri",sans-serif;font-weight:600}
+.food-detail-main{max-width:1280px;padding-left:clamp(20px,5vw,76px);padding-right:clamp(20px,5vw,76px)}
+.food-breadcrumb{font-size:13px;color:#8a8c80}
+.food-detail-grid{position:relative;gap:clamp(30px,5.5vw,82px)}
+.food-detail-visual{border-radius:34px;min-height:550px;box-shadow:0 30px 75px rgba(24,48,35,.15)}
+.food-detail-visual img{min-height:550px;max-height:680px}
+.food-image-label{font-family:"Hind Siliguri",sans-serif;font-size:12px;font-weight:700;letter-spacing:.3px}
+.food-detail-info{max-width:560px}
+.food-detail-info .eyebrow,.food-detail-section .eyebrow,.food-reviews .eyebrow,.related-foods .eyebrow{font-family:"Hind Siliguri",sans-serif;font-size:13px;letter-spacing:.5px;font-weight:700}
+.food-detail-info h1,.food-detail-section h2,.food-reviews h2,.related-foods h2,.food-note strong,.review-form h3,.related-card h3{
+ font-family:"Noto Serif Bengali","Hind Siliguri",serif;
+ letter-spacing:0;
+}
+.food-detail-info h1{font-size:clamp(39px,4.7vw,60px);line-height:1.32;font-weight:800;margin:10px 0 16px}
+.food-description{font-size:16px;line-height:2.05;color:#68766c}
+.food-price-row strong{font-family:"Hind Siliguri",sans-serif;font-size:38px;font-weight:700}
+.food-stock,.food-rating,.food-promise,.quantity-control,.secondary-button{font-family:"Hind Siliguri",sans-serif}
+.food-rating{font-size:13px}
+.food-promise{font-size:12px}
+.food-detail-section{position:relative;overflow:hidden}
+.food-detail-section:before{content:"";position:absolute;width:210px;height:210px;border-radius:50%;right:-80px;top:-100px;background:rgba(224,171,111,.10);pointer-events:none}
+.food-detail-section h2,.food-reviews h2,.related-foods h2{font-size:clamp(28px,3.2vw,38px);line-height:1.45;font-weight:800}
+.food-detail-section p,.food-note p{font-family:"Hind Siliguri",sans-serif;font-size:15px;line-height:2}
+.food-note strong{font-size:20px;font-weight:700}
+.food-reviews{padding:48px 0;border-top:1px solid rgba(28,59,43,.09);border-bottom:1px solid rgba(28,59,43,.09)}
+.review-summary{font-family:"Hind Siliguri",sans-serif;font-size:14px}
+.review-card strong,.review-card p,.review-form label,.review-form input,.review-form select,.review-form textarea,.review-form button{font-family:"Hind Siliguri",sans-serif}
+.review-card strong{font-size:15px}
+.review-card p{font-size:14px}
+.review-form h3{font-size:23px;font-weight:700}
+.review-form label{font-size:14px;font-weight:600}
+.review-form .primary-button,.food-actions .primary-button{font-family:"Hind Siliguri",sans-serif;font-size:15px;font-weight:700}
+.related-foods{padding-top:10px}
+.related-card h3{font-size:17px;line-height:1.6;font-weight:700}
+.related-card p{font-family:"Hind Siliguri",sans-serif;font-size:15px}
+.food-detail-body footer{font-family:"Hind Siliguri",sans-serif}
+.food-detail-body footer p,.food-detail-body footer small{font-size:13px}
+@media(max-width:760px){
+ .food-detail-main{padding-left:18px;padding-right:18px}
+ .food-detail-grid{gap:24px}
+ .food-detail-visual,.food-detail-visual img{min-height:290px;max-height:370px}
+ .food-detail-visual{border-radius:24px}
+ .food-detail-info h1{font-size:39px;line-height:1.4}
+ .food-description{font-size:15px;line-height:1.9}
+ .food-detail-section h2,.food-reviews h2,.related-foods h2{font-size:29px}
+ .food-detail-section p,.food-note p{font-size:14px}
+ .food-reviews{padding:34px 0}
+ .review-form h3{font-size:21px}
+ .related-card h3{font-size:15px}
+}
+@media(max-width:430px){
+ .food-detail-info h1{font-size:35px;line-height:1.42}
+ .food-detail-visual,.food-detail-visual img{min-height:255px;max-height:315px}
+ .food-image-label{font-size:11px}
+ .food-promise span{font-size:11px}
+ .food-detail-section{padding:22px}
+}
