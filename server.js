@@ -29,6 +29,8 @@ const pool = usePg ? new Pool({
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(ROOT, { extensions: ["html"] }));
 
+app.get("/food/:id", (req,res) => res.sendFile(path.join(ROOT, "product.html")));
+
 function ensureFile(file, fallback) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify(fallback, null, 2));
