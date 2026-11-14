@@ -361,6 +361,43 @@ app.get("/api/admin/summary",adminOnly,async(req,res)=>{
     res.json({products:products.length,activeProducts:products.filter(p=>p.active!==false).length,orders:orders.length,revenue:orders.filter(o=>o.status!=="Cancelled").reduce((s,o)=>s+Number(o.total||0),0),todayOrders:orders.filter(o=>String(o.createdAt).slice(0,10)===today).length,lowStock:products.filter(p=>p.stock<=5).length});
   } catch { res.status(500).json({error:"Summary unavailable"}); }
 });
+app.get("/api/admin/analytics",adminOnly,async(req,res)=>{
+  try {
+    const orders=await getOrders();
+    const today=new Date();
+    today.setUTCHours(0,0,0,0);
+    const days=[];
+    const byDay=new Map();
+    for(let offset=6;offset>=0;offset--){
+      const date=new Date(today);
+      date.setUTCDate(date.getUTCDate()-offset);
+      const key=date.toISOString().slice(0,10);
+      const item={date:key,label:date.toLocaleDateString("en-BD",{weekday:"short",day:"numeric",timeZone:"UTC"}),orders:0,revenue:0};
+      days.push(item);
+      byDay.set(key,item);
+    }
+    const statuses={};
+    let totalRevenue=0,totalOrders=0;
+    for(const order of orders){
+      const status=clean(order.status||"Pending",40)||"Pending";
+      statuses[status]=(statuses[status]||0)+1;
+      const created=order.createdAt||order.created_at;
+      const date=created?new Date(created):null;
+      const key=date&&!Number.isNaN(date.getTime())?date.toISOString().slice(0,10):"";
+      const day=byDay.get(key);
+      if(day){
+        day.orders++;
+        if(status!=="Cancelled")day.revenue+=Number(order.total||0);
+        totalOrders++;
+        if(status!=="Cancelled")totalRevenue+=Number(order.total||0);
+      }
+    }
+    res.set("Cache-Control","no-store");
+    res.json({days,totalOrders,totalRevenue,statuses});
+  } catch {
+    res.status(500).json({error:"Analytics unavailable"});
+  }
+});
 app.get("/api/admin/products",adminOnly,async(req,res)=>{ try{res.json(await getProducts());}catch{res.status(500).json({error:"Products unavailable"});} });
 app.post("/api/admin/products",adminOnly,async(req,res)=>{
   const p=normalProduct(req.body);
