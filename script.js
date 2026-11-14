@@ -461,17 +461,27 @@ function renderProducts() {
    ADD TO CART
 ========================================= */
 
-function updateFavoriteCount() {\n  const count = favorites.size;
+function updateFavoriteCount() {
+  const count = favorites.size;
   if ($("favoriteCount")) $("favoriteCount").textContent = count;
-  if ($("favoritesToggle")) {\n    $("favoritesToggle").classList.toggle("active", favoritesOnly);
+  if ($("favoritesToggle")) {
+    $("favoritesToggle").classList.toggle("active", favoritesOnly);
     $("favoritesToggle").setAttribute("aria-pressed", String(favoritesOnly));
-  }\n}
+  }
+}
 
-function toggleFavorite(id) {\n  const key = String(id);
+function toggleFavorite(id) {
+  const key = String(id);
   if (favorites.has(key)) favorites.delete(key);
   else favorites.add(key);
-  try { localStorage.setItem("foodora_favorites", JSON.stringify([...favorites])); } catch (_) {}\n  updateFavoriteCount();
-  renderProducts();\n}
+
+  try {
+    localStorage.setItem("foodora_favorites", JSON.stringify([...favorites]));
+  } catch (_) {}
+
+  updateFavoriteCount();
+  renderProducts();
+}
 
 function addToCart(id) {
   const product = products.find(
@@ -753,6 +763,12 @@ $("categories").addEventListener("click", event => {
 });
 
 $("products").addEventListener("click", event => {
+  const favoriteButton = event.target.closest("[data-favorite]");
+  if (favoriteButton) {
+    toggleFavorite(favoriteButton.dataset.favorite);
+    return;
+  }
+
   const button = event.target.closest("[data-add]");
   if (button) {
     addToCart(button.dataset.add);
