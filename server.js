@@ -269,6 +269,26 @@ function couponDiscount(coupon, subtotal) {
 
 app.get("/api/health", (req,res) => res.json({ ok:true, app:"Foodora V6", database:usePg ? "postgresql" : "local-json", time:new Date().toISOString() }));
 app.get("/api/config",async(req,res)=>{try{const delivery=await getDeliverySettings();res.set("Cache-Control","no-store");res.json({paymentNumbers:PAYMENT_NUMBERS,paymentMethods:PAYMENT_METHODS,...delivery});}catch{res.status(500).json({error:"Store settings unavailable"});}});
+app.get("/api/offers",async(req,res)=>{try{
+  let rows;
+  if(usePg){
+    const result=await pool.query("SELECT code,type,value,min_order AS min_order,expires_at FROM coupons WHERE active=true AND (expires_at IS NULL OR expires_at>NOW()) ORDER BY code");
+    rows=result.rows;
+  }else{
+    const now=Date.now();
+    rows=readJson(COUPONS_FILE,[]).filter(c=>c&&c.active!==false&&(!c.expiresAt||new Date(c.expiresAt).getTime()>now));
+  }
+  const offers=rows.map(c=>({
+    code:clean(c.code,40).toUpperCase(),
+    type:c.type==="percent"?"percent":"fixed",
+    value:money(c.value),
+    minOrder:money(c.min_order??c.minOrder??0),
+    expiresAt:c.expires_at??c.expiresAt??null
+  })).filter(c=>c.code&&c.value>0&&(c.type!=="percent"||c.value<=100));
+  res.set("Cache-Control","no-store");
+  res.json({offers});
+}catch{res.status(500).json({error:"Offers are temporarily unavailable."});}});
+
 app.get("/api/products", async (req,res) => {
   try { res.json(await getProducts(true)); } catch(e) { res.status(500).json({error:"Could not load products"}); }
 });

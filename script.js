@@ -211,6 +211,62 @@ async function copyPaymentNumber() {
    INITIALIZATION
 ========================================= */
 
+
+/* =========================================
+   FIRST-VISIT WELCOME + LIVE OFFERS
+========================================= */
+function closeWelcome() {
+  const backdrop = $("welcomeBackdrop");
+  if (backdrop) backdrop.hidden = true;
+  try { localStorage.setItem("foodora_welcome_seen", String(Date.now())); } catch (_) {}
+}
+function renderWelcomeCoupons(offers) {
+  const list = $("welcomeCoupons");
+  if (!list) return;
+  if (!offers.length) {
+    list.innerHTML = '<div class="welcome-coupon"><div class="welcome-coupon-copy"><span class="welcome-coupon-code">নতুন অফারের অপেক্ষায় থাকুন</span><span class="welcome-coupon-desc">এই মুহূর্তে কোনো সক্রিয় কুপন নেই।</span></div></div>';
+    return;
+  }
+  list.innerHTML = offers.map(offer => {
+    const value = offer.type === "percent" ? offer.value + "% ছাড়" : money(offer.value) + " ছাড়";
+    const min = offer.minOrder > 0 ? "ন্যূনতম অর্ডার " + money(offer.minOrder) : "ন্যূনতম অর্ডার নেই";
+    return '<div class="welcome-coupon"><div class="welcome-coupon-copy"><span class="welcome-coupon-code">' + esc(offer.code) + ' · ' + esc(value) + '</span><span class="welcome-coupon-desc">' + esc(min) + '</span></div><button type="button" data-copy-coupon="' + esc(offer.code) + '">কোড কপি</button></div>';
+  }).join("");
+}
+async function showWelcomeIfNeeded() {
+  const backdrop = $("welcomeBackdrop");
+  if (!backdrop) return;
+  try {
+    const seenAt = Number(localStorage.getItem("foodora_welcome_seen") || 0);
+    if (seenAt && Date.now() - seenAt < 7 * 24 * 60 * 60 * 1000) return;
+  } catch (_) {}
+  let customer = null, offerData = {offers:[]}, liveConfig = config;
+  const results = await Promise.allSettled([
+    api("/api/customer/me"),
+    api("/api/offers"),
+    api("/api/config")
+  ]);
+  if (results[0].status === "fulfilled") customer = results[0].value.customer;
+  if (results[1].status === "fulfilled") offerData = results[1].value;
+  if (results[2].status === "fulfilled") liveConfig = {...config,...results[2].value};
+  const title = $("welcomeTitle");
+  const intro = $("welcomeIntro");
+  if (title) title.textContent = customer?.name ? "স্বাগতম, " + customer.name + "!" : "স্বাগতম Foodora-তে!";
+  if (intro) intro.textContent = customer?.name
+    ? "আপনার জন্য চলছে দারুণ কিছু খাবারের অফার। পছন্দের খাবার অর্ডার করুন সহজেই।"
+    : "প্রিয় Foodie, আপনার পছন্দের খাবার অর্ডার করুন আর উপভোগ করুন চলমান অফারগুলো।";
+  const deliveryBox = $("welcomeDelivery");
+  if (deliveryBox) {
+    const threshold = Number(liveConfig.freeDeliveryFrom || 0);
+    const fee = Number(liveConfig.deliveryFee || 0);
+    deliveryBox.innerHTML = threshold > 0
+      ? '🚚 <strong>' + money(threshold) + ' বা তার বেশি</strong> খাবারের অর্ডারে ডেলিভারি চার্জ ফ্রি। এর কম অর্ডারে ডেলিভারি চার্জ ' + money(fee) + '।'
+      : '🚚 বর্তমানে ফ্রি ডেলিভারি শর্ত প্রযোজ্য নয়।';
+  }
+  renderWelcomeCoupons(Array.isArray(offerData.offers) ? offerData.offers : []);
+  backdrop.hidden = false;
+}
+
 async function init() {
   try {
     const [menu, settings] = await Promise.all([
@@ -296,6 +352,7 @@ async function init() {
       if (nameField && !nameField.value) nameField.value = session.customer.name;
       if (phoneField && !phoneField.value) phoneField.value = session.customer.phone;
     } catch (_) { /* Guest checkout remains available. */ }
+    await showWelcomeIfNeeded();
 
   } catch (error) {
     if ($("products")) {
@@ -306,6 +363,29 @@ async function init() {
     console.error("Foodora initialization:", error);
   }
 }
+
+
+document.addEventListener("click", async event => {
+  const close = event.target.closest("#welcomeClose");
+  const shop = event.target.closest("#welcomeShop");
+  const copy = event.target.closest("[data-copy-coupon]");
+  if (close) closeWelcome();
+  if (shop) {
+    closeWelcome();
+    document.getElementById("offers")?.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  if (copy) {
+    const code = copy.getAttribute("data-copy-coupon") || "";
+    try {
+      await navigator.clipboard.writeText(code);
+      copy.textContent = "কপি হয়েছে ✓";
+    } catch (_) {
+      const couponInput = $("coupon");
+      if (couponInput) couponInput.value = code;
+      copy.textContent = "কার্টে ব্যবহার করুন";
+    }
+  }
+});
 
 /* =========================================
    PRODUCT IMAGES
