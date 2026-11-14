@@ -186,6 +186,11 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS customer_sessions_customer_idx ON customer_sessions(customer_id);
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
+    ALTER TABLE reviews ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
+    ALTER TABLE reviews ADD COLUMN IF NOT EXISTS order_id TEXT REFERENCES orders(id) ON DELETE SET NULL;
+    ALTER TABLE reviews ADD COLUMN IF NOT EXISTS moderation_status TEXT NOT NULL DEFAULT 'approved';
+    ALTER TABLE reviews ADD COLUMN IF NOT EXISTS verified_purchase BOOLEAN NOT NULL DEFAULT FALSE;
+    CREATE UNIQUE INDEX IF NOT EXISTS reviews_customer_product_unique ON reviews(customer_id, product_id) WHERE customer_id IS NOT NULL;
   `);
   await pool.query("INSERT INTO site_settings(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING",["delivery",JSON.stringify(DEFAULT_DELIVERY_SETTINGS)]);
   const count = await pool.query("SELECT COUNT(*)::int AS n FROM products");
@@ -269,24 +274,32 @@ app.get("/api/products", async (req,res) => {
 app.get("/api/products/:id/reviews", async (req,res) => {
   try {
     if (usePg) {
-      const r = await pool.query("SELECT id,customer_name AS name,rating,comment,created_at FROM reviews WHERE product_id=$1 ORDER BY created_at DESC LIMIT 30", [req.params.id]);
-      return res.json(r.rows);
+      const r = await pool.query("SELECT r.id,r.product_id AS productId,COALESCE(c.full_name,r.customer_name) AS name,r.rating,r.comment,r.created_at AS createdAt,r.verified_purchase AS verifiedPurchase FROM reviews r LEFT JOIN customers c ON c.id=r.customer_id WHERE r.product_id=$1 AND r.moderation_status='approved' ORDER BY r.created_at DESC LIMIT 30", [req.params.id]);
+      res.set("Cache-Control","no-store"); return res.json(r.rows);
     }
     const all = readJson(path.join(DATA_DIR,"reviews.json"), []);
     res.json(all.filter(x => x.productId === req.params.id).slice(-30).reverse());
   } catch { res.status(500).json({error:"Could not load reviews"}); }
 });
 app.post("/api/products/:id/reviews", async (req,res) => {
-  const name=clean(req.body.name,80), rating=Number(req.body.rating), comment=clean(req.body.comment,500);
-  if (!name || !Number.isInteger(rating) || rating<1 || rating>5) return res.status(400).json({error:"Name and a 1–5 rating are required"});
+  if(!requireCustomerDatabase(res))return;
+  const rating=Number(req.body.rating),comment=clean(req.body.comment,500);
+  if(!Number.isInteger(rating)||rating<1||rating>5)return res.status(400).json({error:"১–৫ এর মধ্যে একটি রেটিং দিন।"});
   try {
+    const customer=await signedInCustomer(req);
+    if(!customer)return res.status(401).json({error:"রিভিউ দিতে আগে আপনার অ্যাকাউন্টে লগইন করুন।"});
     const products=await getProducts(true);
-    if (!products.some(p=>p.id===req.params.id)) return res.status(404).json({error:"Product not found"});
-    const review={id:id("r"),productId:req.params.id,name,rating,comment,createdAt:new Date().toISOString()};
-    if (usePg) await pool.query("INSERT INTO reviews(id,product_id,customer_name,rating,comment) VALUES($1,$2,$3,$4,$5)",[review.id,review.productId,name,rating,comment]);
-    else { const f=path.join(DATA_DIR,"reviews.json"); const a=readJson(f,[]); a.push(review); writeJson(f,a); }
-    res.status(201).json({ok:true,review});
-  } catch { res.status(500).json({error:"Review could not be saved"}); }
+    if(!products.some(p=>p.id===req.params.id))return res.status(404).json({error:"Product not found"});
+    const purchased=await pool.query("SELECT id,items FROM orders WHERE customer_id=$1 AND status='Delivered' ORDER BY created_at DESC",[customer.id]);
+    const qualifyingOrder=purchased.rows.find(order=>Array.isArray(order.items)&&order.items.some(item=>String(item.id)===String(req.params.id)&&Number(item.qty||item.quantity||0)>0));
+    if(!qualifyingOrder)return res.status(403).json({error:"এই পণ্যটি ডেলিভারি সম্পন্ন হওয়া অর্ডারে না থাকায় রিভিউ দেওয়া যাবে না।"});
+    await pool.query("INSERT INTO reviews(id,product_id,customer_name,rating,comment,customer_id,order_id,moderation_status,verified_purchase) VALUES($1,$2,$3,$4,$5,$6,$7,'pending',TRUE)",[id("r"),req.params.id,customer.full_name,rating,comment,customer.id,qualifyingOrder.id]);
+    res.status(201).json({ok:true,message:"রিভিউ জমা হয়েছে। অ্যাডমিন অনুমোদনের পর এটি প্রকাশিত হবে।"});
+  } catch(e) {
+    if(e.code==="23505")return res.status(409).json({error:"এই পণ্যের জন্য আপনি ইতিমধ্যে রিভিউ দিয়েছেন।"});
+    console.error("Customer review submission failed:",e.message);
+    res.status(500).json({error:"রিভিউ জমা দেওয়া যায়নি। আবার চেষ্টা করুন।"});
+  }
 });
 app.post("/api/coupons/validate", async (req,res) => {
   const code=clean(req.body.code,40).toUpperCase(), subtotal=money(req.body.subtotal);
@@ -676,7 +689,23 @@ app.post("/api/admin/coupons",adminOnly,async(req,res)=>{
   try{if(usePg)await pool.query("INSERT INTO coupons(code,type,value,min_order,active) VALUES($1,$2,$3,$4,true) ON CONFLICT(code) DO UPDATE SET type=$2,value=$3,min_order=$4,active=true",[code,type,value,minOrder]);else{const a=readJson(COUPONS_FILE,[]);const i=a.findIndex(x=>x.code===code);const c={code,type,value,minOrder,active:true};if(i>=0)a[i]=c;else a.push(c);writeJson(COUPONS_FILE,a);}res.status(201).json({code,type,value,minOrder,active:true});}catch{res.status(500).json({error:"Coupon save failed"});}
 });
 app.get("/api/admin/reviews",adminOnly,async(req,res)=>{
-  try{if(usePg){const r=await pool.query("SELECT id,product_id AS \"productId\",customer_name AS name,rating,comment,created_at AS \"createdAt\" FROM reviews ORDER BY created_at DESC");return res.json(r.rows);}res.json(readJson(path.join(DATA_DIR,"reviews.json"),[]));}catch{res.status(500).json({error:"Reviews unavailable"});}
+  try {
+    if(usePg) {
+      const r=await pool.query("SELECT r.id,r.product_id AS productId,COALESCE(c.full_name,r.customer_name) AS name,r.rating,r.comment,r.created_at AS createdAt,r.moderation_status AS status,r.verified_purchase AS verifiedPurchase,r.order_id AS orderId FROM reviews r LEFT JOIN customers c ON c.id=r.customer_id ORDER BY CASE r.moderation_status WHEN 'pending' THEN 0 ELSE 1 END,r.created_at DESC");
+      return res.json(r.rows);
+    }
+    res.json(readJson(path.join(DATA_DIR,"reviews.json"),[]).map(r=>({...r,status:"approved",verifiedPurchase:false})));
+  } catch { res.status(500).json({error:"Reviews unavailable"}); }
+});
+app.patch("/api/admin/reviews/:id",adminOnly,async(req,res)=>{
+  const status=String(req.body.status||"");
+  if(!["approved","rejected"].includes(status))return res.status(400).json({error:"Invalid review status"});
+  try {
+    if(!usePg)return res.status(503).json({error:"Review moderation requires PostgreSQL."});
+    const result=await pool.query("UPDATE reviews SET moderation_status=$1 WHERE id=$2 RETURNING id,moderation_status AS status",[status,clean(req.params.id,60)]);
+    if(!result.rowCount)return res.status(404).json({error:"Review not found"});
+    res.json({ok:true,review:result.rows[0]});
+  } catch { res.status(500).json({error:"Review moderation failed"}); }
 });
 
 async function start(){
