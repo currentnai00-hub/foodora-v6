@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102c23"><meta name="referrer" content="same-origin">
+<title>আমার অ্যাকাউন্ট | Foodora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css?v=foodora-account-v1">
+</head>
+<body>
+<header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="/#menu">মেনু</a><a href="/track">অর্ডার ট্র্যাক</a><a href="/">হোম</a></nav><a class="cart-button" href="/">শপিং চালিয়ে যান</a></header>
+<main class="account-page"><div class="account-shell">
+<div class="account-heading"><p class="eyebrow">FOODORA CUSTOMER SPACE</p><h1>আপনার অ্যাকাউন্ট</h1><p>অর্ডার ও অ্যাকাউন্টের তথ্য এক জায়গায় রাখুন।</p></div>
+<section class="account-panel">
+<div id="accountAuth">
+<div class="account-tabs" role="tablist" aria-label="অ্যাকাউন্ট অপশন">
+<button type="button" class="active" id="loginTab" aria-selected="true">লগইন</button>
+<button type="button" id="registerTab" aria-selected="false">নতুন অ্যাকাউন্ট</button>
+</div>
+<form class="account-form" id="loginForm">
+<label>মোবাইল নম্বর<input name="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="01XXXXXXXXX" pattern="01[0-9]{9}" maxlength="11" required></label>
+<label>পাসওয়ার্ড<input name="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required></label>
+<button type="submit">লগইন করুন</button><p class="account-message" id="loginMessage" aria-live="polite"></p>
+</form>
+<form class="account-form" id="registerForm" hidden>
+<label>আপনার নাম<input name="name" type="text" autocomplete="name" maxlength="80" required></label>
+<label>মোবাইল নম্বর<input name="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="01XXXXXXXXX" pattern="01[0-9]{9}" maxlength="11" required></label>
+<label>পাসওয়ার্ড (কমপক্ষে ১০ অক্ষর)<input name="password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label>
+<button type="submit">অ্যাকাউন্ট তৈরি করুন</button><p class="account-message" id="registerMessage" aria-live="polite"></p>
+</form>
+<p class="account-note">আপনার পাসওয়ার্ড নিরাপদভাবে হ্যাশ করে সংরক্ষণ করা হয়। মোবাইল নম্বরের মালিকানা SMS OTP দিয়ে যাচাই করা হচ্ছে না—তাই নিজের নম্বর ব্যবহার করুন।</p>
+</div>
+<section class="account-dashboard" id="accountDashboard" hidden>
+<div class="account-dashboard-head"><div><h2 id="customerGreeting">স্বাগতম</h2><p id="customerPhone"></p></div><button type="button" class="account-logout" id="logoutButton">লগআউট</button></div>
+<h3 class="account-orders-title">আপনার অর্ডার হিস্টোরি</h3><div class="account-order-list" id="accountOrders"><p class="account-empty">অর্ডার লোড হচ্ছে…</p></div>
+<p class="account-note">এই অ্যাকাউন্টে লগইন থাকা অবস্থায় করা অর্ডারগুলো এখানে দেখা যাবে। আগের Guest Checkout অর্ডারগুলো অপরিবর্তিত থাকবে।</p>
+</section>
+</section></div></main>
+<footer><a class="brand" href="/">foodora<span>.</span></a><p>যত্নে তৈরি খাবার, পৌঁছে যাবে আপনার ঘরে।</p><small>© Foodora. সর্বস্বত্ব সংরক্ষিত।</small></footer>
+<script src="/account.js?v=foodora-account-v1" defer></script>
+</body></html>
