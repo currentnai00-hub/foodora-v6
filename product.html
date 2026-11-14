@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#12372b">
+<title>Food details | Foodora</title>
+<meta name="description" content="Explore freshly prepared food at Foodora.">
+<link rel="canonical" id="canonicalUrl" href="/">
+<link rel="stylesheet" href="/style.css?v=foodora-tracking-v1">
+<link rel="stylesheet" href="/product-page.css?v=foodora-product-v1">
+</head>
+<body class="food-detail-body">
+<header class="topbar">
+<a class="brand" href="/">foodora<span>.</span></a>
+<nav><a href="/#menu">Menu</a><a href="/#offers">Offers</a><a href="/track">Track order</a></nav>
+<a class="cart-button" href="/#menu">Explore menu</a>
+</header>
+<main class="food-detail-main">
+<div class="food-breadcrumb"><a href="/">Home</a><span>›</span><a href="/#menu">Menu</a><span>›</span><span id="crumbName">Food details</span></div>
+<div id="foodState" class="food-state" role="status">Loading food details…</div>
+<section id="foodDetail" hidden>
+<div class="food-detail-grid">
+<div class="food-detail-visual">
+<img id="foodImage" src="" alt="" fetchpriority="high">
+<span class="food-image-label">FRESHLY PREPARED</span>
+</div>
+<div class="food-detail-info">
+<p class="eyebrow" id="foodCategory">FROM OUR KITCHEN</p>
+<h1 id="foodName">Food name</h1>
+<div class="food-rating"><span id="foodStars">☆☆☆☆☆</span><span id="foodRatingText">No reviews yet</span></div>
+<p class="food-description" id="foodDescription"></p>
+<div class="food-price-row"><strong id="foodPrice"></strong><span id="foodStock" class="food-stock"></span></div>
+<div class="food-actions">
+<label class="quantity-control">Qty <input id="foodQty" type="number" min="1" max="20" value="1"></label>
+<button id="addFoodToCart" class="primary-button">Add to cart</button>
+<a class="secondary-button" href="/#menu">Back to menu</a>
+</div>
+<div class="food-promise"><span>✦ Freshly prepared</span><span>✦ Carefully packed</span><span>✦ Doorstep delivery</span></div>
+</div>
+</div>
+<section class="food-detail-section">
+<div><p class="eyebrow">MADE WITH CARE</p><h2>About this food</h2><p id="foodAbout"></p></div>
+<div class="food-note"><strong>Good to know</strong><p>Food is prepared fresh. Availability may change based on current stock.</p></div>
+</section>
+<section class="food-reviews">
+<div class="section-head"><div><p class="eyebrow">YOUR EXPERIENCE MATTERS</p><h2>Customer reviews</h2></div></div>
+<div id="reviewSummary" class="review-summary">Loading reviews…</div>
+<div id="reviewList" class="review-list"></div>
+<form id="reviewForm" class="review-form">
+<h3>Share your feedback</h3>
+<label>Your name<input name="name" required maxlength="80" placeholder="Your name"></label>
+<label>Rating<select name="rating" required><option value="5">★★★★★ — Excellent</option><option value="4">★★★★ — Very good</option><option value="3">★★★ — Good</option><option value="2">★★ — Fair</option><option value="1">★ — Poor</option></select></label>
+<label>Your review<textarea name="comment" maxlength="500" placeholder="Tell others what you think (optional)"></textarea></label>
+<button class="primary-button" type="submit">Submit review</button>
+<p id="reviewMessage" role="status"></p>
+</form>
+</section>
+<section class="related-foods"><div class="section-head"><div><p class="eyebrow">MORE TO ENJOY</p><h2>You may also like</h2></div><a href="/#menu">View full menu ↗</a></div><div id="relatedFoods" class="related-grid"></div></section>
+</section>
+</main>
+<footer><a class="brand" href="/">foodora<span>.</span></a><p>Fresh food, delivered with care.</p><small>© <span id="year"></span> Foodora. All rights reserved.</small></footer>
+<script src="/product-page.js?v=foodora-product-v1" defer></script>
+</body>
+</html>
