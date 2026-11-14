@@ -104,6 +104,20 @@ function total() {
   return subtotal() - discount() + delivery();
 }
 
+function updateDeliveryProgress() {
+  const panel = $("deliveryProgress");
+  if (!panel) return;
+  if (!cart.length || Number(config.freeDeliveryFrom) <= 0) { panel.hidden = true; panel.innerHTML = ""; return; }
+  const threshold = Math.max(0, Number(config.freeDeliveryFrom) || 0);
+  const eligibleAmount = Math.max(0, subtotal() - discount());
+  const remaining = Math.max(0, threshold - eligibleAmount);
+  const progress = Math.min(100, (eligibleAmount / threshold) * 100);
+  panel.hidden = false;
+  panel.innerHTML = remaining > 0
+    ? `<div class="delivery-progress-copy"><span>আর <strong>${money(remaining)}</strong> যোগ করলেই ডেলিভারি ফ্রি!</span><b>${Math.round(progress)}%</b></div><div class="delivery-progress-track" role="progressbar" aria-label="ফ্রি ডেলিভারির অগ্রগতি" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress)}"><span style="width:${progress}%"></span></div>`
+    : `<div class="delivery-progress-success">✓ অভিনন্দন! আপনার ডেলিভারি চার্জ ফ্রি।</div><div class="delivery-progress-track is-complete" role="progressbar" aria-label="ফ্রি ডেলিভারি অর্জিত" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span style="width:100%"></span></div>`;
+}
+
 /* =========================================
    PAYMENT METHODS
 ========================================= */
@@ -546,32 +560,25 @@ function updateCart() {
         <div class="cart-line">
           <div>
             <b>${esc(p.name)}</b>
-            <p>${money(p.price)} each</p>
+            <p>${money(p.price)} × ${p.qty}</p>
           </div>
-
           <div class="qty-controls">
-            <button data-qty="${esc(p.id)}" data-change="-1">−</button>
+            <button type="button" aria-label="একটি কমান" data-qty="${esc(p.id)}" data-change="-1">−</button>
             <b>${p.qty}</b>
-            <button data-qty="${esc(p.id)}" data-change="1">+</button>
-            <button data-remove="${esc(p.id)}">✕</button>
+            <button type="button" aria-label="একটি বাড়ান" data-qty="${esc(p.id)}" data-change="1">+</button>
+            <button type="button" aria-label="সরিয়ে ফেলুন" data-remove="${esc(p.id)}">✕</button>
           </div>
         </div>
       `).join("")
-    : `<div class="empty">Your cart is empty. Add some delicious food!</div>`;
+    : `<div class="empty"><p>আপনার কার্ট এখনো খালি।</p><a href="#menu" data-close-cart>মেনু থেকে খাবার বেছে নিন →</a></div>`;
+
+  updateDeliveryProgress();
 
   $("totals").innerHTML = `
-    <div class="total-line">
-      <span>Subtotal</span><b>${money(subtotal())}</b>
-    </div>
-    <div class="total-line">
-      <span>Discount</span><b>−${money(discount())}</b>
-    </div>
-    <div class="total-line">
-      <span>Delivery</span><b>${money(delivery())}</b>
-    </div>
-    <div class="total-line">
-      <strong>Total</strong><strong>${money(total())}</strong>
-    </div>
+    <div class="total-line"><span>খাবারের মূল্য</span><b>${money(subtotal())}</b></div>
+    <div class="total-line"><span>ছাড়</span><b>−${money(discount())}</b></div>
+    <div class="total-line"><span>ডেলিভারি চার্জ</span><b>${delivery() === 0 ? "ফ্রি" : money(delivery())}</b></div>
+    <div class="total-line"><strong>সর্বমোট</strong><strong>${money(total())}</strong></div>
   `;
 
   $("checkoutOpen").disabled = !cart.length;
@@ -624,7 +631,7 @@ async function applyCoupon() {
   const code = $("coupon").value.trim();
 
   if (!code) {
-    $("couponMessage").textContent = "Enter a coupon code.";
+    $("couponMessage").textContent = "কুপন কোড লিখুন।";
     return;
   }
 
@@ -643,7 +650,7 @@ async function applyCoupon() {
     };
 
     $("couponMessage").textContent =
-      "Coupon applied! You saved " + money(result.discount);
+      "কুপন প্রয়োগ হয়েছে! সাশ্রয় " + money(result.discount);
 
     updateCart();
 
@@ -794,6 +801,7 @@ $("products").addEventListener("click", event => {
 });
 
 $("cartItems").addEventListener("click", event => {
+  if (event.target.closest("[data-close-cart]")) { closeCart(); return; }
   const remove = event.target.closest("[data-remove]");
   const change = event.target.closest("[data-qty]");
 
