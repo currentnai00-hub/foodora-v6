@@ -107,6 +107,7 @@ td select{padding:8px;max-width:160px}
   <button data-tab="coupons">％ Coupons</button>
   <button data-tab="reviews">☆ Reviews</button>
   <button data-tab="analytics">▥ Analytics</button>
+  <button data-tab="delivery">🚚 Delivery Areas</button>
  </nav>
 </aside>
 
@@ -195,6 +196,17 @@ td select{padding:8px;max-width:160px}
   <div class="panel"><h2 style="margin-bottom:15px">All Coupons</h2><div id="couponsTable" class="tablewrap"></div></div>
  </section>
 
+ <section id="delivery" class="section">
+  <div class="panel">
+   <div class="panelhead"><h2>Delivery Settings</h2><span class="muted">Changes apply to new orders</span></div>
+   <form id="deliveryForm" class="formgrid">
+    <label>সাধারণ ডেলিভারি চার্জ (৳)<input id="deliveryFeeInput" type="number" min="0" max="100000" required></label>
+    <label>ফ্রি ডেলিভারির ন্যূনতম অর্ডার (৳)<input id="freeDeliveryInput" type="number" min="0" max="1000000" required></label>
+    <label class="full">সক্রিয় ডেলিভারি এলাকা (প্রতি লাইনে ID|এলাকার নাম লিখুন)<textarea id="deliveryAreasInput" rows="7" required placeholder="amirabad|আমিরাবাদ ইউনিয়ন"></textarea></label>
+    <div class="full"><p class="muted">উদাহরণ: padua|পদুয়া ইউনিয়ন। ID ইংরেজি অক্ষর/সংখ্যায় রাখুন। কোনো এলাকা বাদ দিতে চাইলে তার লাইন মুছে দিন।</p><button class="btn primary" type="submit">Save Delivery Settings</button></div>
+   </form>
+  </div>
+ </section>
  <section id="reviews" class="section">
   <div class="panel">
    <div class="panelhead"><h2>Customer Reviews</h2></div>
@@ -226,7 +238,7 @@ td select{padding:8px;max-width:160px}
 <script>
 const $=id=>document.getElementById(id);
 let KEY=sessionStorage.getItem("foodora_admin_key")||"";
-let products=[],orders=[],coupons=[],reviews=[],summary={},analytics={days:[],statuses:{}};
+let products=[],orders=[],coupons=[],reviews=[],summary={},analytics={days:[],statuses:{}},deliverySettings={areas:[]};
 let orderPollTimer=null, knownOrderIds=null, orderPollBusy=false;
 const statuses=["Pending","Confirmed","Preparing","Shipped","Out for delivery","Delivered","Cancelled"];
 const payments=["Awaiting payment","Pending verification","Verified","Rejected"];
@@ -252,7 +264,7 @@ function tab(name){
  document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
  $(name).classList.add("active");
  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.tab===name));
- $("pageTitle").textContent=({overview:"Dashboard Overview",orders:"Order Management",customers:"Customer Management",products:"Product Management",coupons:"Coupon Management",reviews:"Customer Reviews",analytics:"Sales Analytics"})[name];
+ $("pageTitle").textContent=({overview:"Dashboard Overview",orders:"Order Management",customers:"Customer Management",products:"Product Management",coupons:"Coupon Management",reviews:"Customer Reviews",analytics:"Sales Analytics",delivery:"Delivery Areas"})[name];
 }
 document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>tab(b.dataset.tab)));
 function statusSelect(value,kind,id){
@@ -270,9 +282,10 @@ async function refreshAll(){
  try{
   const results=await Promise.all([
    api("/api/admin/summary"),api("/api/admin/products"),api("/api/admin/orders"),
-   api("/api/admin/coupons"),api("/api/admin/reviews"),api("/api/admin/analytics")
+   api("/api/admin/coupons"),api("/api/admin/reviews"),api("/api/admin/analytics"),api("/api/admin/delivery-settings")
   ]);
-  [summary,products,orders,coupons,reviews,analytics]=results;
+  [summary,products,orders,coupons,reviews,analytics,deliverySettings]=results;
+  renderDeliverySettings();
   if(knownOrderIds===null)knownOrderIds=new Set(orders.map(o=>String(orderId(o))).filter(id=>id!=="—"));
   renderAll();
   startOrderPolling();
@@ -441,6 +454,17 @@ $("couponForm").addEventListener("submit",async e=>{
  e.preventDefault();let d=Object.fromEntries(new FormData(e.currentTarget).entries());
  d.value=Number(d.value);d.minOrder=Number(d.minOrder);
  try{await api("/api/admin/coupons",{method:"POST",body:JSON.stringify(d)});e.currentTarget.reset();toast("Coupon saved");await refreshAll()}
+ catch(e){toast(e.message)}
+});
+function renderDeliverySettings(){
+ $("deliveryFeeInput").value=Number(deliverySettings.deliveryFee??70);
+ $("freeDeliveryInput").value=Number(deliverySettings.freeDeliveryFrom??999);
+ $("deliveryAreasInput").value=(deliverySettings.areas||[]).map(a=>a.id+"|"+a.name).join("\n");
+}
+$("deliveryForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const areas=$("deliveryAreasInput").value.split(/\\r?\\n/).map(line=>line.trim()).filter(Boolean).map(line=>{const parts=line.split("|");return {id:(parts.shift()||"").trim(),name:parts.join("|").trim(),active:true};});
+ try{const saved=await api("/api/admin/delivery-settings",{method:"PUT",body:JSON.stringify({deliveryFee:Number($("deliveryFeeInput").value),freeDeliveryFrom:Number($("freeDeliveryInput").value),areas})});deliverySettings=saved;renderDeliverySettings();toast("Delivery settings saved");}
  catch(e){toast(e.message)}
 });
 function renderReviews(){
