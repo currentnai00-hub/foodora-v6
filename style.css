@@ -1790,3 +1790,30 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 
 /* CART CONVERSION: FREE DELIVERY PROGRESS */
 .delivery-progress{margin:14px 0 18px;padding:14px 15px;border:1px solid #e4eadf;border-radius:15px;background:#f6f8f2}.delivery-progress[hidden]{display:none}.delivery-progress-copy{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px;color:#526257;font-size:13px}.delivery-progress-copy strong{color:#173b2d;font-weight:800}.delivery-progress-copy>b{color:#bd713e;font-size:12px}.delivery-progress-track{height:8px;overflow:hidden;border-radius:20px;background:#e2e8dd}.delivery-progress-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d98243,#173b2d);transition:width .25s ease}.delivery-progress-success{margin-bottom:9px;color:#1d6542;font-size:14px;font-weight:800}.empty a{display:inline-block;margin-top:8px;color:#173b2d;font-weight:700;text-decoration:none}.empty a:hover{text-decoration:underline}.qty-controls button{min-width:34px;min-height:34px;border:1px solid #e5e8df;border-radius:9px;background:#fff;color:#173b2d;font-size:17px;cursor:pointer;touch-action:manipulation}.qty-controls button:focus-visible,.empty a:focus-visible{outline:3px solid #d98243;outline-offset:2px}@media(max-width:600px){.delivery-progress{padding:12px}.delivery-progress-copy{font-size:12px}.qty-controls button{min-width:36px;min-height:36px}}
+
+
+/* CHECKOUT & ORDER EXPERIENCE UPGRADE */
+.checkout-summary{margin:14px 0 18px;padding:15px 16px;border:1px solid #e8e9df;border-radius:16px;background:#f8f8f3}
+.checkout-summary-heading,.checkout-summary-item,.checkout-summary-total{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.checkout-summary-heading{margin-bottom:10px;color:#244a38;font-size:14px}
+.checkout-summary-heading span{color:#788078;font-size:11px;font-weight:600}
+.checkout-summary-item{padding:7px 0;color:#68746b;font-size:12px}
+.checkout-summary-item b{color:#253d30;white-space:nowrap}
+.checkout-summary-total{margin-top:9px;padding-top:12px;border-top:1px solid #e2e5dc;color:#354d3e;font-size:12px}
+.checkout-summary-total strong{font-size:18px;color:#153b2b}
+.checkout-security-note{margin:8px 0;color:#788078;font-size:11px;line-height:1.6}
+#checkoutFields[hidden],#checkoutResult[hidden]{display:none!important}
+#placeOrderButton:disabled{opacity:.65;cursor:wait}
+.checkout-result{text-align:center;padding:18px 4px 8px}
+.checkout-success-mark{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 15px;border-radius:50%;background:#e8f3e9;color:#247447;font-size:30px;font-weight:800}
+.checkout-success-eyebrow{margin:0;color:#28734a;font-size:12px;font-weight:700}
+.checkout-result h3{margin:9px 0 18px;color:#173b2d;font:700 23px 'Hind Siliguri',sans-serif;line-height:1.5}
+.checkout-order-id{display:grid;gap:5px;padding:14px;border:1px dashed #cbd8ca;border-radius:13px;background:#f7faf5}
+.checkout-order-id span{color:#778278;font-size:11px}
+.checkout-order-id strong{color:#173b2d;font-size:19px;letter-spacing:.5px;overflow-wrap:anywhere}
+.checkout-final-total{margin:14px 0;color:#59665d;font-size:13px}
+.checkout-final-total strong{color:#173b2d;font-size:19px}
+.checkout-payment-instructions{padding:13px;border-radius:12px;background:#f5f2e9;color:#59665d;font-size:12px;line-height:1.8;text-align:left}
+.checkout-track-link{display:block;margin-top:14px;text-align:center;text-decoration:none}
+.checkout-done-button{width:100%;min-height:44px;margin-top:9px;border:1px solid #e3e7df;border-radius:12px;background:#fff;color:#355342;font:700 13px 'Hind Siliguri',sans-serif}
+@media(max-width:560px){.checkout-summary{padding:13px}.checkout-result h3{font-size:20px}.checkout-order-id strong{font-size:17px}}
