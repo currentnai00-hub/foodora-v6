@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const { Pool } = require("pg");
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = Number(process.env.PORT || 8080);
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
