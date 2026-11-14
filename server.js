@@ -694,7 +694,6 @@ app.get("/api/admin/reviews",adminOnly,async(req,res)=>{
     if(usePg) {
       const r=await pool.query("SELECT r.id,r.product_id AS productid,COALESCE(c.full_name,r.customer_name) AS name,r.rating,r.comment,r.created_at AS createdat,r.moderation_status AS status,r.verified_purchase AS verifiedpurchase,r.order_id AS orderid FROM reviews r LEFT JOIN customers c ON c.id=r.customer_id ORDER BY CASE r.moderation_status WHEN 'pending' THEN 0 ELSE 1 END,r.created_at DESC");
       return res.json(r.rows.map(x=>({...x,productId:x.productid,createdAt:x.createdat,verifiedPurchase:x.verifiedpurchase,orderId:x.orderid})));
-      return res.json(r.rows);
     }
     res.json(readJson(path.join(DATA_DIR,"reviews.json"),[]).map(r=>({...r,status:"approved",verifiedPurchase:false})));
   } catch { res.status(500).json({error:"Reviews unavailable"}); }
