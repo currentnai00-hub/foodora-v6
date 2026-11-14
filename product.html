@@ -49,7 +49,7 @@
 <div id="reviewList" class="review-list"></div>
 <form id="reviewForm" class="review-form">
 <h3>আপনার অভিজ্ঞতা জানান</h3>
-<label>আপনার নাম<input name="name" required maxlength="80" placeholder="Your name"></label>
+<p class="review-login-note">রিভিউ দিতে <a href="/account">আপনার অ্যাকাউন্টে লগইন করুন</a>। শুধু ডেলিভারি সম্পন্ন হওয়া অর্ডারের ক্রেতারাই রিভিউ দিতে পারবেন।</p>
 <label>Rating<select name="rating" required><option value="5">★★★★★ — Excellent</option><option value="4">★★★★ — Very good</option><option value="3">★★★ — Good</option><option value="2">★★ — Fair</option><option value="1">★ — Poor</option></select></label>
 <label>আপনার মতামত<textarea name="comment" maxlength="500" placeholder="আপনার মতামত লিখুন (ঐচ্ছিক)"></textarea></label>
 <button class="primary-button" type="submit">রিভিউ জমা দিন</button>
@@ -60,6 +60,6 @@
 </section>
 </main>
 <footer><a class="brand" href="/">foodora<span>.</span></a><p>টাটকা খাবার, যত্নের সঙ্গে আপনার দোরগোড়ায়।</p><small>© <span id="year"></span> Foodora. সর্বস্বত্ব সংরক্ষিত।</small></footer>
-<script src="/product-page.js?v=foodora-product-v1" defer></script>
+<script src="/product-page.js?v=foodora-verified-reviews-v1" defer></script>
 </body>
 </html>
