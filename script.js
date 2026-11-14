@@ -12,6 +12,11 @@ let category = "All";
 let favorites = new Set();
 let favoritesOnly = false;
 let sortMode = "recommended";
+let dietaryFilter = "all";
+let mealFilter = "all";
+let spiceFilter = "all";
+let minPriceFilter = 0;
+let maxPriceFilter = Infinity;
 
 let config = {
   paymentNumbers: {
@@ -369,20 +374,24 @@ function renderProducts() {
       data-category="${esc(c)}">${esc(c === "All" ? "সব খাবার" : c)}</button>
   `).join("");
 
-  let list = products.filter(p =>
-    p.active !== false &&
-    (!favoritesOnly || favorites.has(String(p.id))) &&
-    (category === "All" || p.category === category) &&
-    (
-      (p.name || "") + " " +
-      (p.category || "") + " " +
-      (p.description || "")
-    ).toLowerCase().includes(search)
-  );
+  let list = products.filter(p => {
+    const tags = Array.isArray(p.dietaryTags) ? p.dietaryTags : [];
+    const meal = p.mealTime || "all";
+    const spice = p.spicyLevel || "medium";
+    return p.active !== false &&
+      (!favoritesOnly || favorites.has(String(p.id))) &&
+      (category === "All" || p.category === category) &&
+      (mealFilter === "all" || meal === mealFilter || meal === "all") &&
+      (dietaryFilter === "all" || tags.includes(dietaryFilter)) &&
+      (spiceFilter === "all" || spice === spiceFilter) &&
+      Number(p.price) >= minPriceFilter && Number(p.price) <= maxPriceFilter &&
+      ((p.name || "") + " " + (p.category || "") + " " + (p.description || "")).toLowerCase().includes(search);
+  });
 
   if (sortMode === "price-low") list.sort((a,b) => Number(a.price)-Number(b.price));
   if (sortMode === "price-high") list.sort((a,b) => Number(b.price)-Number(a.price));
   if (sortMode === "name") list.sort((a,b) => String(a.name).localeCompare(String(b.name)));
+  if (sortMode === "popular") list.sort((a,b) => Number(b.featured===true)-Number(a.featured===true));
 
   $("products").innerHTML = list.length
     ? list.map(p => {
@@ -405,10 +414,7 @@ function renderProducts() {
           ? p.image
           : foodoraImage(p);
 
-        const bestSeller =
-          p.bestSeller === true ||
-          p.isBestSeller === true ||
-          p.featured === true;
+        const bestSeller = p.featured === true;
 
         const unavailable = Number(p.stock) <= 0;
 
@@ -434,6 +440,7 @@ function renderProducts() {
 
             <div class="productInfo">
               <div class="tag">${esc(p.category || "Fresh Food")}</div>
+              <div class="menu-product-tags">${(Array.isArray(p.dietaryTags)?p.dietaryTags:[]).map(tag=>'<span>'+(tag==="vegetarian"?"নিরামিষ":"চিনি ছাড়া")+'</span>').join("")}${p.spicyLevel==="hot"?'<span>ঝাল</span>':p.spicyLevel==="mild"?'<span>কম ঝাল</span>':""}</div>
               <h3><a class="product-name-link" href="/food/${encodeURIComponent(String(p.id))}">${esc(p.name)}</a></h3>
               <p>${esc(p.description || "Freshly prepared with quality ingredients.")}</p>
 
@@ -751,6 +758,11 @@ $("checkoutForm").addEventListener("submit", placeOrder);
 
 $("search").addEventListener("input", renderProducts);
 if ($("sortMenu")) $("sortMenu").addEventListener("change", event => { sortMode = event.target.value; renderProducts(); });
+if ($("dietaryFilter")) $("dietaryFilter").addEventListener("change", event => { dietaryFilter = event.target.value; renderProducts(); });
+if ($("mealFilter")) $("mealFilter").addEventListener("change", event => { mealFilter = event.target.value; renderProducts(); });
+if ($("spiceFilter")) $("spiceFilter").addEventListener("change", event => { spiceFilter = event.target.value; renderProducts(); });
+if ($("minPrice")) $("minPrice").addEventListener("input", event => { minPriceFilter = Math.max(0, Number(event.target.value)||0); renderProducts(); });
+if ($("maxPrice")) $("maxPrice").addEventListener("input", event => { maxPriceFilter = event.target.value===""?Infinity:Math.max(0,Number(event.target.value)||0); renderProducts(); });
 if ($("favoritesToggle")) $("favoritesToggle").addEventListener("click", () => { favoritesOnly = !favoritesOnly; updateFavoriteCount(); renderProducts(); });
 $("applyCoupon").addEventListener("click", applyCoupon);
 

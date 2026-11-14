@@ -22,7 +22,14 @@
 <div class="trust-item"><span>৳</span><div><b>ন্যায্য দাম</b><small>সুস্বাদু খাবার, সঠিক দাম</small></div></div>
 </section>
 <main>
-<section class="section" id="menu"><div class="section-head"><div><p class="eyebrow">আমাদের রান্নাঘর · টাটকা পরিবেশন</p><h2>খুঁজে নিন আপনার পছন্দের খাবার।</h2><p class="menu-subtitle">যত্নে তৈরি সুস্বাদু খাবার পৌঁছে যাবে আপনার ঠিকানায়।</p></div><input id="search" class="search" placeholder="খাবার খুঁজুন..." aria-label="খাবার খুঁজুন"></div><div class="menu-tools"><button type="button" id="favoritesToggle" class="menu-filter" aria-pressed="false">♡ পছন্দের খাবার <span id="favoriteCount">0</span></button><label class="sort-label">সাজান <select id="sortMenu" aria-label="Sort menu"><option value="recommended">জনপ্রিয়তা অনুযায়ী</option><option value="price-low">কম দাম আগে</option><option value="price-high">বেশি দাম আগে</option><option value="name">নাম অনুযায়ী</option></select></label></div><div id="categories" class="chips"></div><div id="products" class="product-grid"><p>মেনু লোড হচ্ছে…</p></div></section>
+<section class="section" id="menu"><div class="section-head"><div><p class="eyebrow">আমাদের রান্নাঘর · টাটকা পরিবেশন</p><h2>খুঁজে নিন আপনার পছন্দের খাবার।</h2><p class="menu-subtitle">যত্নে তৈরি সুস্বাদু খাবার পৌঁছে যাবে আপনার ঠিকানায়।</p></div><input id="search" class="search" placeholder="খাবার খুঁজুন..." aria-label="খাবার খুঁজুন"></div><div class="menu-tools"><button type="button" id="favoritesToggle" class="menu-filter" aria-pressed="false">♡ পছন্দের খাবার <span id="favoriteCount">0</span></button><label class="sort-label">সাজান <select id="sortMenu" aria-label="খাবার সাজান"><option value="recommended">ডিফল্ট</option><option value="popular">জনপ্রিয় আগে</option><option value="price-low">কম দাম আগে</option><option value="price-high">বেশি দাম আগে</option><option value="name">নাম অনুযায়ী</option></select></label></div>
+<div class="smart-filters" aria-label="খাবার ফিল্টার">
+<label>সময় <select id="mealFilter"><option value="all">সব সময়</option><option value="breakfast">সকালের নাশতা</option><option value="lunch">দুপুরের খাবার</option><option value="dinner">রাতের খাবার</option></select></label>
+<label>খাবারের ধরন <select id="dietaryFilter"><option value="all">সব ধরনের</option><option value="vegetarian">নিরামিষ</option><option value="sugar-free">চিনি ছাড়া</option></select></label>
+<label>ঝালের মাত্রা <select id="spiceFilter"><option value="all">সব</option><option value="mild">কম ঝাল</option><option value="medium">মাঝারি</option><option value="hot">বেশি ঝাল</option></select></label>
+<label>সর্বনিম্ন দাম <input id="minPrice" type="number" min="0" placeholder="৳ ০"></label>
+<label>সর্বোচ্চ দাম <input id="maxPrice" type="number" min="0" placeholder="৳ ১০০০"></label>
+</div><div id="categories" class="chips"></div><div id="products" class="product-grid"><p>মেনু লোড হচ্ছে…</p></div></section>
 <section class="offer-banner" id="offers">
 <div class="offer-copy">
 <p class="eyebrow">আপনার জন্য বিশেষ</p>
@@ -44,5 +51,5 @@
 class="primary-button full" style="display:none;">
 নম্বর কপি করুন
 </button><div id="checkoutMessage" class="notice"></div><button class="primary-button full">অর্ডার নিশ্চিত করুন</button></form></div>
-<script src="/script.js?v=foodora-delivery-zones-1"></script>
+<script src="/script.js?v=foodora-smart-menu-v1"></script>
 </body></html>
