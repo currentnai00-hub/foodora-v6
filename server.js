@@ -320,7 +320,7 @@ app.post("/api/orders", async (req,res) => {
         }
         await client.query(`INSERT INTO orders(id,customer_name,phone,address,payment_method,transaction_id,payment_status,status,items,subtotal,discount,delivery_fee,total,coupon_code)
           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-          [order.id,name,phone,address,paymentMethod,transactionId,order.paymentStatus,order.status,JSON.stringify(normalized),subtotal,discount,deliveryFee,total,code]);
+          [order.id,name,phone,fullAddress,paymentMethod,transactionId,order.paymentStatus,order.status,JSON.stringify(normalized),subtotal,discount,deliveryFee,total,code]);
         await client.query("COMMIT");
       } catch(e) { await client.query("ROLLBACK"); throw e; } finally { client.release(); }
     } else {
