@@ -406,6 +406,29 @@ app.get("/api/customer/orders",async(req,res)=>{
   }catch{res.status(500).json({error:"অর্ডার হিস্টোরি পাওয়া যায়নি।"});}
 });
 
+app.get("/api/customer/orders/:id",async(req,res)=>{
+  if(!requireCustomerDatabase(res))return;
+  try{
+    const customer=await signedInCustomer(req);
+    if(!customer)return res.status(401).json({error:"লগইন করুন।"});
+    const orderId=clean(req.params.id,60);
+    const result=await pool.query(
+      `SELECT id,status,payment_status,payment_method,items,subtotal,discount,delivery_fee,total,address,created_at
+       FROM orders WHERE id=$1 AND customer_id=$2 LIMIT 1`,[orderId,customer.id]);
+    const order=result.rows[0];
+    res.set("Cache-Control","no-store");
+    if(!order)return res.status(404).json({error:"এই অর্ডারটি পাওয়া যায়নি।"});
+    res.json({order:{
+      id:order.id,status:order.status,paymentStatus:order.payment_status,
+      paymentMethod:order.payment_method,items:Array.isArray(order.items)?order.items:[],
+      subtotal:order.subtotal,discount:order.discount,deliveryFee:order.delivery_fee,
+      total:order.total,address:order.address,createdAt:order.created_at
+    }});
+  }catch{res.status(500).json({error:"অর্ডারের বিস্তারিত পাওয়া যায়নি।"});}
+});
+
+app.get("/account/order/:id",(req,res)=>res.sendFile(path.join(ROOT,"order-detail.html")));
+
 app.post("/api/orders", async (req,res) => {
   const name=clean(req.body.name,80), phone=clean(req.body.phone,25), address=clean(req.body.address,400);
   const deliveryAreaId=clean(req.body.deliveryArea,40);
