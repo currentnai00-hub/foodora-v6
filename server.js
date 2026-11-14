@@ -332,6 +332,28 @@ app.post("/api/orders", async (req,res) => {
     });
   } catch(e) { console.error(e); res.status(500).json({error:e.message || "Order could not be placed"}); }
 });
+app.post("/api/orders/track", async (req,res) => {
+  try {
+    const orderId = clean(req.body.orderId,60).toLowerCase();
+    const phone = String(req.body.phone || "").replace(/\D/g, "");
+    if (!orderId || !/^01[0-9]{9}$/.test(phone))
+      return res.status(400).json({error:"Enter your Order ID and the 11-digit checkout phone number."});
+    const orders=await getOrders();
+    const o=orders.find(x=>String(x.id).toLowerCase()===orderId);
+    if (!o || String(o.phone || "").replace(/\D/g, "") !== phone)
+      return res.status(404).json({error:"We couldn't find an order with those details. Check your Order ID and phone number."});
+    res.set("Cache-Control", "no-store");
+    res.set("Referrer-Policy", "no-referrer");
+    res.json({
+      id:o.id, status:o.status, paymentStatus:o.paymentStatus,
+      paymentMethod:o.paymentMethod || o.payment || "", createdAt:o.createdAt || o.created_at,
+      items:Array.isArray(o.items)?o.items:[], subtotal:Number(o.subtotal||0),
+      discount:Number(o.discount||0), deliveryFee:Number(o.deliveryFee ?? o.delivery ?? 0),
+      total:Number(o.total||0)
+    });
+  } catch { res.status(500).json({error:"Tracking is temporarily unavailable. Please try again."}); }
+});
+
 app.get("/api/orders/:id", async (req,res) => {
   try {
     const orderId = clean(req.params.id,60).toLowerCase();
@@ -364,15 +386,27 @@ app.get("/api/admin/summary",adminOnly,async(req,res)=>{
 app.get("/api/admin/analytics",adminOnly,async(req,res)=>{
   try {
     const orders=await getOrders();
-    const today=new Date();
-    today.setUTCHours(0,0,0,0);
+    const dateKey=value=>{
+      const date=value?new Date(value):null;
+      if(!date||Number.isNaN(date.getTime()))return "";
+      const parts=new Intl.DateTimeFormat("en-CA",{
+        timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"
+      }).formatToParts(date);
+      const part=type=>parts.find(x=>x.type===type)?.value||"";
+      return part("year")+"-"+part("month")+"-"+part("day");
+    };
+    const todayKey=dateKey(new Date());
+    const todayUtcMidnight=new Date(todayKey+"T00:00:00+06:00");
     const days=[];
     const byDay=new Map();
     for(let offset=6;offset>=0;offset--){
-      const date=new Date(today);
+      const date=new Date(todayUtcMidnight);
       date.setUTCDate(date.getUTCDate()-offset);
-      const key=date.toISOString().slice(0,10);
-      const item={date:key,label:date.toLocaleDateString("en-BD",{weekday:"short",day:"numeric",timeZone:"UTC"}),orders:0,revenue:0};
+      const key=dateKey(date);
+      const label=new Intl.DateTimeFormat("en-BD",{
+        timeZone:"Asia/Dhaka",weekday:"short",day:"numeric"
+      }).format(date);
+      const item={date:key,label,orders:0,revenue:0};
       days.push(item);
       byDay.set(key,item);
     }
@@ -381,15 +415,15 @@ app.get("/api/admin/analytics",adminOnly,async(req,res)=>{
     for(const order of orders){
       const status=clean(order.status||"Pending",40)||"Pending";
       statuses[status]=(statuses[status]||0)+1;
-      const created=order.createdAt||order.created_at;
-      const date=created?new Date(created):null;
-      const key=date&&!Number.isNaN(date.getTime())?date.toISOString().slice(0,10):"";
-      const day=byDay.get(key);
-      if(day){
-        day.orders++;
-        if(status!=="Cancelled")day.revenue+=Number(order.total||0);
-        totalOrders++;
-        if(status!=="Cancelled")totalRevenue+=Number(order.total||0);
+      const day=byDay.get(dateKey(order.createdAt||order.created_at));
+      if(!day)continue;
+      const amount=Number(order.total);
+      const safeAmount=Number.isFinite(amount)&&amount>0?amount:0;
+      day.orders++;
+      totalOrders++;
+      if(status!=="Cancelled"){
+        day.revenue+=safeAmount;
+        totalRevenue+=safeAmount;
       }
     }
     res.set("Cache-Control","no-store");
