@@ -1,65 +1,65 @@
 <!doctype html>
-<html lang="en">
+<html lang="bn">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#12372b">
-<title>Food details | Foodora</title>
-<meta name="description" content="Explore freshly prepared food at Foodora.">
+<title>খাবারের বিস্তারিত | Foodora</title>
+<meta name="description" content="ফুডোরায় টাটকা ও সুস্বাদু খাবার অর্ডার করুন।">
 <link rel="canonical" id="canonicalUrl" href="/">
 <link rel="stylesheet" href="/style.css?v=foodora-tracking-v1">
-<link rel="stylesheet" href="/product-page.css?v=foodora-product-premium-v2">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/product-page.css?v=foodora-bangla-premium-v3">
 </head>
 <body class="food-detail-body">
 <header class="topbar">
 <a class="brand" href="/">foodora<span>.</span></a>
-<nav><a href="/#menu">Menu</a><a href="/#offers">Offers</a><a href="/track">Track order</a></nav>
-<a class="cart-button" href="/#menu">Explore menu</a>
+<nav><a href="/#menu">মেনু</a><a href="/#offers">অফার</a><a href="/track">অর্ডার ট্র্যাক</a></nav>
+<a class="cart-button" href="/#menu">মেনু দেখুন</a>
 </header>
 <main class="food-detail-main">
-<div class="food-breadcrumb"><a href="/">Home</a><span>›</span><a href="/#menu">Menu</a><span>›</span><span id="crumbName">Food details</span></div>
-<div id="foodState" class="food-state" role="status">Loading food details…</div>
+<div class="food-breadcrumb"><a href="/">হোম</a><span>›</span><a href="/#menu">মেনু</a><span>›</span><span id="crumbName">খাবারের বিস্তারিত</span></div>
+<div id="foodState" class="food-state" role="status">খাবারের তথ্য লোড হচ্ছে…</div>
 <section id="foodDetail" hidden>
 <div class="food-detail-grid">
 <div class="food-detail-visual">
 <img id="foodImage" src="" alt="" fetchpriority="high">
-<span class="food-image-label">FRESHLY PREPARED</span>
+<span class="food-image-label">টাটকা তৈরি</span>
 </div>
 <div class="food-detail-info">
-<p class="eyebrow" id="foodCategory">FROM OUR KITCHEN</p>
+<p class="eyebrow" id="foodCategory">আমাদের রান্নাঘর থেকে</p>
 <h1 id="foodName">Food name</h1>
-<div class="food-rating"><span id="foodStars">☆☆☆☆☆</span><span id="foodRatingText">No reviews yet</span></div>
+<div class="food-rating"><span id="foodStars">☆☆☆☆☆</span><span id="foodRatingText">এখনো কোনো রিভিউ নেই</span></div>
 <p class="food-description" id="foodDescription"></p>
 <div class="food-price-row"><strong id="foodPrice"></strong><span id="foodStock" class="food-stock"></span></div>
 <div class="food-actions">
-<label class="quantity-control">Qty <input id="foodQty" type="number" min="1" max="20" value="1"></label>
-<button id="addFoodToCart" class="primary-button">Add to cart</button>
-<a class="secondary-button" href="/#menu">Back to menu</a>
+<label class="quantity-control">পরিমাণ <input id="foodQty" type="number" min="1" max="20" value="1"></label>
+<button id="addFoodToCart" class="primary-button">কার্টে যোগ করুন</button>
+<a class="secondary-button" href="/#menu">মেনুতে ফিরে যান</a>
 </div>
-<div class="food-promise"><span>✦ Freshly prepared</span><span>✦ Carefully packed</span><span>✦ Doorstep delivery</span></div>
+<div class="food-promise"><span>✦ টাটকা তৈরি</span><span>✦ যত্নে প্যাকেট করা</span><span>✦ বাসায় পৌঁছে দেওয়া</span></div>
 </div>
 </div>
 <section class="food-detail-section">
-<div><p class="eyebrow">MADE WITH CARE</p><h2>About this food</h2><p id="foodAbout"></p></div>
-<div class="food-note"><strong>Good to know</strong><p>Food is prepared fresh. Availability may change based on current stock.</p></div>
+<div><p class="eyebrow">যত্নসহকারে তৈরি</p><h2>খাবারটি সম্পর্কে</h2><p id="foodAbout"></p></div>
+<div class="food-note"><strong>জেনে রাখুন</strong><p>খাবারটি অর্ডার পাওয়ার পর যত্নসহকারে প্রস্তুত করা হয়। স্টকের ওপর প্রাপ্যতা নির্ভর করে।</p></div>
 </section>
 <section class="food-reviews">
-<div class="section-head"><div><p class="eyebrow">YOUR EXPERIENCE MATTERS</p><h2>Customer reviews</h2></div></div>
-<div id="reviewSummary" class="review-summary">Loading reviews…</div>
+<div class="section-head"><div><p class="eyebrow">আপনার মতামত আমাদের কাছে গুরুত্বপূর্ণ</p><h2>ক্রেতাদের মতামত</h2></div></div>
+<div id="reviewSummary" class="review-summary">রিভিউ লোড হচ্ছে…</div>
 <div id="reviewList" class="review-list"></div>
 <form id="reviewForm" class="review-form">
-<h3>Share your feedback</h3>
-<label>Your name<input name="name" required maxlength="80" placeholder="Your name"></label>
+<h3>আপনার অভিজ্ঞতা জানান</h3>
+<label>আপনার নাম<input name="name" required maxlength="80" placeholder="Your name"></label>
 <label>Rating<select name="rating" required><option value="5">★★★★★ — Excellent</option><option value="4">★★★★ — Very good</option><option value="3">★★★ — Good</option><option value="2">★★ — Fair</option><option value="1">★ — Poor</option></select></label>
-<label>Your review<textarea name="comment" maxlength="500" placeholder="Tell others what you think (optional)"></textarea></label>
-<button class="primary-button" type="submit">Submit review</button>
+<label>আপনার মতামত<textarea name="comment" maxlength="500" placeholder="আপনার মতামত লিখুন (ঐচ্ছিক)"></textarea></label>
+<button class="primary-button" type="submit">রিভিউ জমা দিন</button>
 <p id="reviewMessage" role="status"></p>
 </form>
 </section>
-<section class="related-foods"><div class="section-head"><div><p class="eyebrow">MORE TO ENJOY</p><h2>You may also like</h2></div><a href="/#menu">View full menu ↗</a></div><div id="relatedFoods" class="related-grid"></div></section>
+<section class="related-foods"><div class="section-head"><div><p class="eyebrow">আরও মজাদার খাবার</p><h2>আপনার পছন্দ হতে পারে</h2></div><a href="/#menu">সম্পূর্ণ মেনু দেখুন ↗</a></div><div id="relatedFoods" class="related-grid"></div></section>
 </section>
 </main>
-<footer><a class="brand" href="/">foodora<span>.</span></a><p>Fresh food, delivered with care.</p><small>© <span id="year"></span> Foodora. All rights reserved.</small></footer>
+<footer><a class="brand" href="/">foodora<span>.</span></a><p>টাটকা খাবার, যত্নের সঙ্গে আপনার দোরগোড়ায়।</p><small>© <span id="year"></span> Foodora. সর্বস্বত্ব সংরক্ষিত।</small></footer>
 <script src="/product-page.js?v=foodora-product-v1" defer></script>
 </body>
 </html>
