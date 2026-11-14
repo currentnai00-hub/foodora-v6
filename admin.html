@@ -463,7 +463,7 @@ function renderDeliverySettings(){
 }
 $("deliveryForm").addEventListener("submit",async e=>{
  e.preventDefault();
- const areas=$("deliveryAreasInput").value.split(/\\r?\\n/).map(line=>line.trim()).filter(Boolean).map(line=>{const parts=line.split("|");return {id:(parts.shift()||"").trim(),name:parts.join("|").trim(),active:true};});
+ const areas=$("deliveryAreasInput").value.split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{const parts=line.split("|");return {id:(parts.shift()||"").trim(),name:parts.join("|").trim(),active:true};});
  try{const saved=await api("/api/admin/delivery-settings",{method:"PUT",body:JSON.stringify({deliveryFee:Number($("deliveryFeeInput").value),freeDeliveryFrom:Number($("freeDeliveryInput").value),areas})});deliverySettings=saved;renderDeliverySettings();toast("Delivery settings saved");}
  catch(e){toast(e.message)}
 });
