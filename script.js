@@ -122,6 +122,22 @@ function updateDeliveryProgress() {
    PAYMENT METHODS
 ========================================= */
 
+function paymentGuideUrl(method) {
+  const params = new URLSearchParams({method, amount:String(total())});
+  return "/payment-guide.html?" + params.toString();
+}
+function handlePaymentMethodChange() {
+  const method = $("paymentMethod")?.value || "";
+  if (["bKash","Nagad"].includes(method)) {
+    try {
+      sessionStorage.setItem("foodora_payment_method",method);
+      sessionStorage.setItem("foodora_checkout_coupon",JSON.stringify(appliedCoupon || null));
+    } catch (_) {}
+    window.location.href = paymentGuideUrl(method);
+    return;
+  }
+  updatePaymentHelp();
+}
 function updatePaymentHelp() {
   const methodInput = $("paymentMethod");
   const help = $("paymentHelp");
@@ -352,8 +368,8 @@ async function init() {
     }
 
     if (payment) {
-      payment.removeEventListener("change", updatePaymentHelp);
-      payment.addEventListener("change", updatePaymentHelp);
+      payment.removeEventListener("change", handlePaymentMethodChange);
+      payment.addEventListener("change", handlePaymentMethodChange);
     }
 
     const copyButton = $("copyPaymentNumber");
@@ -385,6 +401,26 @@ async function init() {
       if (phoneField && !phoneField.value) phoneField.value = session.customer.phone;
     } catch (_) { /* Guest checkout remains available. */ }
     await showWelcomeIfNeeded();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "1") {
+      const selectedMethod = params.get("paymentMethod") || sessionStorage.getItem("foodora_payment_method") || "";
+      const paymentSelect = $("paymentMethod");
+      if (paymentSelect && [...paymentSelect.options].some(option => option.value === selectedMethod)) paymentSelect.value = selectedMethod;
+      try {
+        const savedCoupon = JSON.parse(sessionStorage.getItem("foodora_checkout_coupon") || "null");
+        if (savedCoupon?.code) {
+          const checked = await api("/api/coupons/validate",{method:"POST",body:JSON.stringify({code:savedCoupon.code,subtotal:subtotal()})});
+          appliedCoupon = {code:checked.code,discount:checked.discount};
+        }
+      } catch (_) { appliedCoupon = null; }
+      closeWelcome();
+      renderCheckoutSummary();
+      openCheckout();
+      updatePaymentHelp();
+      sessionStorage.removeItem("foodora_payment_method");
+      sessionStorage.removeItem("foodora_checkout_coupon");
+      history.replaceState({}, "", "/");
+    }
 
   } catch (error) {
     if ($("products")) {
