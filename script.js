@@ -362,7 +362,7 @@ async function init() {
         ? config.paymentMethods
         : [];
 
-      payment.innerHTML = methods.map(method =>
+      payment.innerHTML = '<option value="" selected disabled>পেমেন্ট পদ্ধতি নির্বাচন করুন</option>' + methods.map(method =>
         `<option value="${esc(method)}">${esc(method)}</option>`
       ).join("");
     }
