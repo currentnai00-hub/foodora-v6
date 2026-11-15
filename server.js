@@ -596,9 +596,6 @@ app.post("/api/orders", async (req,res) => {
       console.error("Telegram order notification failed:", err.message);
     });
 
-    const isCashOnDelivery =
-      paymentMethod.toLowerCase() === "cash on delivery";
-
     const selectedPaymentNumber = isCashOnDelivery
       ? null
       : PAYMENT_NUMBERS[paymentMethod];
