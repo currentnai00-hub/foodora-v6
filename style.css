@@ -2022,3 +2022,14 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 .payment-guide-transaction input:focus{border-color:#6c9475;box-shadow:0 0 0 3px rgba(70,125,82,.12)}
 .payment-guide-transaction small{display:block;margin-top:8px;color:#7b867c;font-size:11px;line-height:1.6}
 @media(max-width:480px){.payment-guide-logo{height:38px;max-width:125px}.payment-guide-transaction{padding:15px}}
+
+/* Clear, prominent Transaction ID field directly below the Send Money number */
+.payment-guide-transaction{margin:14px 0 22px;padding:22px;border:2px solid #d6e4d5;border-radius:18px;background:linear-gradient(145deg,#f1f8ef,#fff);box-shadow:0 8px 24px rgba(24,65,39,.07)}
+.payment-guide-transaction label{display:flex;align-items:center;gap:6px;font-size:17px;font-weight:800;color:#173b2d}
+.payment-guide-transaction p{margin:7px 0 14px;font-size:13px;color:#526456;line-height:1.8}
+.payment-guide-transaction input{min-height:64px;padding:16px 17px;border:2px solid #9bb99d;border-radius:13px;font-size:18px;font-weight:700;letter-spacing:.4px;background:#fff;box-shadow:inset 0 1px 3px rgba(20,50,30,.04)}
+.payment-guide-transaction input::placeholder{color:#9aa69b;font-weight:500;font-size:15px}
+.payment-guide-transaction input:focus{border-color:#27643c;box-shadow:0 0 0 4px rgba(39,100,60,.14)}
+.payment-guide-transaction small{margin-top:10px;font-size:12px;color:#536b57;line-height:1.8}
+.payment-guide-continue{min-height:56px;font-size:15px}
+@media(max-width:480px){.payment-guide-transaction{padding:18px 15px}.payment-guide-transaction label{font-size:16px}.payment-guide-transaction input{min-height:62px;font-size:17px}}
