@@ -419,8 +419,13 @@ async function init() {
       const transactionField = $("checkoutForm")?.elements.namedItem("transactionId");
       try {
         const savedTransactionId = sessionStorage.getItem("foodora_payment_transaction_id") || "";
-        if (transactionField && savedTransactionId) transactionField.value = savedTransactionId;
+        if (transactionField && savedTransactionId) {
+          transactionField.value = savedTransactionId;
+          const checkoutMessage = $("checkoutMessage");
+          if (checkoutMessage) checkoutMessage.textContent = "✓ Transaction ID সফলভাবে জমা হয়েছে এবং checkout-এ যুক্ত হয়েছে। অর্ডার নিশ্চিত করার আগে পেমেন্ট যাচাই করা হবে।";
+        }
         sessionStorage.removeItem("foodora_payment_transaction_id");
+        sessionStorage.removeItem("foodora_payment_transaction_saved");
       } catch (_) {}
       try {
         const savedCoupon = JSON.parse(sessionStorage.getItem("foodora_checkout_coupon") || "null");
