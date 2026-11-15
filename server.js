@@ -4,6 +4,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { Pool } = require("pg");
 const { registerWalletRoutes } = require("./wallet");
+const { registerBackupRoutes } = require("./backup");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -30,6 +31,7 @@ const pool = usePg ? new Pool({
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
 }) : null;
 
+app.use("/api/admin/backups", express.json({ limit: "50mb" }));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(ROOT, { extensions: ["html"] }));
 
@@ -857,12 +859,14 @@ app.patch("/api/admin/reviews/:id",adminOnly,async(req,res)=>{
 });
 
 
+const backupServices = usePg ? registerBackupRoutes({ app, pool, adminOnly }) : null;
+
 const walletServices = usePg ? registerWalletRoutes({
   app,pool,signedInCustomer,adminOnly,requestIsSameOrigin,requireCustomerDatabase,clean
 }) : null;
 
 async function start(){
-  if(usePg) { await initDb(); await walletServices.ensureWalletSchema(); } else initJson();
+  if(usePg) { await initDb(); await walletServices.ensureWalletSchema(); await backupServices.ensureSchema(); } else initJson();
   app.listen(PORT,"0.0.0.0",()=>console.log(`Foodora V6 running on port ${PORT} | DB: ${usePg?"PostgreSQL":"local JSON"}`));
 }
 start().catch(err=>{console.error("Startup failed:",err);process.exit(1);});
