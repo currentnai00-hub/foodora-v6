@@ -388,12 +388,28 @@ function renderOrders(){
  let q=($("orderSearch")?.value||"").toLowerCase(),f=$("orderFilter")?.value||"";
  let list=orders.filter(o=>(!f||o.status===f)&&JSON.stringify(o).toLowerCase().includes(q));
  $("orderCount").textContent=list.length+" orders";
- $("ordersTable").innerHTML=table(["Order / Items","Customer","Phone","Date","Total","Order Status","Payment"],list.map(o=>[
- `<b>${esc(orderId(o))}</b><div class="muted">${esc(orderItems(o))}</div>`,
- esc(orderCustomer(o)),esc(orderPhone(o)),esc(orderDate(o)),`<b>${money(orderTotal(o))}</b>`,
- statusSelect(o.status,"status",orderId(o)),
- statusSelect(val(o,"paymentStatus","payment_status")||"Awaiting payment","payment",orderId(o))
- ]));
+ $("ordersTable").innerHTML=table(["Order / Items","Customer","Phone","Date","Total","Order Status","Payment verification"],list.map(o=>{
+  const payment=val(o,"paymentStatus","payment_status")||"Awaiting payment";
+  const txn=val(o,"transactionId","transaction_id");
+  const canReview=payment==="Pending verification";
+  const reviewNote=val(o,"paymentReviewNote","payment_review_note");
+  return [
+   `<b>${esc(orderId(o))}</b><div class="muted">${esc(orderItems(o))}</div>`,
+   esc(orderCustomer(o)),esc(orderPhone(o)),esc(orderDate(o)),`<b>${money(orderTotal(o))}</b>`,
+   statusSelect(o.status,"status",orderId(o)),
+   `<div><b>${esc(payment)}</b><div class="muted" style="margin:5px 0">Method: ${esc(val(o,"paymentMethod","payment_method")||"—")}<br>Transaction ID: <strong style="color:var(--green);word-break:break-all">${esc(txn||"Not submitted")}</strong></div>${reviewNote?`<small class="muted">Review note: ${esc(reviewNote)}</small>`:""}${canReview?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:9px"><button class="btn primary" onclick="reviewPayment('${esc(orderId(o))}','approve')">✓ Approve payment</button><button class="btn danger" onclick="reviewPayment('${esc(orderId(o))}','reject')">Reject</button></div>`:""}</div>`
+  ];
+ }));
+}
+async function reviewPayment(id,action){
+ const label=action==="approve"?"Approve this payment only after checking the transaction in the bKash/Nagad app?":"Reject this payment submission?";
+ if(!confirm(label))return;
+ const note=action==="reject"?(prompt("Reason for rejection (shown to admin):")||"").trim():"";
+ try{
+  await api("/api/admin/orders/"+encodeURIComponent(id)+"/payment-review",{method:"PATCH",body:JSON.stringify({action,note})});
+  toast(action==="approve"?"Payment marked as verified":"Payment rejected");
+  await refreshAll();
+ }catch(e){toast(e.message);await refreshAll()}
 }
 async function updateOrder(id,kind,value){
  try{await api("/api/admin/orders/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify(kind==="status"?{status:value}:{paymentStatus:value})});toast("Order updated");await refreshAll()}
