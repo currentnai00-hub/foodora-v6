@@ -20,6 +20,7 @@
   $("guideTitle").textContent = method + " দিয়ে Send Money করুন";
   $("guideIntro").textContent = method + " অ্যাপ ব্যবহার করে নিচের নম্বরে Send Money করুন।";
   $("guideAmount").textContent = "৳" + amount.toLocaleString("en-BD");
+  $("guideNote").textContent = "Transaction ID জমা দেওয়ার পর checkout-এ ফিরে অর্ডার নিশ্চিত করুন। আপনার Transaction ID ও পেমেন্ট যাচাই হওয়ার পরই অর্ডার পেমেন্ট-নিশ্চিত হিসেবে গণ্য হবে।";
   $("guideCopy").classList.add(theme); $("guideContinue").href = returnUrl; $("guideBack").href = returnUrl;
   const transactionInput = $("guideTransactionId");
   try { transactionInput.value = sessionStorage.getItem("foodora_payment_transaction_id") || ""; } catch (_) {}
@@ -30,13 +31,13 @@
     const transactionId = transactionInput.value.trim();
     if (!transactionId) {
       event.preventDefault();
-      transactionInput.setCustomValidity("Foodora-তে ফেরার আগে Transaction ID লিখুন।");
+      transactionInput.setCustomValidity("অনুগ্রহ করে Transaction ID লিখুন। এটি ছাড়া checkout-এ যাওয়া যাবে না।");
       transactionInput.reportValidity();
       transactionInput.focus();
       return;
     }
     transactionInput.setCustomValidity("");
-    try { sessionStorage.setItem("foodora_payment_transaction_id", transactionId); } catch (_) {}
+    try { sessionStorage.setItem("foodora_payment_transaction_id", transactionId); sessionStorage.setItem("foodora_payment_transaction_saved", "1"); } catch (_) {}
   });
   $("guideBack").addEventListener("click", () => {
     try { if (transactionInput.value.trim()) sessionStorage.setItem("foodora_payment_transaction_id", transactionInput.value.trim()); } catch (_) {}
