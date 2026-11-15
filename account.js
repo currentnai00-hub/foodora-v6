@@ -14,10 +14,30 @@ function showAuth(mode){
 }
 function money(value){return "৳"+Number(value||0).toLocaleString("en-BD");}
 function safe(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+function walletTypeLabel(type){return ({topup:"টাকা জমা",purchase:"অর্ডার পেমেন্ট",refund:"রিফান্ড",adjustment:"সমন্বয়"})[type]||type;}
+async function loadWallet(){
+  const balance=byId("walletBalance"),transactions=byId("walletTransactions"),topups=byId("walletTopups");
+  if(!balance||!transactions||!topups)return;
+  try{
+    const data=await accountApi("/api/customer/wallet");
+    balance.textContent=money(Number(data.balancePaisa||0)/100);
+    transactions.innerHTML=data.transactions?.length?data.transactions.map(item=>{
+      const positive=["topup","refund","adjustment"].includes(item.type);
+      const date=item.createdAt?new Date(item.createdAt).toLocaleString("bn-BD",{dateStyle:"medium",timeStyle:"short"}):"";
+      return '<article class="wallet-transaction"><div><strong>'+safe(walletTypeLabel(item.type))+'</strong><small>'+safe(item.description||item.referenceId||"")+' · '+safe(date)+'</small></div><b class="'+(positive?"wallet-credit":"wallet-debit")+'">'+(positive?"+":"−")+money(Number(item.amountPaisa||0)/100)+'</b></article>';
+    }).join(""):'<p class="account-empty">এখনো কোনো Wallet লেনদেন নেই।</p>';
+    topups.innerHTML=data.topups?.length?data.topups.map(item=>{
+      const date=item.createdAt?new Date(item.createdAt).toLocaleString("bn-BD",{dateStyle:"medium",timeStyle:"short"}):"";
+      return '<article class="wallet-transaction"><div><strong>'+safe(item.paymentMethod)+' · '+safe(item.transactionId)+'</strong><small>'+safe(date)+(item.reviewNote?' · '+safe(item.reviewNote):"")+'</small></div><span class="wallet-status">'+safe(item.status)+'</span></article>';
+    }).join(""):'<p class="account-empty">কোনো জমার অনুরোধ নেই।</p>';
+  }catch(error){transactions.innerHTML='<p class="account-empty">'+safe(error.message)+'</p>';}
+}
 async function loadDashboard(customer){
   byId("accountAuth").hidden=true;byId("accountDashboard").hidden=false;
   byId("customerGreeting").textContent="স্বাগতম, "+customer.name;
   byId("customerPhone").textContent=customer.phone;
+  await loadWallet();
   const box=byId("accountOrders");box.innerHTML='<p class="account-empty">অর্ডার লোড হচ্ছে…</p>';
   try{
     const data=await accountApi("/api/customer/orders");
@@ -48,6 +68,21 @@ function bindForm(formId,messageId,url,successText){
     finally{button.disabled=false;}
   });
 }
+
+byId("walletRefresh")?.addEventListener("click",loadWallet);
+byId("walletTopupForm")?.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const form=event.currentTarget,button=byId("walletTopupSubmit"),message=byId("walletTopupMessage");
+  if(!form.reportValidity())return;
+  const data=Object.fromEntries(new FormData(form).entries());
+  button.disabled=true;message.textContent="অনুরোধ জমা হচ্ছে…";
+  try{
+    await accountApi("/api/customer/wallet/topups",{method:"POST",body:JSON.stringify(data)});
+    message.className="account-message success";message.textContent="অনুরোধ জমা হয়েছে। যাচাই শেষে ব্যালেন্স আপডেট হবে।";
+    form.reset();await loadWallet();
+  }catch(error){message.className="account-message";message.textContent=error.message;}
+  finally{button.disabled=false;}
+});
 byId("loginTab").addEventListener("click",()=>showAuth("login"));
 byId("registerTab").addEventListener("click",()=>showAuth("register"));
 bindForm("loginForm","loginMessage","/api/customer/login","লগইন সফল হয়েছে।");
