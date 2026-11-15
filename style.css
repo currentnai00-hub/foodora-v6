@@ -1918,3 +1918,75 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 .welcome-product-info span{color:#bd713b;font-size:11px;font-weight:800}
 .welcome-catalog-empty{color:#7b8379;font-size:12px}
 @media(max-width:390px){.welcome-product-grid{grid-template-columns:1fr}.welcome-product-visual{flex-basis:48px;width:48px;height:48px}}
+
+
+/* =========================================
+   FOODORA PREMIUM ANIMATION EXPERIENCE V1
+   Lightweight CSS-only motion; no dependencies
+========================================= */
+:root {
+  --fd-motion-fast: 180ms;
+  --fd-motion-medium: 320ms;
+  --fd-motion-smooth: cubic-bezier(.22,.8,.25,1);
+}
+.welcome-backdrop:not([hidden]) { animation: fd-overlay-in 260ms ease both; }
+.welcome-modal { transform-origin: 50% 60%; animation: fd-modal-in 420ms var(--fd-motion-smooth) both; }
+.welcome-close,.welcome-coupon button,.welcome-cta {
+  transition: transform var(--fd-motion-fast) var(--fd-motion-smooth),box-shadow var(--fd-motion-fast) ease,background-color var(--fd-motion-fast) ease;
+}
+.welcome-close:hover,.welcome-coupon button:hover { transform: translateY(-2px); }
+.welcome-cta:hover { transform: translateY(-2px); box-shadow: 0 11px 24px rgba(217,130,67,.27); }
+.welcome-cta:active,.welcome-close:active,.welcome-coupon button:active { transform: scale(.97); }
+.cart-drawer { transition: right 380ms var(--fd-motion-smooth),box-shadow 380ms var(--fd-motion-smooth); }
+.cart-drawer.open { box-shadow: -18px 0 55px rgba(16,35,25,.14); }
+.drawer-backdrop,.modal-backdrop { transition: opacity 260ms ease,visibility 260ms ease; }
+.modal-backdrop.show .modal { animation: fd-modal-in 300ms var(--fd-motion-smooth) both; }
+.cart-line { animation: fd-row-in 260ms var(--fd-motion-smooth) both; }
+.product-card {
+  backface-visibility: hidden; transform: translateZ(0);
+  transition: transform 260ms var(--fd-motion-smooth),box-shadow 260ms ease,border-color 260ms ease;
+  animation: fd-card-in 420ms var(--fd-motion-smooth) both;
+}
+.product-card:nth-child(2) { animation-delay: 35ms; }
+.product-card:nth-child(3) { animation-delay: 70ms; }
+.product-card:nth-child(4) { animation-delay: 105ms; }
+.product-card:nth-child(5) { animation-delay: 140ms; }
+.product-card:nth-child(6) { animation-delay: 175ms; }
+.product-card .product-visual img { transition: transform 500ms var(--fd-motion-smooth); }
+.product-card:hover .product-visual img { transform: scale(1.045); }
+.product-card:hover { border-color: rgba(28,73,55,.2); }
+.add-button,.primary-button,.cart-button,.chip,.menu-filter,.search,.smart-filters select,.smart-filters input {
+  transition: transform var(--fd-motion-fast) var(--fd-motion-smooth),box-shadow var(--fd-motion-fast) ease,background-color var(--fd-motion-fast) ease,border-color var(--fd-motion-fast) ease;
+}
+.add-button:hover,.primary-button:hover,.cart-button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,44,35,.13); }
+.add-button:active,.primary-button:active,.cart-button:active,.chip:active,.menu-filter:active { transform: scale(.97); }
+.product-visual img,.welcome-product-visual img,.hero-photo,.offer-art img { animation: fd-image-in 500ms ease both; }
+.product-grid > p {
+  position: relative; overflow: hidden; min-height: 92px; padding: 30px 18px; border-radius: 14px;
+  background: linear-gradient(100deg,#f0eee7 25%,#faf9f5 42%,#f0eee7 62%);
+  background-size: 220% 100%; animation: fd-shimmer 1.35s ease-in-out infinite;
+}
+.hero-photo-wrap,.hero-art,.floating-tag { will-change: transform; }
+.floating-tag { animation: fd-tag-float 5.5s ease-in-out infinite; }
+.tag-two { animation-delay: -2.7s; }
+.welcome-close:focus-visible,.welcome-cta:focus-visible,.welcome-coupon button:focus-visible,.add-button:focus-visible,.primary-button:focus-visible,.cart-button:focus-visible,.chip:focus-visible {
+  outline: 3px solid rgba(217,130,67,.65); outline-offset: 3px;
+}
+@keyframes fd-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fd-modal-in { from { opacity: 0; transform: translateY(18px) scale(.975); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes fd-card-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fd-row-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fd-image-in { from { opacity: .65; } to { opacity: 1; } }
+@keyframes fd-shimmer { to { background-position: -220% 0; } }
+@keyframes fd-tag-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@media (hover: none) {
+  .product-card:hover,.add-button:hover,.primary-button:hover,.cart-button:hover { transform: none; box-shadow: none; }
+}
+@media (max-width: 600px) {
+  .product-card { animation-duration: 300ms; }
+  .floating-tag { animation-duration: 7s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-backdrop:not([hidden]),.welcome-modal,.product-card,.cart-line,.product-visual img,.welcome-product-visual img,.hero-photo,.offer-art img,.floating-tag,.product-grid > p { animation: none !important; }
+  .cart-drawer,.drawer-backdrop,.modal-backdrop,.product-card,.product-card .product-visual img,.add-button,.primary-button,.cart-button,.chip,.menu-filter,.search,.smart-filters select,.smart-filters input { transition: none !important; }
+}
