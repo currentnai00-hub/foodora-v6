@@ -46,6 +46,8 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
         ON wallet_transactions(customer_id, created_at DESC, id DESC);
       CREATE INDEX IF NOT EXISTS wallet_topups_status_idx
         ON wallet_topups(status, created_at DESC);
+      CREATE UNIQUE INDEX IF NOT EXISTS wallet_topups_payment_txn_ci
+        ON wallet_topups(LOWER(payment_method), LOWER(transaction_id));
       CREATE TABLE IF NOT EXISTS wallet_refund_cases (
         id BIGSERIAL PRIMARY KEY,
         order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE RESTRICT,
