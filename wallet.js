@@ -70,6 +70,18 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
     return {duplicate:false,balancePaisa:next};
   }
 
+  async function debitWalletForOrder(client, customerId, orderId, totalTaka) {
+    const totalPaisa=Number(totalTaka)*100;
+    if(!customerId) throw Object.assign(new Error("Wallet checkout requires a customer account."),{status:401});
+    if(!Number.isSafeInteger(totalPaisa)||totalPaisa<=0) throw Object.assign(new Error("Invalid order total."),{status:400});
+    return postLedger(client,{
+      customerId,type:"purchase",amountPaisa:totalPaisa,
+      referenceType:"order",referenceId:String(orderId),
+      idempotencyKey:"wallet-order:"+String(orderId),
+      description:"Foodora order payment · "+String(orderId)
+    });
+  }
+
   async function cancelOrderAndRefund(orderId) {
     const client=await pool.connect();
     try {
@@ -187,7 +199,7 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
     }catch(e){res.status(500).json({error:"Wallet transactions unavailable"});}
   });
 
-  return {ensureWalletSchema,cancelOrderAndRefund};
+  return {ensureWalletSchema,cancelOrderAndRefund,debitWalletForOrder};
 }
 
 module.exports={registerWalletRoutes};
