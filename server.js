@@ -186,6 +186,8 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS customer_sessions_customer_idx ON customer_sessions(customer_id);
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reviewed_at TIMESTAMPTZ;
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_review_note TEXT NOT NULL DEFAULT '';
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS order_id TEXT REFERENCES orders(id) ON DELETE SET NULL;
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS moderation_status TEXT NOT NULL DEFAULT 'approved';
@@ -232,7 +234,7 @@ async function getProducts(activeOnly = false) {
 async function getOrders() {
   if (usePg) {
     const r = await pool.query("SELECT * FROM orders ORDER BY created_at DESC");
-    return r.rows.map(o => ({ id:o.id,name:o.customer_name,phone:o.phone,address:o.address,paymentMethod:o.payment_method,transactionId:o.transaction_id,paymentStatus:o.payment_status,status:o.status,items:o.items,subtotal:o.subtotal,discount:o.discount,deliveryFee:o.delivery_fee,total:o.total,couponCode:o.coupon_code,createdAt:o.created_at }));
+    return r.rows.map(o => ({ id:o.id,name:o.customer_name,phone:o.phone,address:o.address,paymentMethod:o.payment_method,transactionId:o.transaction_id,paymentStatus:o.payment_status,paymentReviewedAt:o.payment_reviewed_at,paymentReviewNote:o.payment_review_note||"",status:o.status,items:o.items,subtotal:o.subtotal,discount:o.discount,deliveryFee:o.delivery_fee,total:o.total,couponCode:o.coupon_code,createdAt:o.created_at }));
   }
   return readJson(ORDERS_FILE, []);
 }
@@ -697,12 +699,49 @@ app.delete("/api/admin/products/:id",adminOnly,async(req,res)=>{
     res.json({ok:true});
   }catch{res.status(500).json({error:"Delete failed"});}
 });
+app.patch("/api/admin/orders/:id/payment-review",adminOnly,async(req,res)=>{
+  const action=clean(req.body.action,20).toLowerCase();
+  const note=clean(req.body.note,300);
+  if(!["approve","reject"].includes(action))return res.status(400).json({error:"Choose approve or reject."});
+  try{
+    if(usePg){
+      const result=action==="approve"
+        ? await pool.query(
+            `UPDATE orders SET payment_status='Verified',payment_reviewed_at=NOW(),payment_review_note=$1
+             WHERE id=$2 AND payment_status='Pending verification' AND COALESCE(NULLIF(transaction_id,''),'')<>''
+             RETURNING id,payment_status,payment_reviewed_at,payment_review_note`,
+            [note,clean(req.params.id,60)])
+        : await pool.query(
+            `UPDATE orders SET payment_status='Rejected',payment_reviewed_at=NOW(),payment_review_note=$1
+             WHERE id=$2 AND payment_status='Pending verification'
+             RETURNING id,payment_status,payment_reviewed_at,payment_review_note`,
+            [note,clean(req.params.id,60)]);
+      if(!result.rowCount){
+        const exists=await pool.query("SELECT payment_status,transaction_id FROM orders WHERE id=$1",[clean(req.params.id,60)]);
+        if(!exists.rowCount)return res.status(404).json({error:"Order not found."});
+        if(action==="approve"&&!String(exists.rows[0].transaction_id||"").trim())return res.status(400).json({error:"Transaction ID is missing; payment cannot be approved."});
+        return res.status(409).json({error:"This payment is no longer awaiting verification. Refresh the order list."});
+      }
+      return res.json({ok:true,order:result.rows[0]});
+    }
+    const orders=readJson(ORDERS_FILE,[]);
+    const order=orders.find(x=>String(x.id)===String(req.params.id));
+    if(!order)return res.status(404).json({error:"Order not found."});
+    if(order.paymentStatus!=="Pending verification")return res.status(409).json({error:"This payment is no longer awaiting verification."});
+    if(action==="approve"&&!String(order.transactionId||"").trim())return res.status(400).json({error:"Transaction ID is missing; payment cannot be approved."});
+    order.paymentStatus=action==="approve"?"Verified":"Rejected";
+    order.paymentReviewedAt=new Date().toISOString();
+    order.paymentReviewNote=note;
+    writeJson(ORDERS_FILE,orders);
+    return res.json({ok:true,order});
+  }catch(e){console.error("Payment review failed:",e);res.status(500).json({error:"Payment review could not be saved."});}
+});
 app.get("/api/admin/orders",adminOnly,async(req,res)=>{try{res.json(await getOrders());}catch{res.status(500).json({error:"Orders unavailable"});}});
 app.patch("/api/admin/orders/:id",adminOnly,async(req,res)=>{
   const allowed=["Pending","Confirmed","Preparing","Shipped","Out for delivery","Delivered","Cancelled"];
   const status=clean(req.body.status,40), paymentStatus=clean(req.body.paymentStatus,40);
   if(status && !allowed.includes(status))return res.status(400).json({error:"Invalid order status"});
-  if(paymentStatus && !["Awaiting payment","Pending verification","Verified","Rejected"].includes(paymentStatus))return res.status(400).json({error:"Invalid payment status"});
+  if(paymentStatus && !["Awaiting payment","Pending verification"].includes(paymentStatus))return res.status(400).json({error:"Payment approval or rejection must use the payment review action."});
   try{
     if(usePg){
       const r=await pool.query("UPDATE orders SET status=COALESCE(NULLIF($1,''),status),payment_status=COALESCE(NULLIF($2,''),payment_status) WHERE id=$3 RETURNING id,status,payment_status",[status,paymentStatus,req.params.id]);
