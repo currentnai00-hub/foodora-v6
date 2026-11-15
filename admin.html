@@ -102,6 +102,7 @@ td select{padding:8px;max-width:160px}
  <nav class="nav">
   <button class="active" data-tab="overview">▦ Overview</button>
   <button data-tab="orders">▤ Orders</button>
+  <button data-tab="paymentHistory">৳ Payment History</button>
   <button data-tab="customers">♙ Customers</button>
   <button data-tab="products">▣ Products</button>
   <button data-tab="coupons">％ Coupons</button>
@@ -164,6 +165,12 @@ td select{padding:8px;max-width:160px}
   </div>
  </section>
 
+ <section id="paymentHistory" class="section">
+  <div class="panel">
+   <div class="panelhead"><div><h2>Payment Review History</h2><div class="muted">সর্বশেষ ৫০০টি payment submission ও review event</div></div><button class="btn" onclick="loadPaymentHistory()">↻ Refresh</button></div>
+   <div id="paymentHistoryTable" class="tablewrap"><div class="empty">Load history to view events</div></div>
+  </div>
+ </section>
  <section id="customers" class="section">
   <div class="panel">
    <div class="panelhead"><h2>Customer Directory</h2><span class="muted" id="customerCount"></span></div>
@@ -267,8 +274,9 @@ function showApp(){$("login").style.display="none";$("app").style.display="flex"
 function tab(name){
  document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
  $(name).classList.add("active");
+ if(name==="paymentHistory")loadPaymentHistory();
  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.tab===name));
- $("pageTitle").textContent=({overview:"Dashboard Overview",orders:"Order Management",customers:"Customer Management",products:"Product Management",coupons:"Coupon Management",reviews:"Customer Reviews",analytics:"Sales Analytics",delivery:"Delivery Areas"})[name];
+ $("pageTitle").textContent=({overview:"Dashboard Overview",orders:"Order Management",customers:"Customer Management",products:"Product Management",coupons:"Coupon Management",reviews:"Customer Reviews",analytics:"Sales Analytics",delivery:"Delivery Areas",paymentHistory:"Payment History"})[name];
 }
 document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>tab(b.dataset.tab)));
 function statusSelect(value,kind,id){
@@ -282,6 +290,17 @@ function orderDate(o){let d=val(o,"createdAt","date","created_at");return d?new 
 function orderItems(o){let a=o.items;if(Array.isArray(a))return a.map(x=>(x.name||x.title||"Item")+" × "+(x.quantity||x.qty||1)).join(", ");return typeof a==="string"?a:"—"}
 function orderTotal(o){return val(o,"total","grandTotal","amount","totalAmount")||0}
 function orderId(o){return val(o,"id","orderId")||"—"}
+async function loadPaymentHistory(){
+ try{
+  const data=await api("/api/admin/payment-history");
+  const events=Array.isArray(data.events)?data.events:[];
+  $("paymentHistoryTable").innerHTML=table(["Order","Customer","Phone","Action","Transaction ID","Reviewed by","Date","Note"],events.map(e=>[
+   "<b>"+esc(e.orderId)+"</b>",esc(e.customerName||"—"),esc(e.phone||"—"),
+   badge(e.action==="approved"?"Verified":e.action==="rejected"?"Rejected":"Submitted"),
+   esc(e.transactionId||"—"),esc(e.reviewedBy||"—"),esc(e.createdAt?new Date(e.createdAt).toLocaleString():"—"),esc(e.note||"—")
+  ]));
+ }catch(e){$("paymentHistoryTable").innerHTML='<div class="empty">'+esc(e.message)+'</div>';}
+}
 async function refreshAll(){
  try{
   const results=await Promise.all([
