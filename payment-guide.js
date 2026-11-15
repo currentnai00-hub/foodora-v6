@@ -10,7 +10,10 @@
   const method = requestedMethod === "nagad" ? "Nagad" : "bKash";
   const theme = method === "bKash" ? "bkash" : "nagad";
   const amount = Math.max(0, Math.round(Number(params.get("amount")) || 0));
-  const returnUrl = "/?checkout=1&paymentMethod=" + encodeURIComponent(method);
+  const walletContext = params.get("context") === "wallet";
+  const returnUrl = walletContext
+    ? "/account?walletTopup=1&method=" + encodeURIComponent(method) + "&amount=" + encodeURIComponent(String(amount))
+    : "/?checkout=1&paymentMethod=" + encodeURIComponent(method);
   $("guideHero").classList.add(theme); $("guideLogo").textContent = method; $("guideLogoImage").src = method === "bKash"
     ? "https://raw.githubusercontent.com/mdmubarokhosin/Bd-MFS-Logo/refs/heads/main/logos/png/bkash.png"
     : "https://raw.githubusercontent.com/mdmubarokhosin/Bd-MFS-Logo/refs/heads/main/logos/png/nagad.png";
@@ -20,7 +23,10 @@
   $("guideTitle").textContent = method + " দিয়ে Send Money করুন";
   $("guideIntro").textContent = method + " অ্যাপ ব্যবহার করে নিচের নম্বরে Send Money করুন।";
   $("guideAmount").textContent = "৳" + amount.toLocaleString("en-BD");
-  $("guideNote").textContent = "Transaction ID জমা দেওয়ার পর checkout-এ ফিরে অর্ডার নিশ্চিত করুন। আপনার Transaction ID ও পেমেন্ট যাচাই হওয়ার পরই অর্ডার পেমেন্ট-নিশ্চিত হিসেবে গণ্য হবে।";
+  $("guideNote").textContent = walletContext
+    ? "পেমেন্টের পর Transaction ID লিখে Foodora Wallet-এ ফিরে Top-up Request জমা দিন। অ্যাডমিন যাচাই ও অনুমোদনের পর ব্যালেন্স যোগ হবে।"
+    : "Transaction ID জমা দেওয়ার পর checkout-এ ফিরে অর্ডার নিশ্চিত করুন। আপনার Transaction ID ও পেমেন্ট যাচাই হওয়ার পরই অর্ডার পেমেন্ট-নিশ্চিত হিসেবে গণ্য হবে।";
+  if(walletContext){ $("guideTitle").textContent = method + " দিয়ে Wallet Top-up করুন"; $("guideIntro").textContent = "আপনার Foodora Wallet-এ যোগ করার জন্য নিচের পরিমাণ Send Money করুন।"; $("guideContinue").textContent = "Transaction ID সংরক্ষণ করে Wallet-এ ফিরুন"; }
   $("guideCopy").classList.add(theme); $("guideContinue").href = returnUrl; $("guideBack").href = returnUrl;
   const transactionInput = $("guideTransactionId");
   try { transactionInput.value = sessionStorage.getItem("foodora_payment_transaction_id") || ""; } catch (_) {}
@@ -47,7 +53,7 @@
     ["প্রাপকের নম্বর দিন","Foodora-র দেখানো bKash নম্বরটি লিখুন বা কপি করে পেস্ট করুন।"],
     ["টাকার পরিমাণ লিখুন","অর্ডারের দেখানো পরিমাণটি লিখুন। পাঠানোর আগে নম্বর ও পরিমাণ আবার মিলিয়ে নিন।"],
     ["পেমেন্ট নিশ্চিত করুন","অ্যাপের নির্দেশনা অনুসরণ করুন। আপনার PIN কাউকে জানাবেন না।"],
-    ["Transaction ID সংরক্ষণ করুন","সফল Send Money-এর পর পাওয়া Transaction ID লিখে রাখুন। Foodora-তে ফিরে checkout ফর্মে সেটি দিন।"]
+    ["Transaction ID সংরক্ষণ করুন","সফল Send Money-এর পর পাওয়া Transaction ID লিখে রাখুন। Foodora-তে ফিরে Wallet Top-up Request-এ সেটি দিন।"]
   ] : [
     ["Nagad অ্যাপ খুলুন","আপনার Nagad অ্যাপে লগইন করে Send Money অপশন নির্বাচন করুন।"],
     ["প্রাপকের নম্বর দিন","Foodora-র দেখানো Nagad নম্বরটি লিখুন বা কপি করে পেস্ট করুন।"],

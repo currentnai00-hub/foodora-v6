@@ -15,6 +15,36 @@ function showAuth(mode){
 function money(value){return "৳"+Number(value||0).toLocaleString("en-BD");}
 function safe(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
+function startWalletPaymentGuide(){
+  const form=byId("walletTopupForm");
+  if(!form)return;
+  const amount=Number(form.elements.amount.value);
+  const method=String(form.elements.paymentMethod.value||"");
+  if(!Number.isFinite(amount)||amount<10||amount>100000){
+    byId("walletTopupMessage").textContent="আগে ১০ থেকে ১,০০,০০০ টাকার মধ্যে পরিমাণ লিখুন।";
+    form.elements.amount.focus();return;
+  }
+  if(!["bKash","Nagad"].includes(method))return;
+  try{sessionStorage.removeItem("foodora_payment_transaction_id");sessionStorage.removeItem("foodora_payment_transaction_saved");}catch(_){}
+  const params=new URLSearchParams({context:"wallet",method,amount:String(Math.round(amount))});
+  location.href="/payment-guide.html?"+params.toString();
+}
+function restoreWalletTopupFromGuide(){
+  const params=new URLSearchParams(location.search);
+  if(params.get("walletTopup")!=="1")return;
+  const method=params.get("method");
+  const amount=Number(params.get("amount"));
+  let transactionId="";
+  try{transactionId=sessionStorage.getItem("foodora_payment_transaction_id")||"";}catch(_){}
+  if(["bKash","Nagad"].includes(method)&&Number.isInteger(amount)&&amount>=10&&amount<=100000){
+    byId("walletTopupForm").elements.amount.value=String(amount);
+    byId("walletPaymentMethod").value=method;
+    byId("walletTransactionId").value=transactionId;
+    byId("walletTopupMessage").textContent=transactionId?"Transaction ID যুক্ত হয়েছে। এখন অনুরোধ জমা দিন।":"Transaction ID পাওয়া যায়নি। পেমেন্ট নির্দেশিকা থেকে আবার লিখে আসুন।";
+    byId("walletTopupForm").scrollIntoView({behavior:"smooth",block:"center"});
+  }
+  history.replaceState({},document.title,"/account");
+}
 function walletTypeLabel(type){return ({topup:"টাকা জমা",purchase:"অর্ডার পেমেন্ট",refund:"রিফান্ড",adjustment:"সমন্বয়"})[type]||type;}
 async function loadWallet(){
   const balance=byId("walletBalance"),transactions=byId("walletTransactions"),topups=byId("walletTopups");
@@ -38,6 +68,7 @@ async function loadDashboard(customer){
   byId("customerGreeting").textContent="স্বাগতম, "+customer.name;
   byId("customerPhone").textContent=customer.phone;
   await loadWallet();
+  restoreWalletTopupFromGuide();
   const box=byId("accountOrders");box.innerHTML='<p class="account-empty">অর্ডার লোড হচ্ছে…</p>';
   try{
     const data=await accountApi("/api/customer/orders");
@@ -70,6 +101,7 @@ function bindForm(formId,messageId,url,successText){
 }
 
 byId("walletRefresh")?.addEventListener("click",loadWallet);
+byId("walletPaymentMethod")?.addEventListener("change",startWalletPaymentGuide);
 byId("walletTopupForm")?.addEventListener("submit",async event=>{
   event.preventDefault();
   const form=event.currentTarget,button=byId("walletTopupSubmit"),message=byId("walletTopupMessage");
@@ -79,7 +111,7 @@ byId("walletTopupForm")?.addEventListener("submit",async event=>{
   try{
     await accountApi("/api/customer/wallet/topups",{method:"POST",body:JSON.stringify(data)});
     message.className="account-message success";message.textContent="অনুরোধ জমা হয়েছে। যাচাই শেষে ব্যালেন্স আপডেট হবে।";
-    form.reset();await loadWallet();
+    form.reset();try{sessionStorage.removeItem("foodora_payment_transaction_id");sessionStorage.removeItem("foodora_payment_transaction_saved");}catch(_){} await loadWallet();
   }catch(error){message.className="account-message";message.textContent=error.message;}
   finally{button.disabled=false;}
 });
