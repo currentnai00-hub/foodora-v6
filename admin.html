@@ -181,6 +181,10 @@ td select{padding:8px;max-width:160px}
    <div class="panelhead"><h2>Wallet Ledger</h2></div>
    <div id="walletLedgerAdmin" class="tablewrap"><div class="empty">Loading wallet transactions…</div></div>
   </div>
+  <div class="panel" style="margin-top:18px">
+   <div class="panelhead"><h2>Unclaimed Refunds</h2><div class="muted">Guest order-এর ফোনে customer account পাওয়া গেলে এখানে Wallet-এ credit করা যাবে</div></div>
+   <div id="walletRefundCases" class="tablewrap"><div class="empty">Loading refund cases…</div></div>
+  </div>
  </section>
  <section id="customers" class="section">
   <div class="panel">
@@ -316,7 +320,7 @@ async function loadPaymentHistory(){
 
 async function loadWalletAdmin(){
  try{
-  const [topups,ledger]=await Promise.all([api("/api/admin/wallet/topups"),api("/api/admin/wallet/transactions")]);
+  const [topups,ledger,refunds]=await Promise.all([api("/api/admin/wallet/topups"),api("/api/admin/wallet/transactions"),api("/api/admin/wallet/refund-cases")]);
   const rows=Array.isArray(topups.topups)?topups.topups:[];
   $("walletTopupsAdmin").innerHTML=rows.length?table(["Request","Customer","Amount","Method / Txn ID","Status","Review"],rows.map(t=>[
    "<b>#"+esc(t.id)+"</b><div class='muted'>"+esc(t.createdAt?new Date(t.createdAt).toLocaleString():"")+"</div>",
@@ -332,7 +336,17 @@ async function loadWalletAdmin(){
    esc(x.type),money(Number(x.amountPaisa||0)/100),money(Number(x.balanceAfterPaisa||0)/100),
    esc(x.referenceType)+" "+esc(x.referenceId)
   ])):'<div class="empty">No wallet ledger entries</div>';
+  const cases=Array.isArray(refunds.cases)?refunds.cases:[];
+  $("walletRefundCases").innerHTML=cases.length?table(["Order","Phone","Amount","Status","Action"],cases.map(x=>[
+   "<b>"+esc(x.orderId)+"</b>",esc(x.phone),money(Number(x.amountPaisa||0)/100),badge(x.status),
+   x.status==="Pending"?"<button class='btn primary' onclick='creditGuestRefund("+Number(x.id)+")'>Credit to matching account</button>":esc(x.customerName||"Credited")
+  ])):'<div class="empty">No pending refund cases</div>';
  }catch(e){$("walletTopupsAdmin").innerHTML='<div class="empty">'+esc(e.message)+'</div>';}
+}
+async function creditGuestRefund(id){
+ if(!confirm("Credit this verified cancelled-order refund to the customer account registered with the same phone number?"))return;
+ try{await api("/api/admin/wallet/refund-cases/"+encodeURIComponent(id)+"/credit",{method:"POST",body:"{}"});toast("Refund credited to customer wallet");await loadWalletAdmin();}
+ catch(e){toast(e.message);await loadWalletAdmin();}
 }
 async function reviewWalletTopup(id,action){
  const note=action==="reject"?(prompt("Reason for rejection:")||"").trim():"";
