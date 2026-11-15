@@ -485,8 +485,11 @@ app.post("/api/orders", async (req,res) => {
   const deliveryAreaId=clean(req.body.deliveryArea,40);
   const paymentMethod=clean(req.body.paymentMethod,30), transactionId=clean(req.body.transactionId,80);
   const input=Array.isArray(req.body.items) ? req.body.items : [];
+  const isCashOnDelivery = paymentMethod.toLowerCase() === "cash on delivery";
   if (!name || !/^01[0-9]{9}$/.test(phone) || !address || !PAYMENT_METHODS.includes(paymentMethod) || !input.length)
     return res.status(400).json({error:"Name, valid BD phone, address, payment method and cart items are required"});
+  if (!isCashOnDelivery && !transactionId)
+    return res.status(400).json({error:"bKash/Nagad Transaction ID is required before placing this order."});
   try {
     const deliverySettings=await getDeliverySettings();
     const deliveryArea=deliverySettings.areas.find(area=>area.id===deliveryAreaId);
@@ -514,7 +517,7 @@ app.post("/api/orders", async (req,res) => {
     const fullAddress=deliveryArea.name+" — "+address;
     const total=subtotal-discount+deliveryFee;
     const customer=await signedInCustomer(req);
-    const order={id:id("FD"),name,phone,address:fullAddress,deliveryArea:deliveryArea.name,paymentMethod,transactionId,paymentStatus:transactionId?"Pending verification":"Awaiting payment",status:"Pending",items:normalized,subtotal,discount,deliveryFee,total,couponCode:code,customerId:customer?.id||null,createdAt:new Date().toISOString()};
+    const order={id:id("FD"),name,phone,address:fullAddress,deliveryArea:deliveryArea.name,paymentMethod,transactionId,paymentStatus:isCashOnDelivery?"Awaiting payment":"Pending verification",status:"Pending",items:normalized,subtotal,discount,deliveryFee,total,couponCode:code,customerId:customer?.id||null,createdAt:new Date().toISOString()};
     if (usePg) {
       const client=await pool.connect();
       try {
@@ -708,7 +711,7 @@ app.patch("/api/admin/orders/:id/payment-review",adminOnly,async(req,res)=>{
       const result=action==="approve"
         ? await pool.query(
             `UPDATE orders SET payment_status='Verified',payment_reviewed_at=NOW(),payment_review_note=$1
-             WHERE id=$2 AND payment_status='Pending verification' AND COALESCE(NULLIF(transaction_id,''),'')<>''
+             WHERE id=$2 AND payment_status='Pending verification' AND LOWER(payment_method) NOT IN ('cash on delivery','cod') AND COALESCE(NULLIF(BTRIM(transaction_id),''),'')<>''
              RETURNING id,payment_status,payment_reviewed_at,payment_review_note`,
             [note,clean(req.params.id,60)])
         : await pool.query(
@@ -728,7 +731,7 @@ app.patch("/api/admin/orders/:id/payment-review",adminOnly,async(req,res)=>{
     const order=orders.find(x=>String(x.id)===String(req.params.id));
     if(!order)return res.status(404).json({error:"Order not found."});
     if(order.paymentStatus!=="Pending verification")return res.status(409).json({error:"This payment is no longer awaiting verification."});
-    if(action==="approve"&&!String(order.transactionId||"").trim())return res.status(400).json({error:"Transaction ID is missing; payment cannot be approved."});
+    if(action==="approve"&&(String(order.paymentMethod||"").toLowerCase()==="cash on delivery"||!String(order.transactionId||"").trim()))return res.status(400).json({error:"Only a submitted bKash/Nagad Transaction ID can be approved."});
     order.paymentStatus=action==="approve"?"Verified":"Rejected";
     order.paymentReviewedAt=new Date().toISOString();
     order.paymentReviewNote=note;
