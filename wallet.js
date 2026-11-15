@@ -46,6 +46,18 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
         ON wallet_transactions(customer_id, created_at DESC, id DESC);
       CREATE INDEX IF NOT EXISTS wallet_topups_status_idx
         ON wallet_topups(status, created_at DESC);
+      CREATE TABLE IF NOT EXISTS wallet_refund_cases (
+        id BIGSERIAL PRIMARY KEY,
+        order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE RESTRICT,
+        customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL,
+        phone TEXT NOT NULL,
+        amount_paisa BIGINT NOT NULL CHECK (amount_paisa > 0),
+        status TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending','Credited')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        credited_at TIMESTAMPTZ
+      );
+      CREATE INDEX IF NOT EXISTS wallet_refund_cases_status_idx
+        ON wallet_refund_cases(status, created_at DESC);
     `);
   }
 
@@ -98,17 +110,31 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
       await client.query("UPDATE orders SET status='Cancelled' WHERE id=$1",[o.id]);
       let refundIssued=false;
       const method=String(o.payment_method||"");
-      const eligible=o.customer_id && ["bKash","Nagad"].includes(method) && o.payment_status==="Verified" && Number(o.total)>0;
+      const eligible=["bKash","Nagad"].includes(method) && o.payment_status==="Verified" && Number(o.total)>0;
+      let refundPending=false;
       if(eligible) {
-        const credit=await postLedger(client,{
-          customerId:o.customer_id,type:"refund",amountPaisa:Number(o.total)*100,
-          referenceType:"order",referenceId:o.id,idempotencyKey:"order-refund:"+o.id,
-          description:"Cancelled order refund · "+o.id
-        });
-        refundIssued=!credit.duplicate;
+        let refundCustomerId=o.customer_id;
+        if(!refundCustomerId) {
+          const match=await client.query("SELECT id FROM customers WHERE phone=$1",[o.phone]);
+          refundCustomerId=match.rows[0]?.id||null;
+        }
+        if(refundCustomerId) {
+          const credit=await postLedger(client,{
+            customerId:refundCustomerId,type:"refund",amountPaisa:Number(o.total)*100,
+            referenceType:"order",referenceId:o.id,idempotencyKey:"order-refund:"+o.id,
+            description:"Cancelled order refund · "+o.id
+          });
+          refundIssued=!credit.duplicate;
+          await client.query("INSERT INTO wallet_refund_cases(order_id,customer_id,phone,amount_paisa,status,credited_at) VALUES($1,$2,$3,$4,'Credited',NOW()) ON CONFLICT(order_id) DO NOTHING",
+            [o.id,refundCustomerId,o.phone,Number(o.total)*100]);
+        } else {
+          refundPending=true;
+          await client.query("INSERT INTO wallet_refund_cases(order_id,phone,amount_paisa,status) VALUES($1,$2,$3,'Pending') ON CONFLICT(order_id) DO NOTHING",
+            [o.id,o.phone,Number(o.total)*100]);
+        }
       }
       await client.query("COMMIT");
-      return {id:o.id,status:"Cancelled",refundIssued};
+      return {id:o.id,status:"Cancelled",refundIssued,refundPending};
     } catch(e) {
       await client.query("ROLLBACK").catch(()=>{});
       throw e;
@@ -189,6 +215,32 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
       await client.query("ROLLBACK").catch(()=>{});
       res.status(e.status||500).json({error:e.message||"Top-up review failed."});
     }finally{client.release();}
+  });
+
+  app.get("/api/admin/wallet/refund-cases",adminOnly,async(req,res)=>{
+    if(!requireCustomerDatabase(res))return;
+    try{
+      const r=await pool.query(`SELECT f.id,f.order_id AS "orderId",f.phone,f.amount_paisa AS "amountPaisa",f.status,f.created_at AS "createdAt",c.id AS "customerId",c.full_name AS "customerName" FROM wallet_refund_cases f LEFT JOIN customers c ON c.id=f.customer_id ORDER BY f.created_at DESC LIMIT 300`);
+      res.set("Cache-Control","no-store").json({cases:r.rows.map(x=>({...x,amountPaisa:Number(x.amountPaisa)}))});
+    }catch(e){res.status(500).json({error:"Refund cases unavailable"});}
+  });
+
+  app.post("/api/admin/wallet/refund-cases/:id/credit",adminOnly,async(req,res)=>{
+    const client=await pool.connect();
+    try{
+      await client.query("BEGIN");
+      const r=await client.query("SELECT * FROM wallet_refund_cases WHERE id=$1 FOR UPDATE",[req.params.id]);
+      if(!r.rowCount){await client.query("ROLLBACK");return res.status(404).json({error:"Refund case not found."});}
+      const item=r.rows[0];
+      if(item.status!=="Pending"){await client.query("ROLLBACK");return res.status(409).json({error:"Refund already credited."});}
+      const customer=await client.query("SELECT id FROM customers WHERE phone=$1 FOR UPDATE",[item.phone]);
+      if(!customer.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"No customer account exists for this phone number yet."});}
+      await postLedger(client,{customerId:customer.rows[0].id,type:"refund",amountPaisa:Number(item.amount_paisa),referenceType:"order",referenceId:item.order_id,idempotencyKey:"order-refund:"+item.order_id,description:"Cancelled order refund · "+item.order_id});
+      await client.query("UPDATE wallet_refund_cases SET customer_id=$2,status='Credited',credited_at=NOW() WHERE id=$1",[item.id,customer.rows[0].id]);
+      await client.query("COMMIT");
+      res.json({ok:true,status:"Credited"});
+    }catch(e){await client.query("ROLLBACK").catch(()=>{});res.status(e.status||500).json({error:e.message||"Refund credit failed."});}
+    finally{client.release();}
   });
 
   app.get("/api/admin/wallet/transactions",adminOnly,async(req,res)=>{
