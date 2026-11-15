@@ -6,7 +6,7 @@
 <title>আমার অ্যাকাউন্ট | Foodora</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=foodora-all-order-reviews-v1">
+<link rel="stylesheet" href="/style.css?v=foodora-wallet-v1">
 </head>
 <body>
 <header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="/#menu">মেনু</a><a href="/track">অর্ডার ট্র্যাক</a><a href="/">হোম</a></nav><a class="cart-button" href="/">শপিং চালিয়ে যান</a></header>
@@ -33,6 +33,20 @@
 </div>
 <section class="account-dashboard" id="accountDashboard" hidden>
 <div class="account-dashboard-head"><div><h2 id="customerGreeting">স্বাগতম</h2><p id="customerPhone"></p></div><button type="button" class="account-logout" id="logoutButton">লগআউট</button></div>
+<section class="wallet-panel" aria-labelledby="walletTitle">
+<div class="wallet-heading"><div><p class="eyebrow">FOODORA WALLET</p><h3 id="walletTitle">আপনার ওয়ালেট</h3></div><button type="button" class="account-logout" id="walletRefresh">রিফ্রেশ</button></div>
+<p class="wallet-balance-label">বর্তমান ব্যালেন্স</p><p class="wallet-balance" id="walletBalance">৳০</p>
+<form class="account-form wallet-topup-form" id="walletTopupForm">
+<h4>টাকা জমার অনুরোধ</h4>
+<p class="account-note">bKash বা Nagad-এ পেমেন্ট করার পর তথ্য দিন। অ্যাডমিন যাচাই ও অনুমোদন না করা পর্যন্ত ব্যালেন্স বাড়বে না।</p>
+<label>পরিমাণ (৳)<input name="amount" type="number" min="10" max="100000" step="1" required></label>
+<label>পেমেন্ট মাধ্যম<select name="paymentMethod" required><option value="">নির্বাচন করুন</option><option value="bKash">bKash</option><option value="Nagad">Nagad</option></select></label>
+<label>Transaction ID<input name="transactionId" type="text" minlength="4" maxlength="80" required></label>
+<button type="submit" id="walletTopupSubmit">অনুরোধ জমা দিন</button><p class="account-message" id="walletTopupMessage" aria-live="polite"></p>
+</form>
+<h4 class="wallet-history-title">Wallet লেনদেন</h4><div id="walletTransactions" class="wallet-transactions"><p class="account-empty">লোড হচ্ছে…</p></div>
+<h4 class="wallet-history-title">টাকা জমার অনুরোধের অবস্থা</h4><div id="walletTopups" class="wallet-transactions"><p class="account-empty">লোড হচ্ছে…</p></div>
+</section>
 <h3 class="account-orders-title">আপনার অর্ডার হিস্টোরি</h3><div class="account-order-list" id="accountOrders"><p class="account-empty">অর্ডার লোড হচ্ছে…</p></div>
 <p class="account-note">এই অ্যাকাউন্টে লগইন থাকা অবস্থায় করা অর্ডারগুলো এখানে দেখা যাবে। আগের Guest Checkout অর্ডারগুলো অপরিবর্তিত থাকবে।</p>
 </section>

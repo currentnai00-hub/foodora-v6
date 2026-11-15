@@ -158,6 +158,11 @@ function updatePaymentHelp() {
     copyButton.dataset.number = "";
   }
 
+  if (method === "Wallet") {
+    help.textContent = "Foodora Wallet থেকে অর্ডারের মোট টাকা কাটা হবে। পর্যাপ্ত ব্যালেন্স না থাকলে অর্ডার হবে না।";
+    return;
+  }
+
   if (isCOD(method)) {
     help.textContent =
       "ক্যাশ অন ডেলিভারি: খাবার পৌঁছালে নগদ টাকা পরিশোধ করুন।";
@@ -402,6 +407,10 @@ async function init() {
     updateCart();
     try {
       const session = await api("/api/customer/me");
+      const paymentSelectForWallet = $("paymentMethod");
+      if (paymentSelectForWallet && ![...paymentSelectForWallet.options].some(option => option.value === "Wallet")) {
+        paymentSelectForWallet.add(new Option("Foodora Wallet", "Wallet"));
+      }
       const nameField = $("checkoutForm")?.elements.namedItem("name");
       const phoneField = $("checkoutForm")?.elements.namedItem("phone");
       if (nameField && !nameField.value) nameField.value = session.customer.name;

@@ -18,6 +18,10 @@ jobs:
           node-version: 20
       - name: Check backend JavaScript syntax
         run: node --check server.js
+      - name: Check wallet service JavaScript syntax
+        run: node --check wallet.js
+      - name: Check customer account JavaScript syntax
+        run: node --check account.js
       - name: Check customer tracking JavaScript syntax
         run: node --check track.js
       - name: Check customer menu JavaScript syntax
