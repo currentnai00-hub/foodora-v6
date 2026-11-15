@@ -5,18 +5,24 @@
 <meta name="theme-color" content="#173b2d"><title>Foodora | পেমেন্ট নির্দেশিকা</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=foodora-payment-guide-v1">
+<link rel="stylesheet" href="/style.css?v=foodora-payment-v2">
 </head>
 <body>
 <main class="payment-guide-page"><div class="payment-guide-shell">
 <header class="payment-guide-top"><a class="payment-guide-brand" href="/">foodora<span>.</span></a><a class="payment-guide-back" id="guideBack" href="/">← Foodora-তে ফিরে যান</a></header>
 <section class="payment-guide-card"><div class="payment-guide-hero" id="guideHero">
-<div class="payment-guide-brandmark" id="guideBrand"><span id="guideLogo">bKash</span><small>SEND MONEY GUIDE</small></div>
+<div class="payment-guide-brandmark" id="guideBrand"><img id="guideLogoImage" class="payment-guide-logo" src="" alt="bKash অ্যাপের লোগো"><span id="guideLogo">bKash</span><small>SEND MONEY GUIDE</small></div>
 <h1 id="guideTitle">Send Money করে পেমেন্ট সম্পন্ন করুন</h1><p id="guideIntro">নিচের ধাপগুলো অনুসরণ করে পেমেন্ট করুন।</p></div>
 <div class="payment-guide-body"><div class="payment-guide-amount"><span>আপনার আনুমানিক অর্ডার মূল্য</span><strong id="guideAmount">৳—</strong></div>
 <div id="guideNumberSection"><p class="payment-guide-number-label">Send Money করুন এই নম্বরে</p><div class="payment-guide-number"><strong id="guideNumber">লোড হচ্ছে…</strong><button type="button" class="payment-guide-copy" id="guideCopy">নম্বর কপি</button></div></div>
 <h2 class="payment-guide-steps-title">কীভাবে Send Money করবেন</h2><div class="payment-guide-steps" id="guideSteps"></div>
+<section class="payment-guide-transaction" aria-labelledby="transactionTitle">
+  <label id="transactionTitle" for="guideTransactionId">আপনার Transaction ID লিখুন <span>*</span></label>
+  <p>Send Money সফল হওয়ার পর অ্যাপ থেকে পাওয়া Transaction ID এখানে লিখুন।</p>
+  <input id="guideTransactionId" type="text" maxlength="80" autocomplete="off" autocapitalize="characters" placeholder="যেমন: 8N7A2B4C" required>
+  <small>এই ID-টি Foodora checkout-এর Transaction ID ঘরে স্বয়ংক্রিয়ভাবে বসবে।</small>
+</section>
 <div class="payment-guide-note" id="guideNote">পেমেন্ট করার আগে নম্বর ও টাকার পরিমাণ ভালোভাবে মিলিয়ে নিন।</div>
-<div class="payment-guide-actions"><a class="payment-guide-continue" id="guideContinue" href="/">পেমেন্ট করে Foodora-তে ফিরে যান</a><a class="payment-guide-secondary" href="/track">আগের অর্ডার ট্র্যাক করুন</a></div>
+<div class="payment-guide-actions"><a class="payment-guide-continue" id="guideContinue" href="/">Transaction ID দিয়ে Foodora-তে ফিরে যান</a><a class="payment-guide-secondary" href="/track">আগের অর্ডার ট্র্যাক করুন</a></div>
 <p class="payment-guide-footer">Foodora কখনো আপনার PIN বা OTP চাইবে না। PIN/OTP কাউকে জানাবেন না। পেমেন্ট সম্পন্ন হলে Transaction ID সংরক্ষণ করুন।</p>
-</div></section></div></main><script src="/payment-guide.js?v=foodora-payment-guide-v1"></script></body></html>
+</div></section></div></main><script src="/payment-guide.js?v=foodora-payment-v2"></script></body></html>

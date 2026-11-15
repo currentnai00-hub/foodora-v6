@@ -126,14 +126,20 @@ function paymentGuideUrl(method) {
   const params = new URLSearchParams({method, amount:String(total())});
   return "/payment-guide.html?" + params.toString();
 }
+function canonicalPaymentMethod(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "bkash") return "bKash";
+  if (normalized === "nagad") return "Nagad";
+  return String(value || "").trim();
+}
 function handlePaymentMethodChange() {
-  const method = $("paymentMethod")?.value || "";
+  const method = canonicalPaymentMethod($("paymentMethod")?.value);
   if (["bKash","Nagad"].includes(method)) {
     try {
       sessionStorage.setItem("foodora_payment_method",method);
       sessionStorage.setItem("foodora_checkout_coupon",JSON.stringify(appliedCoupon || null));
     } catch (_) {}
-    window.location.href = paymentGuideUrl(method);
+    window.location.assign(paymentGuideUrl(method));
     return;
   }
   updatePaymentHelp();
@@ -362,9 +368,10 @@ async function init() {
         ? config.paymentMethods
         : [];
 
-      payment.innerHTML = '<option value="" selected disabled>পেমেন্ট পদ্ধতি নির্বাচন করুন</option>' + methods.map(method =>
-        `<option value="${esc(method)}">${esc(method)}</option>`
-      ).join("");
+      payment.innerHTML = '<option value="" selected disabled>পেমেন্ট পদ্ধতি নির্বাচন করুন</option>' + methods.map(rawMethod => {
+        const method = canonicalPaymentMethod(rawMethod);
+        return `<option value="${esc(method)}">${esc(method)}</option>`;
+      }).join("");
     }
 
     if (payment) {
@@ -403,9 +410,18 @@ async function init() {
     await showWelcomeIfNeeded();
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") === "1") {
-      const selectedMethod = params.get("paymentMethod") || sessionStorage.getItem("foodora_payment_method") || "";
+      const selectedMethod = canonicalPaymentMethod(params.get("paymentMethod") || sessionStorage.getItem("foodora_payment_method") || "");
       const paymentSelect = $("paymentMethod");
-      if (paymentSelect && [...paymentSelect.options].some(option => option.value === selectedMethod)) paymentSelect.value = selectedMethod;
+      if (paymentSelect) {
+        const matchingOption = [...paymentSelect.options].find(option => canonicalPaymentMethod(option.value) === selectedMethod);
+        if (matchingOption) paymentSelect.value = matchingOption.value;
+      }
+      const transactionField = $("checkoutForm")?.elements.namedItem("transactionId");
+      try {
+        const savedTransactionId = sessionStorage.getItem("foodora_payment_transaction_id") || "";
+        if (transactionField && savedTransactionId) transactionField.value = savedTransactionId;
+        sessionStorage.removeItem("foodora_payment_transaction_id");
+      } catch (_) {}
       try {
         const savedCoupon = JSON.parse(sessionStorage.getItem("foodora_checkout_coupon") || "null");
         if (savedCoupon?.code) {

@@ -2,14 +2,45 @@
 (() => {
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
-  const method = String(params.get("method") || "bKash").toLowerCase() === "nagad" ? "Nagad" : "bKash";
+  const requestedMethod = String(params.get("method") || "").trim().toLowerCase();
+  if (!["bkash","nagad"].includes(requestedMethod)) {
+    location.replace("/");
+    return;
+  }
+  const method = requestedMethod === "nagad" ? "Nagad" : "bKash";
   const theme = method === "bKash" ? "bkash" : "nagad";
   const amount = Math.max(0, Math.round(Number(params.get("amount")) || 0));
   const returnUrl = "/?checkout=1&paymentMethod=" + encodeURIComponent(method);
-  $("guideHero").classList.add(theme); $("guideLogo").textContent = method; $("guideTitle").textContent = method + " দিয়ে Send Money করুন";
+  $("guideHero").classList.add(theme); $("guideLogo").textContent = method; $("guideLogoImage").src = method === "bKash"
+    ? "https://raw.githubusercontent.com/mdmubarokhosin/Bd-MFS-Logo/refs/heads/main/logos/png/bkash.png"
+    : "https://raw.githubusercontent.com/mdmubarokhosin/Bd-MFS-Logo/refs/heads/main/logos/png/nagad.png";
+  $("guideLogoImage").alt = method + " অ্যাপের লোগো";
+  $("guideLogoImage").addEventListener("error", () => { $("guideLogoImage").hidden = true; $("guideLogo").hidden = false; }, {once:true});
+  $("guideLogo").hidden = true;
+  $("guideTitle").textContent = method + " দিয়ে Send Money করুন";
   $("guideIntro").textContent = method + " অ্যাপ ব্যবহার করে নিচের নম্বরে Send Money করুন।";
   $("guideAmount").textContent = "৳" + amount.toLocaleString("en-BD");
   $("guideCopy").classList.add(theme); $("guideContinue").href = returnUrl; $("guideBack").href = returnUrl;
+  const transactionInput = $("guideTransactionId");
+  try { transactionInput.value = sessionStorage.getItem("foodora_payment_transaction_id") || ""; } catch (_) {}
+  transactionInput.addEventListener("input", () => {
+    try { sessionStorage.setItem("foodora_payment_transaction_id", transactionInput.value.trim()); } catch (_) {}
+  });
+  $("guideContinue").addEventListener("click", event => {
+    const transactionId = transactionInput.value.trim();
+    if (!transactionId) {
+      event.preventDefault();
+      transactionInput.setCustomValidity("Foodora-তে ফেরার আগে Transaction ID লিখুন।");
+      transactionInput.reportValidity();
+      transactionInput.focus();
+      return;
+    }
+    transactionInput.setCustomValidity("");
+    try { sessionStorage.setItem("foodora_payment_transaction_id", transactionId); } catch (_) {}
+  });
+  $("guideBack").addEventListener("click", () => {
+    try { if (transactionInput.value.trim()) sessionStorage.setItem("foodora_payment_transaction_id", transactionInput.value.trim()); } catch (_) {}
+  });
   const steps = method === "bKash" ? [
     ["bKash অ্যাপ খুলুন","আপনার bKash অ্যাপে লগইন করে Send Money অপশন নির্বাচন করুন।"],
     ["প্রাপকের নম্বর দিন","Foodora-র দেখানো bKash নম্বরটি লিখুন বা কপি করে পেস্ট করুন।"],
