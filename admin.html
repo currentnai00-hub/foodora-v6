@@ -103,6 +103,7 @@ td select{padding:8px;max-width:160px}
   <button class="active" data-tab="overview">▦ Overview</button>
   <button data-tab="orders">▤ Orders</button>
   <button data-tab="paymentHistory">৳ Payment History</button>
+  <button data-tab="wallet">◈ Customer Wallet</button>
   <button data-tab="customers">♙ Customers</button>
   <button data-tab="products">▣ Products</button>
   <button data-tab="coupons">％ Coupons</button>
@@ -169,6 +170,16 @@ td select{padding:8px;max-width:160px}
   <div class="panel">
    <div class="panelhead"><div><h2>Payment Review History</h2><div class="muted">সর্বশেষ ৫০০টি payment submission ও review event</div></div><button class="btn" onclick="loadPaymentHistory()">↻ Refresh</button></div>
    <div id="paymentHistoryTable" class="tablewrap"><div class="empty">Load history to view events</div></div>
+  </div>
+ </section>
+ <section id="wallet" class="section">
+  <div class="panel">
+   <div class="panelhead"><div><h2>Wallet Top-up Requests</h2><div class="muted">bKash/Nagad payment manually verify করে approve বা reject করুন</div></div><button class="btn" onclick="loadWalletAdmin()">↻ Refresh</button></div>
+   <div id="walletTopupsAdmin" class="tablewrap"><div class="empty">Loading wallet requests…</div></div>
+  </div>
+  <div class="panel" style="margin-top:18px">
+   <div class="panelhead"><h2>Wallet Ledger</h2></div>
+   <div id="walletLedgerAdmin" class="tablewrap"><div class="empty">Loading wallet transactions…</div></div>
   </div>
  </section>
  <section id="customers" class="section">
@@ -275,8 +286,9 @@ function tab(name){
  document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
  $(name).classList.add("active");
  if(name==="paymentHistory")loadPaymentHistory();
+ if(name==="wallet")loadWalletAdmin();
  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.tab===name));
- $("pageTitle").textContent=({overview:"Dashboard Overview",orders:"Order Management",customers:"Customer Management",products:"Product Management",coupons:"Coupon Management",reviews:"Customer Reviews",analytics:"Sales Analytics",delivery:"Delivery Areas",paymentHistory:"Payment History"})[name];
+ $("pageTitle").textContent=({overview:"Dashboard Overview",orders:"Order Management",customers:"Customer Management",products:"Product Management",coupons:"Coupon Management",reviews:"Customer Reviews",analytics:"Sales Analytics",delivery:"Delivery Areas",paymentHistory:"Payment History",wallet:"Customer Wallet"})[name];
 }
 document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>tab(b.dataset.tab)));
 function statusSelect(value,kind,id){
@@ -300,6 +312,37 @@ async function loadPaymentHistory(){
    esc(e.transactionId||"—"),esc(e.reviewedBy||"—"),esc(e.createdAt?new Date(e.createdAt).toLocaleString():"—"),esc(e.note||"—")
   ]));
  }catch(e){$("paymentHistoryTable").innerHTML='<div class="empty">'+esc(e.message)+'</div>';}
+}
+
+async function loadWalletAdmin(){
+ try{
+  const [topups,ledger]=await Promise.all([api("/api/admin/wallet/topups"),api("/api/admin/wallet/transactions")]);
+  const rows=Array.isArray(topups.topups)?topups.topups:[];
+  $("walletTopupsAdmin").innerHTML=rows.length?table(["Request","Customer","Amount","Method / Txn ID","Status","Review"],rows.map(t=>[
+   "<b>#"+esc(t.id)+"</b><div class='muted'>"+esc(t.createdAt?new Date(t.createdAt).toLocaleString():"")+"</div>",
+   esc(t.customerName)+"<div class='muted'>"+esc(t.phone)+"</div>",
+   "<b>"+money(Number(t.amountPaisa||0)/100)+"</b>",
+   esc(t.paymentMethod)+"<div class='muted'>"+esc(t.transactionId)+"</div>",
+   badge(t.status),
+   t.status==="Pending"?"<button class='btn primary' onclick='reviewWalletTopup("+Number(t.id)+",\"approve\")'>Approve</button> <button class='btn danger' onclick='reviewWalletTopup("+Number(t.id)+",\"reject\")'>Reject</button>":esc(t.reviewNote||"—")
+  ])):'<div class="empty">No wallet top-up requests</div>';
+  const entries=Array.isArray(ledger.transactions)?ledger.transactions:[];
+  $("walletLedgerAdmin").innerHTML=entries.length?table(["Date","Customer","Type","Amount","Balance after","Reference"],entries.map(x=>[
+   esc(x.createdAt?new Date(x.createdAt).toLocaleString():""),esc(x.customerName)+"<div class='muted'>"+esc(x.phone)+"</div>",
+   esc(x.type),money(Number(x.amountPaisa||0)/100),money(Number(x.balanceAfterPaisa||0)/100),
+   esc(x.referenceType)+" "+esc(x.referenceId)
+  ])):'<div class="empty">No wallet ledger entries</div>';
+ }catch(e){$("walletTopupsAdmin").innerHTML='<div class="empty">'+esc(e.message)+'</div>';}
+}
+async function reviewWalletTopup(id,action){
+ const note=action==="reject"?(prompt("Reason for rejection:")||"").trim():"";
+ if(action==="reject"&&!note){toast("Please enter a rejection reason");return;}
+ if(!confirm(action==="approve"?"Confirm the bKash/Nagad payment before approving this top-up?":"Reject this wallet top-up request?"))return;
+ try{
+  await api("/api/admin/wallet/topups/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({action,note})});
+  toast(action==="approve"?"Wallet credited after approval":"Top-up rejected");
+  await loadWalletAdmin();
+ }catch(e){toast(e.message);await loadWalletAdmin();}
 }
 async function refreshAll(){
  try{
