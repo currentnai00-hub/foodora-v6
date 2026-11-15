@@ -488,8 +488,13 @@ async function reviewPayment(id,action){
  }catch(e){toast(e.message);await refreshAll()}
 }
 async function updateOrder(id,kind,value){
- try{await api("/api/admin/orders/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify(kind==="status"?{status:value}:{paymentStatus:value})});toast("Order updated");await refreshAll()}
- catch(e){toast(e.message);renderOrders()}
+ try{
+  const result=await api("/api/admin/orders/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify(kind==="status"?{status:value}:{paymentStatus:value})});
+  if(kind==="status"&&value==="Cancelled"&&result.refundIssued)toast("Order cancelled · refund credited to customer wallet");
+  else if(kind==="status"&&value==="Cancelled"&&result.refundPending)toast("Order cancelled · refund is pending account matching");
+  else toast("Order updated");
+  await refreshAll();
+ }catch(e){toast(e.message);renderOrders()}
 }
 function customerList(){
  const map=new Map();
