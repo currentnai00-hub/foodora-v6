@@ -539,9 +539,9 @@ app.post("/api/orders", async (req,res) => {
   if (isWalletPayment && !usePg)return res.status(503).json({error:"Wallet checkout requires PostgreSQL."});
   if (!isCashOnDelivery && !isWalletPayment && !transactionId)
     return res.status(400).json({error:"bKash/Nagad Transaction ID is required before placing this order."});
-  const customer = await signedInCustomer(req);
-  if(isWalletPayment && !customer)return res.status(401).json({error:"Wallet দিয়ে অর্ডার করতে আগে লগইন করুন।"});
   try {
+    const customer = await signedInCustomer(req);
+    if(isWalletPayment && !customer)return res.status(401).json({error:"Wallet দিয়ে অর্ডার করতে আগে লগইন করুন।"});
     const deliverySettings=await getDeliverySettings();
     const deliveryArea=deliverySettings.areas.find(area=>area.id===deliveryAreaId);
     if(!deliveryArea)return res.status(400).json({error:"এই এলাকায় আপাতত ডেলিভারি চালু নেই। তালিকা থেকে এলাকা নির্বাচন করুন।"});
