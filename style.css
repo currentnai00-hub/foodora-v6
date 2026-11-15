@@ -2009,3 +2009,16 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 .payment-guide-note{margin-top:17px;padding:14px;border-radius:13px;background:#fff6e9;color:#79532d;font-size:12px;line-height:1.8}.payment-guide-actions{display:grid;gap:10px;margin-top:22px}
 .payment-guide-continue{display:grid;place-items:center;min-height:51px;border-radius:13px;background:#173b2d;color:#fff;text-decoration:none;font-size:14px;font-weight:800}.payment-guide-secondary{display:grid;place-items:center;min-height:44px;border:1px solid #e3e8df;border-radius:12px;color:#46604d;text-decoration:none;font-size:12px;font-weight:700}.payment-guide-footer{margin-top:16px;color:#929a90;text-align:center;font-size:11px;line-height:1.8}
 @media(max-width:480px){.payment-guide-page{padding:18px 10px 40px}.payment-guide-card{border-radius:19px}.payment-guide-hero{padding:24px 20px}.payment-guide-body{padding:20px 16px}.payment-guide-number{align-items:flex-start;flex-wrap:wrap}.payment-guide-number strong{width:100%}.payment-guide-copy{width:100%;min-height:45px}}
+
+/* Premium MFS logo and transaction ID panel */
+.payment-guide-brandmark{min-height:62px;gap:12px;padding:9px 15px}
+.payment-guide-logo{display:block;width:auto;height:42px;max-width:150px;object-fit:contain;background:#fff;border-radius:8px;padding:4px 8px}
+.payment-guide-brandmark #guideLogo{font-size:22px}
+.payment-guide-transaction{margin-top:22px;padding:18px;border:1px solid #e7e9e1;border-radius:16px;background:#f8faf6}
+.payment-guide-transaction label{display:block;color:#203b2b;font-size:15px;font-weight:800}
+.payment-guide-transaction label span{color:#d23a45}
+.payment-guide-transaction p{margin:5px 0 12px;color:#778078;font-size:12px;line-height:1.7}
+.payment-guide-transaction input{display:block;width:100%;min-height:50px;padding:12px 14px;border:1px solid #d9e0d5;border-radius:11px;background:#fff;color:#20372c;font:600 15px 'Hind Siliguri',sans-serif;outline:none}
+.payment-guide-transaction input:focus{border-color:#6c9475;box-shadow:0 0 0 3px rgba(70,125,82,.12)}
+.payment-guide-transaction small{display:block;margin-top:8px;color:#7b867c;font-size:11px;line-height:1.6}
+@media(max-width:480px){.payment-guide-logo{height:38px;max-width:125px}.payment-guide-transaction{padding:15px}}
