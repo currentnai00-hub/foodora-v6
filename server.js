@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { Pool } = require("pg");
+const { registerWalletRoutes } = require("./wallet");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -808,6 +809,11 @@ app.patch("/api/admin/orders/:id",adminOnly,async(req,res)=>{
   if(paymentStatus && !["Awaiting payment","Pending verification"].includes(paymentStatus))return res.status(400).json({error:"Payment approval or rejection must use the payment review action."});
   try{
     if(usePg){
+      if(status==="Cancelled") {
+        const cancelled=await walletServices.cancelOrderAndRefund(clean(req.params.id,60));
+        if(paymentStatus) await pool.query("UPDATE orders SET payment_status=$1 WHERE id=$2",[paymentStatus,req.params.id]);
+        return res.json({ok:true,...cancelled});
+      }
       const r=await pool.query("UPDATE orders SET status=COALESCE(NULLIF($1,''),status),payment_status=COALESCE(NULLIF($2,''),payment_status) WHERE id=$3 RETURNING id,status,payment_status",[status,paymentStatus,req.params.id]);
       if(!r.rowCount)return res.status(404).json({error:"Order not found"});
       if(status==="Cancelled") {
@@ -847,8 +853,13 @@ app.patch("/api/admin/reviews/:id",adminOnly,async(req,res)=>{
   } catch { res.status(500).json({error:"Review moderation failed"}); }
 });
 
+
+const walletServices = usePg ? registerWalletRoutes({
+  app,pool,signedInCustomer,adminOnly,requestIsSameOrigin,requireCustomerDatabase,clean
+}) : null;
+
 async function start(){
-  if(usePg) await initDb(); else initJson();
+  if(usePg) { await initDb(); await walletServices.ensureWalletSchema(); } else initJson();
   app.listen(PORT,"0.0.0.0",()=>console.log(`Foodora V6 running on port ${PORT} | DB: ${usePg?"PostgreSQL":"local JSON"}`));
 }
 start().catch(err=>{console.error("Startup failed:",err);process.exit(1);});
