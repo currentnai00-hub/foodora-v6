@@ -533,10 +533,14 @@ app.post("/api/orders", async (req,res) => {
   const paymentMethod=clean(req.body.paymentMethod,30), transactionId=clean(req.body.transactionId,80);
   const input=Array.isArray(req.body.items) ? req.body.items : [];
   const isCashOnDelivery = paymentMethod.toLowerCase() === "cash on delivery";
-  if (!name || !/^01[0-9]{9}$/.test(phone) || !address || !PAYMENT_METHODS.includes(paymentMethod) || !input.length)
+  const isWalletPayment = paymentMethod === "Wallet";
+  if (!name || !/^01[0-9]{9}$/.test(phone) || !address || (!PAYMENT_METHODS.includes(paymentMethod) && !isWalletPayment) || !input.length)
     return res.status(400).json({error:"Name, valid BD phone, address, payment method and cart items are required"});
-  if (!isCashOnDelivery && !transactionId)
+  if (isWalletPayment && !usePg)return res.status(503).json({error:"Wallet checkout requires PostgreSQL."});
+  if (!isCashOnDelivery && !isWalletPayment && !transactionId)
     return res.status(400).json({error:"bKash/Nagad Transaction ID is required before placing this order."});
+  const customer = await signedInCustomer(req);
+  if(isWalletPayment && !customer)return res.status(401).json({error:"Wallet দিয়ে অর্ডার করতে আগে লগইন করুন।"});
   try {
     const deliverySettings=await getDeliverySettings();
     const deliveryArea=deliverySettings.areas.find(area=>area.id===deliveryAreaId);
@@ -563,8 +567,7 @@ app.post("/api/orders", async (req,res) => {
     const deliveryFee=subtotal-discount>=deliverySettings.freeDeliveryFrom ? 0 : deliverySettings.deliveryFee;
     const fullAddress=deliveryArea.name+" — "+address;
     const total=subtotal-discount+deliveryFee;
-    const customer=await signedInCustomer(req);
-    const order={id:id("FD"),name,phone,address:fullAddress,deliveryArea:deliveryArea.name,paymentMethod,transactionId,paymentStatus:isCashOnDelivery?"Awaiting payment":"Pending verification",status:"Pending",items:normalized,subtotal,discount,deliveryFee,total,couponCode:code,customerId:customer?.id||null,createdAt:new Date().toISOString()};
+    const order={id:id("FD"),name,phone,address:fullAddress,deliveryArea:deliveryArea.name,paymentMethod,transactionId,paymentStatus:isCashOnDelivery?"Awaiting payment":isWalletPayment?"Verified":"Pending verification",status:"Pending",items:normalized,subtotal,discount,deliveryFee,total,couponCode:code,customerId:customer?.id||null,createdAt:new Date().toISOString()};
     if (usePg) {
       const client=await pool.connect();
       try {
@@ -579,6 +582,7 @@ app.post("/api/orders", async (req,res) => {
         if(transactionId)await client.query(
           "INSERT INTO payment_review_events(order_id,action,transaction_id,note,reviewed_by) VALUES($1,'submitted',$2,'Initial payment submission','Customer')",
           [order.id,transactionId]);
+        if(isWalletPayment) await walletServices.debitWalletForOrder(client,customer.id,order.id,total);
         await client.query("COMMIT");
       } catch(e) { await client.query("ROLLBACK"); throw e; } finally { client.release(); }
     } else {
@@ -601,7 +605,9 @@ app.post("/api/orders", async (req,res) => {
 
     const instructions = isCashOnDelivery
       ? "Pay cash when your order is delivered."
-      : `Send ৳${total} to ${selectedPaymentNumber} using ${paymentMethod} (manual payment). Then share the Transaction ID.`;
+      : isWalletPayment
+        ? "পেমেন্ট আপনার Foodora Wallet থেকে কেটে নেওয়া হয়েছে।"
+        : `Send ৳${total} to ${selectedPaymentNumber} using ${paymentMethod} (manual payment). Then share the Transaction ID.`;
 
     res.status(201).json({
       ok: true,
@@ -617,7 +623,7 @@ app.post("/api/orders", async (req,res) => {
         instructions
       }
     });
-  } catch(e) { console.error(e); res.status(500).json({error:e.message || "Order could not be placed"}); }
+  } catch(e) { console.error(e); res.status(e.status||500).json({error:e.message || "Order could not be placed"}); }
 });
 app.post("/api/orders/track", async (req,res) => {
   try {
