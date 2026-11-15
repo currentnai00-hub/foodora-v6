@@ -188,6 +188,17 @@ async function initDb() {
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reviewed_at TIMESTAMPTZ;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_review_note TEXT NOT NULL DEFAULT '';
+    CREATE TABLE IF NOT EXISTS payment_review_events (
+      id BIGSERIAL PRIMARY KEY,
+      order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      action TEXT NOT NULL CHECK (action IN ('submitted','approved','rejected')),
+      transaction_id TEXT NOT NULL DEFAULT '',
+      note TEXT NOT NULL DEFAULT '',
+      reviewed_by TEXT NOT NULL DEFAULT 'Admin',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS payment_review_events_order_idx ON payment_review_events(order_id, created_at DESC);
+
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS order_id TEXT REFERENCES orders(id) ON DELETE SET NULL;
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS moderation_status TEXT NOT NULL DEFAULT 'approved';
@@ -448,11 +459,14 @@ app.get("/api/customer/orders",async(req,res)=>{
     const customer=await signedInCustomer(req);
     if(!customer)return res.status(401).json({error:"লগইন করুন।"});
     const result=await pool.query(
-      `SELECT id,status,payment_status,items,subtotal,discount,delivery_fee,total,created_at
-       FROM orders WHERE customer_id=$1 ORDER BY created_at DESC LIMIT 100`,[customer.id]);
+      `SELECT o.id,o.status,o.payment_status,o.items,o.subtotal,o.discount,o.delivery_fee,o.total,o.created_at,
+       (SELECT COUNT(*)::int FROM payment_review_events e WHERE e.order_id=o.id) AS payment_event_count,
+       (SELECT e.note FROM payment_review_events e WHERE e.order_id=o.id ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS latest_payment_note
+       FROM orders o WHERE o.customer_id=$1 ORDER BY o.created_at DESC LIMIT 100`,[customer.id]);
     res.set("Cache-Control","no-store").json({orders:result.rows.map(o=>({
       id:o.id,status:o.status,paymentStatus:o.payment_status,items:o.items,
-      subtotal:o.subtotal,discount:o.discount,deliveryFee:o.delivery_fee,total:o.total,createdAt:o.created_at
+      subtotal:o.subtotal,discount:o.discount,deliveryFee:o.delivery_fee,total:o.total,createdAt:o.created_at,
+      paymentEventCount:o.payment_event_count,latestPaymentNote:o.latest_payment_note||""
     }))});
   }catch{res.status(500).json({error:"অর্ডার হিস্টোরি পাওয়া যায়নি।"});}
 });
@@ -464,20 +478,52 @@ app.get("/api/customer/orders/:id",async(req,res)=>{
     if(!customer)return res.status(401).json({error:"লগইন করুন।"});
     const orderId=clean(req.params.id,60);
     const result=await pool.query(
-      `SELECT id,status,payment_status,payment_method,items,subtotal,discount,delivery_fee,total,address,created_at
+      `SELECT id,status,payment_status,payment_method,transaction_id,payment_reviewed_at,payment_review_note,items,subtotal,discount,delivery_fee,total,address,created_at
        FROM orders WHERE id=$1 AND customer_id=$2 LIMIT 1`,[orderId,customer.id]);
     const order=result.rows[0];
     res.set("Cache-Control","no-store");
     if(!order)return res.status(404).json({error:"এই অর্ডারটি পাওয়া যায়নি।"});
     res.json({order:{
       id:order.id,status:order.status,paymentStatus:order.payment_status,
-      paymentMethod:order.payment_method,items:Array.isArray(order.items)?order.items:[],
+      paymentMethod:order.payment_method,paymentTransactionId:order.transaction_id||"",
+      paymentReviewedAt:order.payment_reviewed_at,paymentReviewNote:order.payment_review_note||"",
+      canResubmit:order.payment_status==="Rejected",items:Array.isArray(order.items)?order.items:[],
       subtotal:order.subtotal,discount:order.discount,deliveryFee:order.delivery_fee,
-      total:order.total,address:order.address,createdAt:order.created_at
+      total:order.total,address:order.address,createdAt:order.created_at,
+      paymentHistory:(await pool.query(
+        `SELECT action,transaction_id AS "transactionId",note,reviewed_by AS "reviewedBy",created_at AS "createdAt"
+         FROM payment_review_events WHERE order_id=$1 ORDER BY created_at ASC,id ASC`,[orderId])).rows
     }});
   }catch{res.status(500).json({error:"অর্ডারের বিস্তারিত পাওয়া যায়নি।"});}
 });
 
+app.post("/api/customer/orders/:id/payment-resubmit",async(req,res)=>{
+  if(!requestIsSameOrigin(req))return res.status(403).json({error:"Request origin not allowed."});
+  if(!requireCustomerDatabase(res))return;
+  try{
+    const customer=await signedInCustomer(req);
+    if(!customer)return res.status(401).json({error:"লগইন করুন।"});
+    const transactionId=clean(req.body.transactionId,80);
+    if(!/^[A-Za-z0-9_-]{4,80}$/.test(transactionId))return res.status(400).json({error:"সঠিক Transaction ID দিন।"});
+    const client=await pool.connect();
+    try{
+      await client.query("BEGIN");
+      const result=await client.query(
+        `UPDATE orders SET transaction_id=$1,payment_status='Pending verification',payment_reviewed_at=NULL,payment_review_note=''
+         WHERE id=$2 AND customer_id=$3 AND payment_status='Rejected'
+         AND LOWER(payment_method) NOT IN ('cash on delivery','cod')
+         RETURNING id,payment_status`,
+        [transactionId,clean(req.params.id,60),customer.id]);
+      if(!result.rowCount){await client.query("ROLLBACK");return res.status(409).json({error:"এই অর্ডারে নতুন Transaction ID জমা দেওয়া যাচ্ছে না। অর্ডারটি রিফ্রেশ করুন।"});}
+      await client.query(
+        "INSERT INTO payment_review_events(order_id,action,transaction_id,note,reviewed_by) VALUES($1,'submitted',$2,'Customer resubmitted payment','Customer')",
+        [result.rows[0].id,transactionId]);
+      await client.query("COMMIT");
+      res.set("Cache-Control","no-store").json({ok:true,paymentStatus:"Pending verification"});
+    }catch(e){await client.query("ROLLBACK").catch(()=>{});throw e;}
+    finally{client.release();}
+  }catch(e){console.error("Payment resubmission failed:",e.message);res.status(500).json({error:"নতুন Transaction ID জমা দেওয়া যায়নি। আবার চেষ্টা করুন।"});}
+});
 app.get("/account/order/:id",(req,res)=>res.sendFile(path.join(ROOT,"order-detail.html")));
 
 app.post("/api/orders", async (req,res) => {
@@ -581,8 +627,11 @@ app.post("/api/orders/track", async (req,res) => {
       return res.status(404).json({error:"We couldn't find an order with those details. Check your Order ID and phone number."});
     res.set("Cache-Control", "no-store");
     res.set("Referrer-Policy", "no-referrer");
+    const paymentHistory=usePg?(await pool.query(
+      `SELECT action,note,created_at AS "createdAt" FROM payment_review_events WHERE order_id=$1 ORDER BY created_at ASC,id ASC`,[o.id])).rows:[];
     res.json({
-      id:o.id, status:o.status, paymentStatus:o.paymentStatus,
+      id:o.id, status:o.status, paymentStatus:o.paymentStatus,paymentReviewNote:o.paymentReviewNote||"",
+      paymentReviewedAt:o.paymentReviewedAt||null,paymentHistory,
       paymentMethod:o.paymentMethod || o.payment || "", createdAt:o.createdAt || o.created_at,
       items:Array.isArray(o.items)?o.items:[], subtotal:Number(o.subtotal||0),
       discount:Number(o.discount||0), deliveryFee:Number(o.deliveryFee ?? o.delivery ?? 0),
@@ -703,41 +752,50 @@ app.delete("/api/admin/products/:id",adminOnly,async(req,res)=>{
   }catch{res.status(500).json({error:"Delete failed"});}
 });
 app.patch("/api/admin/orders/:id/payment-review",adminOnly,async(req,res)=>{
-  const action=clean(req.body.action,20).toLowerCase();
-  const note=clean(req.body.note,300);
+  const action=clean(req.body.action,20).toLowerCase(),note=clean(req.body.note,300);
   if(!["approve","reject"].includes(action))return res.status(400).json({error:"Choose approve or reject."});
   try{
-    if(usePg){
+    if(!usePg)return res.status(503).json({error:"Payment review history requires PostgreSQL."});
+    const client=await pool.connect();
+    try{
+      await client.query("BEGIN");
       const result=action==="approve"
-        ? await pool.query(
-            `UPDATE orders SET payment_status='Verified',payment_reviewed_at=NOW(),payment_review_note=$1
-             WHERE id=$2 AND payment_status='Pending verification' AND LOWER(payment_method) NOT IN ('cash on delivery','cod') AND COALESCE(NULLIF(BTRIM(transaction_id),''),'')<>''
-             RETURNING id,payment_status,payment_reviewed_at,payment_review_note`,
-            [note,clean(req.params.id,60)])
-        : await pool.query(
-            `UPDATE orders SET payment_status='Rejected',payment_reviewed_at=NOW(),payment_review_note=$1
-             WHERE id=$2 AND payment_status='Pending verification'
-             RETURNING id,payment_status,payment_reviewed_at,payment_review_note`,
-            [note,clean(req.params.id,60)]);
+        ?await client.query(
+          `UPDATE orders SET payment_status='Verified',payment_reviewed_at=NOW(),payment_review_note=$1
+           WHERE id=$2 AND payment_status='Pending verification' AND LOWER(payment_method) NOT IN ('cash on delivery','cod')
+           AND COALESCE(NULLIF(BTRIM(transaction_id),''),'')<>'' RETURNING id,payment_status,transaction_id`,
+          [note,clean(req.params.id,60)])
+        :await client.query(
+          `UPDATE orders SET payment_status='Rejected',payment_reviewed_at=NOW(),payment_review_note=$1
+           WHERE id=$2 AND payment_status='Pending verification' RETURNING id,payment_status,transaction_id`,
+          [note,clean(req.params.id,60)]);
       if(!result.rowCount){
-        const exists=await pool.query("SELECT payment_status,transaction_id FROM orders WHERE id=$1",[clean(req.params.id,60)]);
+        const exists=await client.query("SELECT payment_status,transaction_id FROM orders WHERE id=$1",[clean(req.params.id,60)]);
+        await client.query("ROLLBACK");
         if(!exists.rowCount)return res.status(404).json({error:"Order not found."});
         if(action==="approve"&&!String(exists.rows[0].transaction_id||"").trim())return res.status(400).json({error:"Transaction ID is missing; payment cannot be approved."});
         return res.status(409).json({error:"This payment is no longer awaiting verification. Refresh the order list."});
       }
+      await client.query(
+        "INSERT INTO payment_review_events(order_id,action,transaction_id,note,reviewed_by) VALUES($1,$2,$3,$4,'Admin')",
+        [result.rows[0].id,action==="approve"?"approved":"rejected",result.rows[0].transaction_id||"",note]);
+      await client.query("COMMIT");
       return res.json({ok:true,order:result.rows[0]});
-    }
-    const orders=readJson(ORDERS_FILE,[]);
-    const order=orders.find(x=>String(x.id)===String(req.params.id));
-    if(!order)return res.status(404).json({error:"Order not found."});
-    if(order.paymentStatus!=="Pending verification")return res.status(409).json({error:"This payment is no longer awaiting verification."});
-    if(action==="approve"&&(String(order.paymentMethod||"").toLowerCase()==="cash on delivery"||!String(order.transactionId||"").trim()))return res.status(400).json({error:"Only a submitted bKash/Nagad Transaction ID can be approved."});
-    order.paymentStatus=action==="approve"?"Verified":"Rejected";
-    order.paymentReviewedAt=new Date().toISOString();
-    order.paymentReviewNote=note;
-    writeJson(ORDERS_FILE,orders);
-    return res.json({ok:true,order});
+    }catch(e){await client.query("ROLLBACK").catch(()=>{});throw e;}
+    finally{client.release();}
   }catch(e){console.error("Payment review failed:",e);res.status(500).json({error:"Payment review could not be saved."});}
+});
+app.get("/api/admin/payment-history",adminOnly,async(req,res)=>{
+  if(!usePg)return res.status(503).json({error:"Payment history requires PostgreSQL."});
+  try{
+    const result=await pool.query(
+      `SELECT e.id,e.order_id AS "orderId",e.action,e.transaction_id AS "transactionId",e.note,
+       e.reviewed_by AS "reviewedBy",e.created_at AS "createdAt",o.customer_name AS "customerName",
+       o.phone,o.payment_method AS "paymentMethod",o.total
+       FROM payment_review_events e JOIN orders o ON o.id=e.order_id
+       ORDER BY e.created_at DESC,e.id DESC LIMIT 500`);
+    res.set("Cache-Control","no-store").json({events:result.rows});
+  }catch(e){console.error("Payment history failed:",e.message);res.status(500).json({error:"Payment history unavailable"});}
 });
 app.get("/api/admin/orders",adminOnly,async(req,res)=>{try{res.json(await getOrders());}catch{res.status(500).json({error:"Orders unavailable"});}});
 app.patch("/api/admin/orders/:id",adminOnly,async(req,res)=>{
