@@ -1945,7 +1945,7 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 .product-card {
   backface-visibility: hidden; transform: translateZ(0);
   transition: transform 260ms var(--fd-motion-smooth),box-shadow 260ms ease,border-color 260ms ease;
-  animation: fd-card-in 420ms var(--fd-motion-smooth) both;
+  animation: fd-card-in 420ms var(--fd-motion-smooth) backwards;
 }
 .product-card:nth-child(2) { animation-delay: 35ms; }
 .product-card:nth-child(3) { animation-delay: 70ms; }
@@ -1954,7 +1954,7 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 .product-card:nth-child(6) { animation-delay: 175ms; }
 .product-card .product-visual img { transition: transform 500ms var(--fd-motion-smooth); }
 .product-card:hover .product-visual img { transform: scale(1.045); }
-.product-card:hover { border-color: rgba(28,73,55,.2); }
+.product-card:hover { transform: translateY(-4px) translateZ(0); box-shadow: 0 15px 35px rgba(25,61,37,.10); border-color: rgba(28,73,55,.2); }
 .add-button,.primary-button,.cart-button,.chip,.menu-filter,.search,.smart-filters select,.smart-filters input {
   transition: transform var(--fd-motion-fast) var(--fd-motion-smooth),box-shadow var(--fd-motion-fast) ease,background-color var(--fd-motion-fast) ease,border-color var(--fd-motion-fast) ease;
 }
