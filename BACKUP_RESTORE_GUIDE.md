@@ -1,21 +1,21 @@
 # Foodora Backup & Restore
 
-## Create
+## Create a backup
 1. Sign in at /admin.html with the Admin Key.
-2. Open /backup-center.html in the same browser session.
-3. Select Create & Download Backup and store the JSON file privately in two safe locations.
+2. Open Backup Center in the admin navigation.
+3. Create and download a database JSON backup. Keep it private and store a second copy securely.
 
-## Restore
-1. Download a fresh backup of the current live database first.
-2. Select the backup JSON and validate it.
-3. Read the validation result, then confirm both restore prompts.
-4. Keep the page open until completion.
+## Restore safeguards
+- Validate a backup before restore.
+- Restore automatically creates a database snapshot in backup history before changing data.
+- Restore runs in a transaction and rolls back on errors.
+- Child tables are deleted before parent tables; parent tables are inserted before child tables.
+- Cyclic and self-referencing foreign-key schemas are refused rather than bypassing constraints.
+- Restore resets serial sequences after inserting rows.
 
-Restore uses a PostgreSQL transaction and rolls back on errors. It refuses circular foreign-key dependency schemas rather than disabling constraints.
-
-## Limitations
-- Logical table-data backup only; it does not include roles, extensions, schema migrations or database-level settings.
-- Backup history stores metadata only. Actual files are downloaded to your device and are not kept on Render's ephemeral disk.
-- 50 MB request limit. For disaster recovery, configure managed PostgreSQL backups or point-in-time recovery.
-- Backup files contain private customer and order data. Never share them.
-- Environment variables, database passwords, API keys and payment secrets are not exported.
+## Operational limits
+- Logical table-data backup only; it does not include database roles, extensions, schema migrations, or database-level settings.
+- Backup history contains sensitive database snapshots; protect the Admin Key and restrict database access.
+- 50 MB JSON request limit. Configure managed PostgreSQL backups or point-in-time recovery for disaster recovery.
+- Environment variables, database passwords, API keys, and payment secrets are never exported.
+- Test restore only against a separate staging/test database. Never experiment on production.
