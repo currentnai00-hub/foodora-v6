@@ -6,7 +6,7 @@
 <title>আমার অ্যাকাউন্ট | Foodora</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=foodora-wallet-v1">
+<link rel="stylesheet" href="/style.css?v=foodora-wallet-payment-guide-v2">
 </head>
 <body>
 <header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="/#menu">মেনু</a><a href="/track">অর্ডার ট্র্যাক</a><a href="/">হোম</a></nav><a class="cart-button" href="/">শপিং চালিয়ে যান</a></header>
@@ -38,10 +38,10 @@
 <p class="wallet-balance-label">বর্তমান ব্যালেন্স</p><p class="wallet-balance" id="walletBalance">৳০</p>
 <form class="account-form wallet-topup-form" id="walletTopupForm">
 <h4>টাকা জমার অনুরোধ</h4>
-<p class="account-note">bKash বা Nagad-এ পেমেন্ট করার পর তথ্য দিন। অ্যাডমিন যাচাই ও অনুমোদন না করা পর্যন্ত ব্যালেন্স বাড়বে না।</p>
+<p class="account-note">প্রথমে bKash বা Nagad নির্বাচন করে পেমেন্ট নির্দেশিকা খুলুন। নম্বর কপি করে পেমেন্টের পর Transaction ID দিয়ে অনুরোধ জমা দিন। অ্যাডমিন যাচাই না করা পর্যন্ত ব্যালেন্স বাড়বে না।</p>
 <label>পরিমাণ (৳)<input name="amount" type="number" min="10" max="100000" step="1" required></label>
-<label>পেমেন্ট মাধ্যম<select name="paymentMethod" required><option value="">নির্বাচন করুন</option><option value="bKash">bKash</option><option value="Nagad">Nagad</option></select></label>
-<label>Transaction ID<input name="transactionId" type="text" minlength="4" maxlength="80" required></label>
+<label>পেমেন্ট মাধ্যম<select name="paymentMethod" id="walletPaymentMethod" required><option value="">নির্বাচন করুন</option><option value="bKash">bKash</option><option value="Nagad">Nagad</option></select></label>
+<label>Transaction ID<input name="transactionId" id="walletTransactionId" type="text" minlength="4" maxlength="80" required></label>
 <button type="submit" id="walletTopupSubmit">অনুরোধ জমা দিন</button><p class="account-message" id="walletTopupMessage" aria-live="polite"></p>
 </form>
 <h4 class="wallet-history-title">Wallet লেনদেন</h4><div id="walletTransactions" class="wallet-transactions"><p class="account-empty">লোড হচ্ছে…</p></div>
@@ -52,5 +52,5 @@
 </section>
 </section></div></main>
 <footer><a class="brand" href="/">foodora<span>.</span></a><p>যত্নে তৈরি খাবার, পৌঁছে যাবে আপনার ঘরে।</p><small>© Foodora. সর্বস্বত্ব সংরক্ষিত।</small></footer>
-<script src="/account.js?v=foodora-all-order-reviews-v1" defer></script>
+<script src="/account.js?v=foodora-wallet-payment-guide-v2" defer></script>
 </body></html>
