@@ -101,7 +101,7 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
     try {
       await client.query("BEGIN");
       const r=await client.query(
-        "SELECT id,customer_id,payment_method,payment_status,total,status FROM orders WHERE id=$1 FOR UPDATE",
+        "SELECT id,customer_id,phone,payment_method,payment_status,total,status FROM orders WHERE id=$1 FOR UPDATE",
         [orderId]);
       if(!r.rowCount) throw Object.assign(new Error("Order not found."),{status:404});
       const o=r.rows[0];
