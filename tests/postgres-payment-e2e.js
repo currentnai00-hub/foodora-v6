@@ -68,7 +68,7 @@ function admin(path, method = "GET", body) {
   try {
     await waitForServer();
 
-    // Exercise the actual Express static middleware, not only source-level regexes.
+    // Exercise the live Express static middleware in the isolated PostgreSQL E2E server, not only source-level regexes.
     for (const privatePath of [
       "/orders.json", "/users.json", "/sessions.json", "/products.json",
       "/coupons.json", "/reviews.json", "/orders.json.backup",
