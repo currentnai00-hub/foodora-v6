@@ -64,6 +64,8 @@ jobs:
           assert "PINs, OTPs" in guide
           print("Manual payment safety invariants present.")
           PY
+      - name: Check payment UI integration guards
+        run: node tests/payment-ui-integration-guards.js
       - name: Check tracking privacy and analytics safeguards
         run: |
           python3 - <<'PY'
