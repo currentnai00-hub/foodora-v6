@@ -1,0 +1,17 @@
+"use strict";
+const assert=require("node:assert/strict");
+const crypto=require("node:crypto");
+const {zipStored,unzipStored,decodeBackup}=require("../backup");
+const data={format:"foodora-postgres-json",version:1,createdAt:"2026-01-01T00:00:00.000Z",tables:[{name:"products",rows:[{id:"p1",name:"Test"}]}],tableCount:1,rowCount:1};
+const payload=Buffer.from(JSON.stringify(data));
+const manifest=Buffer.from(JSON.stringify({format:"foodora-postgres-zip",version:1,file:"backup.json",bytes:payload.length,sha256:crypto.createHash("sha256").update(payload).digest("hex")}));
+const archive=zipStored([["backup.json",payload],["manifest.json",manifest]]);
+assert.equal(decodeBackup(archive).tables[0].rows[0].id,"p1");
+assert.equal(unzipStored(archive).size,2);
+const damaged=Buffer.from(archive);damaged[40]^=1;
+assert.throws(()=>decodeBackup(damaged),/checksum|invalid|ZIP/i);
+const wrongManifest=Buffer.from(JSON.stringify({format:"foodora-postgres-zip",version:1,file:"backup.json",bytes:payload.length,sha256:"0".repeat(64)}));
+const wrong=zipStored([["backup.json",payload],["manifest.json",wrongManifest]]);
+assert.throws(()=>decodeBackup(wrong),/SHA-256/i);
+assert.throws(()=>decodeBackup(Buffer.from("not a zip")),/ZIP/i);
+console.log("ZIP backup format tests passed: archive structure, manifest, SHA-256 and corruption rejection.");
