@@ -46,8 +46,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client age
           aws --version
-      - name: Create encrypted database dump
-        id: backup
+      - name: Create, encrypt, and upload database backup
         shell: bash
         run: |
           set -euo pipefail
@@ -60,27 +59,13 @@ jobs:
           age --encrypt --recipient "$AGE_RECIPIENT" --output "$WORK/foodora.dump.age" "$WORK/foodora.dump"
           rm -f "$WORK/foodora.dump"
           sha256sum "$WORK/foodora.dump.age" > "$WORK/foodora.dump.age.sha256"
-          printf '{"created_at":"%s","format":"postgres-custom","encryption":"age","sha256":"%s"}\n' "$STAMP" "$(cut -d' ' -f1 "$WORK/foodora.dump.age.sha256")" > "$WORK/manifest.json"
-          echo "stamp=$STAMP" >> "$GITHUB_OUTPUT"
-          echo "encrypted_path=$WORK/foodora.dump.age" >> "$GITHUB_OUTPUT"
-          echo "checksum_path=$WORK/foodora.dump.age.sha256" >> "$GITHUB_OUTPUT"
-          echo "manifest_path=$WORK/manifest.json" >> "$GITHUB_OUTPUT"
-          echo "Backup archive encrypted successfully; plaintext dump removed."
-      - name: Upload encrypted backup to Cloudflare R2
-        shell: bash
-        env:
-          STAMP: ${{ steps.backup.outputs.stamp }}
-          ENCRYPTED_PATH: ${{ steps.backup.outputs.encrypted_path }}
-          CHECKSUM_PATH: ${{ steps.backup.outputs.checksum_path }}
-          MANIFEST_PATH: ${{ steps.backup.outputs.manifest_path }}
-        run: |
-          set -euo pipefail
+          printf '{"created_at":"%s","format":"postgres-custom","encryption":"age","sha256":"%s"}\\n' "$STAMP" "$(cut -d' ' -f1 "$WORK/foodora.dump.age.sha256")" > "$WORK/manifest.json"
           ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
           PREFIX="s3://${R2_BUCKET}/foodora"
-          aws s3 cp "$ENCRYPTED_PATH" "$PREFIX/${STAMP}.dump.age" --endpoint-url "$ENDPOINT"
-          aws s3 cp "$CHECKSUM_PATH" "$PREFIX/${STAMP}.dump.age.sha256" --endpoint-url "$ENDPOINT"
-          aws s3 cp "$MANIFEST_PATH" "$PREFIX/${STAMP}.manifest.json" --endpoint-url "$ENDPOINT"
-          aws s3 cp "$ENCRYPTED_PATH" "$PREFIX/latest.dump.age" --endpoint-url "$ENDPOINT"
-          aws s3 cp "$CHECKSUM_PATH" "$PREFIX/latest.dump.age.sha256" --endpoint-url "$ENDPOINT"
-          aws s3 cp "$MANIFEST_PATH" "$PREFIX/latest.manifest.json" --endpoint-url "$ENDPOINT"
-          echo "Encrypted backup uploaded to the configured R2 bucket."
+          aws s3 cp "$WORK/foodora.dump.age" "$PREFIX/${STAMP}.dump.age" --endpoint-url "$ENDPOINT"
+          aws s3 cp "$WORK/foodora.dump.age.sha256" "$PREFIX/${STAMP}.dump.age.sha256" --endpoint-url "$ENDPOINT"
+          aws s3 cp "$WORK/manifest.json" "$PREFIX/${STAMP}.manifest.json" --endpoint-url "$ENDPOINT"
+          aws s3 cp "$WORK/foodora.dump.age" "$PREFIX/latest.dump.age" --endpoint-url "$ENDPOINT"
+          aws s3 cp "$WORK/foodora.dump.age.sha256" "$PREFIX/latest.dump.age.sha256" --endpoint-url "$ENDPOINT"
+          aws s3 cp "$WORK/manifest.json" "$PREFIX/latest.manifest.json" --endpoint-url "$ENDPOINT"
+          echo "Encrypted backup uploaded successfully; plaintext dump removed."
