@@ -26,6 +26,10 @@ jobs:
         run: node --check track.js
       - name: Check customer menu JavaScript syntax
         run: node --check script.js
+      - name: Check Admin dashboard JavaScript syntax
+        run: node --check admin.js
+      - name: Check payment guide JavaScript syntax
+        run: node --check payment-guide.js
       - name: Check individual food page JavaScript syntax
         run: node --check product-page.js
       - name: Extract and check admin dashboard JavaScript
