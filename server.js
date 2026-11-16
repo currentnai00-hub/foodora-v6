@@ -201,6 +201,9 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS payment_review_events_order_idx ON payment_review_events(order_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS orders_payment_transaction_lookup_idx
+      ON orders (LOWER(payment_method), LOWER(BTRIM(transaction_id)))
+      WHERE COALESCE(BTRIM(transaction_id),'') <> '';
 
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS order_id TEXT REFERENCES orders(id) ON DELETE SET NULL;
