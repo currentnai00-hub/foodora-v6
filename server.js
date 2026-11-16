@@ -34,6 +34,22 @@ const pool = usePg ? new Pool({
 app.use("/api/admin/backups", express.json({ limit: "50mb" }));
 app.use(express.json({ limit: "1mb" }));
 
+// Baseline browser/API response protections. Sensitive account and admin responses
+// must never be stored by shared or browser caches.
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  if (process.env.NODE_ENV === "production" && req.secure) {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  if (req.path.startsWith("/api/admin/") || req.path.startsWith("/api/customer/")) {
+    res.setHeader("Cache-Control", "no-store");
+  }
+  next();
+});
+
 // Never expose server-side data, backups, or environment/config artifacts via static hosting.
 app.use((req, res, next) => {
   let pathname;
