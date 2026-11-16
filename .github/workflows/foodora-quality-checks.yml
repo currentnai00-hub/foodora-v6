@@ -68,6 +68,8 @@ jobs:
         run: node tests/payment-ui-integration-guards.js
       - name: Check ZIP backup format and integrity
         run: node tests/zip-backup-format.js
+      - name: Check private data is not statically exposed
+        run: node tests/static-private-data-guards.js
       - name: Check tracking privacy and analytics safeguards
         run: |
           python3 - <<'PY'
