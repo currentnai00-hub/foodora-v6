@@ -9,10 +9,10 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 async function request(path, options = {}) {
   const response = await fetch(base + path, {
     ...options,
-    headers: { "content-type": "application/json", ...(options.headers || {}) }
+    headers: { "content-type": "application/json", origin: base, ...(options.headers || {}) }
   });
   const body = await response.json().catch(() => ({}));
-  return { status: response.status, body };
+  return { status: response.status, body, headers: response.headers };
 }
 async function waitForServer() {
   for (let i = 0; i < 40; i++) {
@@ -40,6 +40,7 @@ async function loadCheckoutFixture() {
     paymentMethods: config.body.paymentMethods
   }));
 }
+let customerCookie = "";
 function checkout(paymentMethod, transactionId = "") {
   return request("/api/orders", {
     method: "POST",
@@ -51,7 +52,8 @@ function checkout(paymentMethod, transactionId = "") {
       paymentMethod,
       transactionId,
       items: [{ id: checkoutFixture.productId, qty: 1 }]
-    })
+    }),
+    headers: customerCookie ? { cookie: customerCookie } : {}
   });
 }
 function admin(path, method = "GET", body) {
@@ -66,6 +68,16 @@ function admin(path, method = "GET", body) {
   try {
     await waitForServer();
     await loadCheckoutFixture();
+
+    const testPhone = "01" + String(crypto.randomInt(0, 1_000_000_000)).padStart(9, "0");
+    const registration = await request("/api/customer/register", {
+      method: "POST",
+      body: JSON.stringify({ name: "CI Payment Customer", phone: testPhone, password: "CI-only-password-2026" })
+    });
+    assert.equal(registration.status, 201, `CI customer registration failed: ${JSON.stringify(registration.body)}`);
+    const setCookie = registration.headers.get("set-cookie");
+    assert(setCookie, "Customer registration must issue an authenticated session cookie");
+    customerCookie = setCookie.split(";")[0];
 
     const malformed = await checkout("bKash", "x");
     assert.equal(malformed.status, 400, "Malformed transaction ID must be rejected");
@@ -104,6 +116,66 @@ function admin(path, method = "GET", body) {
     assert.equal(rejected.status, 200, "Admin rejection route should work");
     assert.equal(rejected.body.order.payment_status, "Rejected");
 
+    // Customer must be authenticated and own the rejected order to resubmit.
+    const unauthenticatedResubmit = await request(
+      `/api/customer/orders/${second.body.order.id}/payment-resubmit`,
+      { method: "POST", body: JSON.stringify({ transactionId: "CIUNAUTH1234" }) }
+    );
+    assert.equal(unauthenticatedResubmit.status, 401, "Unauthenticated payment resubmission must be rejected");
+
+    const resubmitTx = "CIRESUB" + crypto.randomBytes(6).toString("hex");
+    const resubmitted = await request(
+      `/api/customer/orders/${second.body.order.id}/payment-resubmit`,
+      {
+        method: "POST",
+        headers: { cookie: customerCookie },
+        body: JSON.stringify({ transactionId: resubmitTx })
+      }
+    );
+    assert.equal(resubmitted.status, 200, `Rejected payment should accept a new transaction ID: ${JSON.stringify(resubmitted.body)}`);
+    assert.equal(resubmitted.body.paymentStatus, "Pending verification");
+
+    const customerOrder = await request(`/api/customer/orders/${second.body.order.id}`, {
+      headers: { cookie: customerCookie }
+    });
+    assert.equal(customerOrder.status, 200);
+    assert.equal(customerOrder.body.order.paymentStatus, "Pending verification");
+    assert.equal(customerOrder.body.order.paymentTransactionId, resubmitTx);
+    assert(customerOrder.body.order.paymentHistory.some(event => event.action === "rejected"));
+    assert(customerOrder.body.order.paymentHistory.some(event => event.action === "submitted" && event.transactionId === resubmitTx));
+
+    // Two rejected orders concurrently resubmitting the same transaction ID:
+    // exactly one request must win; the other must receive HTTP 409.
+    const raceOrderA = await checkout("bKash", "CIRACEA" + crypto.randomBytes(5).toString("hex"));
+    const raceOrderB = await checkout("bKash", "CIRACEB" + crypto.randomBytes(5).toString("hex"));
+    assert.equal(raceOrderA.status, 201);
+    assert.equal(raceOrderB.status, 201);
+    for (const order of [raceOrderA, raceOrderB]) {
+      const review = await admin(
+        `/api/admin/orders/${order.body.order.id}/payment-review`,
+        "PATCH",
+        { action: "reject", note: "CI fixture: prepare concurrent resubmission" }
+      );
+      assert.equal(review.status, 200);
+      assert.equal(review.body.order.payment_status, "Rejected");
+    }
+    const sharedRaceTx = "CIRACE" + crypto.randomBytes(6).toString("hex");
+    const raceResults = await Promise.all([raceOrderA, raceOrderB].map(order =>
+      request(`/api/customer/orders/${order.body.order.id}/payment-resubmit`, {
+        method: "POST",
+        headers: { cookie: customerCookie },
+        body: JSON.stringify({ transactionId: sharedRaceTx })
+      })
+    ));
+    assert.deepEqual(raceResults.map(result => result.status).sort((a,b)=>a-b), [200,409],
+      `Concurrent duplicate resubmission must yield one success and one conflict: ${JSON.stringify(raceResults.map(x=>({status:x.status,body:x.body}))) }`);
+
+    const raceRows = await pool.query(
+      "SELECT COUNT(*)::int AS n FROM orders WHERE LOWER(payment_method)='bkash' AND LOWER(BTRIM(transaction_id))=LOWER($1)",
+      [sharedRaceTx]
+    );
+    assert.equal(raceRows.rows[0].n, 1, "Only one order may retain the concurrently submitted transaction ID");
+
     const cod = await checkout("Cash on Delivery");
     assert.equal(cod.status, 201, "COD order should still be accepted");
     assert.equal(cod.body.order.paymentStatus, "Awaiting payment");
@@ -128,7 +200,7 @@ function admin(path, method = "GET", body) {
     assert.equal(allOrders.status, 200);
     assert(allOrders.body.some(order => order.id === oldOrderId), "Existing orders must remain readable");
 
-    console.log("PostgreSQL payment E2E passed: malformed ID, duplicate guard, pending status, approve/reject, COD, history, lookup index, and legacy order visibility.");
+    console.log("PostgreSQL payment E2E passed: malformed ID, duplicate guard, pending status, approve/reject, authenticated resubmission, unauthenticated rejection, customer payment history, concurrent duplicate race, COD, lookup index, and legacy order visibility.");
   } catch (error) {
     console.error(error);
     process.exitCode = 1;
