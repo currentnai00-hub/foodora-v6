@@ -144,6 +144,39 @@ function admin(path, method = "GET", body) {
     assert(customerOrder.body.order.paymentHistory.some(event => event.action === "rejected"));
     assert(customerOrder.body.order.paymentHistory.some(event => event.action === "submitted" && event.transactionId === resubmitTx));
 
+    // A different authenticated customer must not read or resubmit this order.
+    const secondPhone = "01" + String(crypto.randomInt(0, 1_000_000_000)).padStart(9, "0");
+    const secondRegistration = await request("/api/customer/register", {
+      method: "POST",
+      body: JSON.stringify({ name: "CI Other Customer", phone: secondPhone, password: "CI-only-password-2026" })
+    });
+    assert.equal(secondRegistration.status, 201, `Second CI customer registration failed: ${JSON.stringify(secondRegistration.body)}`);
+    const secondCookieHeader = secondRegistration.headers.get("set-cookie");
+    assert(secondCookieHeader, "Second customer must receive a session cookie");
+    const secondCustomerCookie = secondCookieHeader.split(";")[0];
+
+    const foreignOrderRead = await request(`/api/customer/orders/${second.body.order.id}`, {
+      headers: { cookie: secondCustomerCookie }
+    });
+    assert.equal(foreignOrderRead.status, 404, "A customer must not read another customer's order");
+
+    const foreignResubmit = await request(`/api/customer/orders/${second.body.order.id}/payment-resubmit`, {
+      method: "POST",
+      headers: { cookie: secondCustomerCookie },
+      body: JSON.stringify({ transactionId: "CIFOREIGN1234" })
+    });
+    assert.equal(foreignResubmit.status, 409, "A customer must not resubmit another customer's payment");
+
+    const noOriginResubmit = await request(`/api/customer/orders/${second.body.order.id}/payment-resubmit`, {
+      method: "POST",
+      headers: { cookie: customerCookie, origin: "https://untrusted.invalid" },
+      body: JSON.stringify({ transactionId: "CIBADORIGIN123" })
+    });
+    assert.equal(noOriginResubmit.status, 403, "Cross-origin payment resubmission must be rejected");
+
+    const unauthenticatedAdminHistory = await request("/api/admin/payment-history");
+    assert.notEqual(unauthenticatedAdminHistory.status, 200, "Admin payment history must require admin authorization");
+
     // Two rejected orders concurrently resubmitting the same transaction ID:
     // exactly one request must win; the other must receive HTTP 409.
     const raceOrderA = await checkout("bKash", "CIRACEA" + crypto.randomBytes(5).toString("hex"));
@@ -200,7 +233,7 @@ function admin(path, method = "GET", body) {
     assert.equal(allOrders.status, 200);
     assert(allOrders.body.some(order => order.id === oldOrderId), "Existing orders must remain readable");
 
-    console.log("PostgreSQL payment E2E passed: malformed ID, duplicate guard, pending status, approve/reject, authenticated resubmission, unauthenticated rejection, customer payment history, concurrent duplicate race, COD, lookup index, and legacy order visibility.");
+    console.log("PostgreSQL payment E2E passed: malformed ID, duplicate guard, pending status, approve/reject, authenticated resubmission, unauthenticated rejection, cross-customer read/resubmit isolation, cross-origin rejection, admin authorization, customer payment history, concurrent duplicate race, COD, lookup index, and legacy order visibility.");
   } catch (error) {
     console.error(error);
     process.exitCode = 1;
