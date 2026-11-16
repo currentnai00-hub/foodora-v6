@@ -59,7 +59,7 @@ jobs:
           age --encrypt --recipient "$AGE_RECIPIENT" --output "$WORK/foodora.dump.age" "$WORK/foodora.dump"
           rm -f "$WORK/foodora.dump"
           sha256sum "$WORK/foodora.dump.age" > "$WORK/foodora.dump.age.sha256"
-          printf '{"created_at":"%s","format":"postgres-custom","encryption":"age","sha256":"%s"}\\n' "$STAMP" "$(cut -d' ' -f1 "$WORK/foodora.dump.age.sha256")" > "$WORK/manifest.json"
+          printf '{"created_at":"%s","format":"postgres-custom","encryption":"age","sha256":"%s"}\n' "$STAMP" "$(cut -d' ' -f1 "$WORK/foodora.dump.age.sha256")" > "$WORK/manifest.json"
           ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
           PREFIX="s3://${R2_BUCKET}/foodora"
           aws s3 cp "$WORK/foodora.dump.age" "$PREFIX/${STAMP}.dump.age" --endpoint-url "$ENDPOINT"
