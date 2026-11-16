@@ -19,6 +19,7 @@ Keep the private key (the line beginning `AGE-SECRET-KEY-`) offline and secure. 
 Add these repository settings under **Settings → Secrets and variables → Actions**:
 
 ### Variables
+- `FOODORA_OFFSITE_BACKUP_ENABLED`: set to `true` only after all variables/secrets below are configured and the first manual backup has been verified
 - `FOODORA_AGE_RECIPIENT`: the age public recipient (`age1...`)
 - `FOODORA_R2_ACCOUNT_ID`: Cloudflare account ID
 - `FOODORA_R2_BUCKET`: exact bucket name
