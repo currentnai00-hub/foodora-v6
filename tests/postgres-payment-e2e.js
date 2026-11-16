@@ -230,15 +230,27 @@ function admin(path, method = "GET", body) {
     const walletOrder = await checkout("Wallet");
     assert.equal(walletOrder.status, 201, "Wallet checkout should create an order");
     assert.equal(walletOrder.body.order.paymentStatus, "Verified");
+    const walletAfterPurchase = await request("/api/customer/wallet", { headers: { cookie: customerCookie } });
+    assert.equal(walletAfterPurchase.status, 200);
+    assert.equal(
+      walletBeforeOrder.body.balancePaisa - walletAfterPurchase.body.balancePaisa,
+      walletOrder.body.order.total * 100,
+      "Wallet checkout must debit the exact order total"
+    );
     const walletCancel = await admin("/api/admin/orders/" + walletOrder.body.order.id, "PATCH", { status: "Cancelled" });
     assert.equal(walletCancel.status, 200, "Cancelling a wallet-paid order should succeed");
     assert.equal(walletCancel.body.refundIssued, true, "Wallet cancellation should issue a wallet refund");
     const walletAfterCancel = await request("/api/customer/wallet", { headers: { cookie: customerCookie } });
     assert.equal(walletAfterCancel.status, 200);
     assert.equal(
-      walletAfterCancel.body.balancePaisa - walletBeforeOrder.body.balancePaisa,
+      walletAfterCancel.body.balancePaisa,
+      walletBeforeOrder.body.balancePaisa,
+      "Wallet cancellation must restore the exact pre-purchase balance"
+    );
+    assert.equal(
+      walletAfterCancel.body.balancePaisa - walletAfterPurchase.body.balancePaisa,
       walletOrder.body.order.total * 100,
-      "Wallet cancellation must restore the exact order total"
+      "Wallet cancellation must credit the exact order total"
     );
     const walletCancelAgain = await admin("/api/admin/orders/" + walletOrder.body.order.id, "PATCH", { status: "Cancelled" });
     assert.equal(walletCancelAgain.status, 200);
