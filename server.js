@@ -44,8 +44,8 @@ app.use((req, res, next) => {
   }
   const normalized = path.posix.normalize(pathname).replace(/^\/+/, "");
   const basename = path.posix.basename(normalized);
-  const privateDataFile = /^(?:orders|users|sessions|products|coupons|reviews)\\.json(?:$|\\.)/i.test(basename);
-  const privateArtifact = /\\.(?:backup|dump|sql|zip)$/i.test(basename) || /^\\.env(?:\\.|$)/i.test(basename);
+  const privateDataFile = /^(?:orders|users|sessions|products|coupons|reviews)\.json(?:$|\.)/i.test(basename);
+  const privateArtifact = /\.(?:backup|dump|sql|zip)$/i.test(basename) || /^\.env(?:\.|$)/i.test(basename);
   if (normalized.startsWith("data/") || privateDataFile || privateArtifact) {
     return res.status(404).end();
   }
