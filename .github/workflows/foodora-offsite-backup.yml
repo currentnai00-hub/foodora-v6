@@ -1,0 +1,86 @@
+name: Foodora encrypted off-site database backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 3 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foodora-offsite-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.FOODORA_DATABASE_URL }}
+      AGE_RECIPIENT: ${{ vars.FOODORA_AGE_RECIPIENT }}
+      R2_ACCOUNT_ID: ${{ vars.FOODORA_R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ vars.FOODORA_R2_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.FOODORA_R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.FOODORA_R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+    steps:
+      - name: Validate required configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in DATABASE_URL AGE_RECIPIENT R2_ACCOUNT_ID R2_BUCKET AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing required GitHub configuration: $name"
+              exit 1
+            fi
+          done
+          if [[ "$AGE_RECIPIENT" != age1* ]]; then
+            echo "::error::FOODORA_AGE_RECIPIENT must be an age public recipient (age1...)."
+            exit 1
+          fi
+      - name: Install PostgreSQL client and age
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client age
+          aws --version
+      - name: Create encrypted database dump
+        id: backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          WORK="$(mktemp -d)"
+          trap 'rm -rf "$WORK"' EXIT
+          STAMP="$(date -u +'%Y%m%dT%H%M%SZ')"
+          pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --file "$WORK/foodora.dump"
+          test -s "$WORK/foodora.dump"
+          age --encrypt --recipient "$AGE_RECIPIENT" --output "$WORK/foodora.dump.age" "$WORK/foodora.dump"
+          rm -f "$WORK/foodora.dump"
+          sha256sum "$WORK/foodora.dump.age" > "$WORK/foodora.dump.age.sha256"
+          printf '{"created_at":"%s","format":"postgres-custom","encryption":"age","sha256":"%s"}\n' "$STAMP" "$(cut -d' ' -f1 "$WORK/foodora.dump.age.sha256")" > "$WORK/manifest.json"
+          echo "stamp=$STAMP" >> "$GITHUB_OUTPUT"
+          echo "encrypted_path=$WORK/foodora.dump.age" >> "$GITHUB_OUTPUT"
+          echo "checksum_path=$WORK/foodora.dump.age.sha256" >> "$GITHUB_OUTPUT"
+          echo "manifest_path=$WORK/manifest.json" >> "$GITHUB_OUTPUT"
+          echo "Backup archive encrypted successfully; plaintext dump removed."
+      - name: Upload encrypted backup to Cloudflare R2
+        shell: bash
+        env:
+          STAMP: ${{ steps.backup.outputs.stamp }}
+          ENCRYPTED_PATH: ${{ steps.backup.outputs.encrypted_path }}
+          CHECKSUM_PATH: ${{ steps.backup.outputs.checksum_path }}
+          MANIFEST_PATH: ${{ steps.backup.outputs.manifest_path }}
+        run: |
+          set -euo pipefail
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          PREFIX="s3://${R2_BUCKET}/foodora"
+          aws s3 cp "$ENCRYPTED_PATH" "$PREFIX/${STAMP}.dump.age" --endpoint-url "$ENDPOINT"
+          aws s3 cp "$CHECKSUM_PATH" "$PREFIX/${STAMP}.dump.age.sha256" --endpoint-url "$ENDPOINT"
+          aws s3 cp "$MANIFEST_PATH" "$PREFIX/${STAMP}.manifest.json" --endpoint-url "$ENDPOINT"
+          aws s3 cp "$ENCRYPTED_PATH" "$PREFIX/latest.dump.age" --endpoint-url "$ENDPOINT"
+          aws s3 cp "$CHECKSUM_PATH" "$PREFIX/latest.dump.age.sha256" --endpoint-url "$ENDPOINT"
+          aws s3 cp "$MANIFEST_PATH" "$PREFIX/latest.manifest.json" --endpoint-url "$ENDPOINT"
+          echo "Encrypted backup uploaded to the configured R2 bucket."
