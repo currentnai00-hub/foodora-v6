@@ -58,7 +58,7 @@ async function jsonResponse(response) {
 
     const backupResponse = await api("/api/admin/backups", { method: "POST" });
     assert.equal(backupResponse.status, 200, "Backup endpoint must return a ZIP");
-    assert.match(backupResponse.headers.get("content-type") || "", /application\\/zip/i);
+    assert.match(backupResponse.headers.get("content-type") || "", /application\/zip/i);
     const archive = Buffer.from(await backupResponse.arrayBuffer());
     assert(archive.length > 22, "Downloaded ZIP archive must not be empty");
 
