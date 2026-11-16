@@ -67,6 +67,19 @@ function admin(path, method = "GET", body) {
 (async () => {
   try {
     await waitForServer();
+
+    // Exercise the live Express static middleware in the isolated PostgreSQL E2E server, not only source-level regexes.
+    for (const privatePath of [
+      "/orders.json", "/users.json", "/sessions.json", "/products.json",
+      "/coupons.json", "/reviews.json", "/orders.json.backup",
+      "/Foodora_Project.zip", "/data/orders.json", "/.env"
+    ]) {
+      const exposed = await fetch(base + privatePath);
+      assert.equal(exposed.status, 404, "Private file must not be publicly served: " + privatePath);
+    }
+    const publicPage = await fetch(base + "/backup-center.html");
+    assert.equal(publicPage.status, 200, "Public application page should remain available");
+
     await loadCheckoutFixture();
 
     const testPhone = "01" + String(crypto.randomInt(0, 1_000_000_000)).padStart(9, "0");
