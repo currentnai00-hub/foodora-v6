@@ -213,6 +213,44 @@ function admin(path, method = "GET", body) {
     assert.equal(cod.status, 201, "COD order should still be accepted");
     assert.equal(cod.body.order.paymentStatus, "Awaiting payment");
 
+    // Wallet cancellation must credit the customer's wallet exactly once.
+    const topupTx = "CIWALLET" + crypto.randomBytes(6).toString("hex");
+    const topup = await request("/api/customer/wallet/topups", {
+      method: "POST",
+      headers: { cookie: customerCookie },
+      body: JSON.stringify({ amount: 5000, paymentMethod: "bKash", transactionId: topupTx })
+    });
+    assert.equal(topup.status, 201, "Wallet top-up request should be accepted");
+    const topupApproval = await admin("/api/admin/wallet/topups/" + topup.body.topup.id, "PATCH", {
+      action: "approve", note: "CI fixture: approve wallet funding"
+    });
+    assert.equal(topupApproval.status, 200, "Admin should approve CI wallet top-up");
+    const walletBeforeOrder = await request("/api/customer/wallet", { headers: { cookie: customerCookie } });
+    assert.equal(walletBeforeOrder.status, 200);
+    const walletOrder = await checkout("Wallet");
+    assert.equal(walletOrder.status, 201, "Wallet checkout should create an order");
+    assert.equal(walletOrder.body.order.paymentStatus, "Verified");
+    const walletCancel = await admin("/api/admin/orders/" + walletOrder.body.order.id, "PATCH", { status: "Cancelled" });
+    assert.equal(walletCancel.status, 200, "Cancelling a wallet-paid order should succeed");
+    assert.equal(walletCancel.body.refundIssued, true, "Wallet cancellation should issue a wallet refund");
+    const walletAfterCancel = await request("/api/customer/wallet", { headers: { cookie: customerCookie } });
+    assert.equal(walletAfterCancel.status, 200);
+    assert.equal(
+      walletAfterCancel.body.balancePaisa - walletBeforeOrder.body.balancePaisa,
+      walletOrder.body.order.total * 100,
+      "Wallet cancellation must restore the exact order total"
+    );
+    const walletCancelAgain = await admin("/api/admin/orders/" + walletOrder.body.order.id, "PATCH", { status: "Cancelled" });
+    assert.equal(walletCancelAgain.status, 200);
+    assert.equal(walletCancelAgain.body.alreadyCancelled, true);
+    const walletAfterSecondCancel = await request("/api/customer/wallet", { headers: { cookie: customerCookie } });
+    assert.equal(walletAfterSecondCancel.body.balancePaisa, walletAfterCancel.body.balancePaisa, "Repeated cancellation must not duplicate the wallet refund");
+    const walletRefundLedger = await pool.query(
+      "SELECT COUNT(*)::int AS n FROM wallet_transactions WHERE idempotency_key=$1",
+      ["order-refund:" + walletOrder.body.order.id]
+    );
+    assert.equal(walletRefundLedger.rows[0].n, 1, "Exactly one refund ledger entry must exist for the wallet order");
+
     const history = await admin("/api/admin/payment-history");
     assert.equal(history.status, 200);
     assert(history.body.events.some(event => event.orderId === first.body.order.id && event.action === "approved"));
