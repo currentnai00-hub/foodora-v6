@@ -33,6 +33,12 @@ async function loadCheckoutFixture() {
   const product = products.body.find(p => p.active !== false && Number(p.stock) >= 1);
   assert(product, "At least one active in-stock product must exist in the test database");
   checkoutFixture = { deliveryArea: config.body.areas[0].id, productId: product.id };
+  console.log("Checkout fixture diagnostics:", JSON.stringify({
+    deliveryArea: checkoutFixture.deliveryArea,
+    productId: product.id,
+    productStock: product.stock,
+    paymentMethods: config.body.paymentMethods
+  }));
 }
 function checkout(paymentMethod, transactionId = "") {
   return request("/api/orders", {
@@ -66,6 +72,13 @@ function admin(path, method = "GET", body) {
 
     const tx = "CI" + crypto.randomBytes(8).toString("hex");
     const first = await checkout("bKash", tx);
+    if (first.status !== 201) {
+      console.error("Checkout API diagnostic:", JSON.stringify({
+        status: first.status, body: first.body,
+        paymentMethod: "bKash", transactionIdLength: tx.length,
+        deliveryArea: checkoutFixture.deliveryArea, productId: checkoutFixture.productId
+      }));
+    }
     assert.equal(first.status, 201, `A new bKash transaction should create an order; received ${first.status}: ${JSON.stringify(first.body)}`);
     assert.equal(first.body.order.paymentStatus, "Pending verification");
 
