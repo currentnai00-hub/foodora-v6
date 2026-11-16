@@ -119,6 +119,8 @@ jobs:
           echo $! > /tmp/foodora-server.pid
       - name: Run PostgreSQL payment end-to-end tests
         run: node tests/postgres-payment-e2e.js
+      - name: Run isolated PostgreSQL ZIP backup and restore end-to-end tests
+        run: node tests/postgres-backup-restore-e2e.js
       - name: Show server log on failure
         if: failure()
         run: cat /tmp/foodora-server.log
