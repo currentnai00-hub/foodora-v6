@@ -112,7 +112,7 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
       await client.query("UPDATE orders SET status='Cancelled' WHERE id=$1",[o.id]);
       let refundIssued=false;
       const method=String(o.payment_method||"");
-      const eligible=["bKash","Nagad"].includes(method) && o.payment_status==="Verified" && Number(o.total)>0;
+      const eligible=["bKash","Nagad","Wallet"].includes(method) && o.payment_status==="Verified" && Number(o.total)>0;
       let refundPending=false;
       if(eligible) {
         let refundCustomerId=o.customer_id;
@@ -124,7 +124,7 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
           const credit=await postLedger(client,{
             customerId:refundCustomerId,type:"refund",amountPaisa:Number(o.total)*100,
             referenceType:"order",referenceId:o.id,idempotencyKey:"order-refund:"+o.id,
-            description:"Cancelled order refund · "+o.id
+            description:(method==="Wallet"?"Wallet order cancellation refund · ":"Cancelled order refund · ")+o.id
           });
           refundIssued=!credit.duplicate;
           await client.query("INSERT INTO wallet_refund_cases(order_id,customer_id,phone,amount_paisa,status,credited_at) VALUES($1,$2,$3,$4,'Credited',NOW()) ON CONFLICT(order_id) DO NOTHING",
