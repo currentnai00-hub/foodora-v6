@@ -33,6 +33,24 @@ const pool = usePg ? new Pool({
 
 app.use("/api/admin/backups", express.json({ limit: "50mb" }));
 app.use(express.json({ limit: "1mb" }));
+
+// Never expose server-side data, backups, or environment/config artifacts via static hosting.
+app.use((req, res, next) => {
+  let pathname;
+  try {
+    pathname = decodeURIComponent(req.path);
+  } catch {
+    return res.status(400).end();
+  }
+  const normalized = path.posix.normalize(pathname).replace(/^\\/+/, "");
+  const basename = path.posix.basename(normalized);
+  const privateDataFile = /^(?:orders|users|sessions|products|coupons|reviews)\\.json(?:$|\\.)/i.test(basename);
+  const privateArtifact = /\\.(?:backup|dump|sql|zip)$/i.test(basename) || /^\\.env(?:\\.|$)/i.test(basename);
+  if (normalized.startsWith("data/") || privateDataFile || privateArtifact) {
+    return res.status(404).end();
+  }
+  next();
+});
 app.use(express.static(ROOT, { extensions: ["html"] }));
 
 app.get("/food/:id", (req,res) => res.sendFile(path.join(ROOT, "product.html")));
