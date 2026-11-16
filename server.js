@@ -539,8 +539,8 @@ app.post("/api/orders", async (req,res) => {
   if (!name || !/^01[0-9]{9}$/.test(phone) || !address || (!PAYMENT_METHODS.includes(paymentMethod) && !isWalletPayment) || !input.length)
     return res.status(400).json({error:"Name, valid BD phone, address, payment method and cart items are required"});
   if (isWalletPayment && !usePg)return res.status(503).json({error:"Wallet checkout requires PostgreSQL."});
-  if (!isCashOnDelivery && !isWalletPayment && !transactionId)
-    return res.status(400).json({error:"bKash/Nagad Transaction ID is required before placing this order."});
+  if (!isCashOnDelivery && !isWalletPayment && !/^[A-Za-z0-9_-]{4,80}$/.test(transactionId))
+    return res.status(400).json({error:"A valid bKash/Nagad Transaction ID (4–80 letters, numbers, _ or -) is required."});
   try {
     const customer = await signedInCustomer(req);
     if(isWalletPayment && !customer)return res.status(401).json({error:"Wallet দিয়ে অর্ডার করতে আগে লগইন করুন।"});
@@ -574,6 +574,19 @@ app.post("/api/orders", async (req,res) => {
       const client=await pool.connect();
       try {
         await client.query("BEGIN");
+        if(transactionId && !isCashOnDelivery && !isWalletPayment){
+          const duplicateKey=paymentMethod.toLowerCase()+":"+transactionId.toLowerCase();
+          await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",[duplicateKey]);
+          const duplicate=await client.query(
+            "SELECT id FROM orders WHERE LOWER(payment_method)=LOWER($1) AND LOWER(BTRIM(transaction_id))=LOWER($2) LIMIT 1",
+            [paymentMethod,transactionId]
+          );
+          if(duplicate.rowCount){
+            const error=new Error("This Transaction ID has already been submitted for this payment method.");
+            error.status=409;
+            throw error;
+          }
+        }
         for (const item of normalized) {
           const r=await client.query("UPDATE products SET stock=stock-$1 WHERE id=$2 AND stock >= $1",[item.qty,item.id]);
           if (!r.rowCount) throw new Error("Stock changed; please refresh your cart");
@@ -588,6 +601,14 @@ app.post("/api/orders", async (req,res) => {
         await client.query("COMMIT");
       } catch(e) { await client.query("ROLLBACK"); throw e; } finally { client.release(); }
     } else {
+      if(transactionId && !isCashOnDelivery && !isWalletPayment){
+        const existingOrders=readJson(ORDERS_FILE,[]);
+        const duplicate=existingOrders.some(existing=>
+          String(existing.paymentMethod||"").toLowerCase()===paymentMethod.toLowerCase() &&
+          String(existing.transactionId||"").trim().toLowerCase()===transactionId.toLowerCase()
+        );
+        if(duplicate)return res.status(409).json({error:"This Transaction ID has already been submitted for this payment method."});
+      }
       const latest=readJson(PRODUCTS_FILE,[]);
       for (const item of normalized) { const p=latest.find(x=>x.id===item.id); if (!p || p.stock<item.qty) return res.status(409).json({error:"Stock changed; refresh and try again"}); p.stock-=item.qty; }
       writeJson(PRODUCTS_FILE,latest);
