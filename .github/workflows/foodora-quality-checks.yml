@@ -44,6 +44,24 @@ jobs:
           Path("/tmp/admin-inline.js").write_text(scripts[-1], encoding="utf-8")
           PY
           node --check /tmp/admin-inline.js
+      - name: Check manual payment safety invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          server = Path("server.js").read_text(encoding="utf-8")
+          admin = Path("admin.js").read_text(encoding="utf-8")
+          guide = Path("PAYMENT_SETUP.md").read_text(encoding="utf-8")
+          assert "pg_advisory_xact_lock(hashtextextended($1,0))" in server
+          assert "orders_payment_transaction_lookup_idx" in server
+          assert "This Transaction ID has already been submitted" in server
+          assert "payment-review" in admin
+          assert "paymentStatus:$" not in admin
+          assert "Pending verification" in server
+          assert "Payment manually verified" in admin
+          assert "not proof of payment" in guide
+          assert "PINs, OTPs" in guide
+          print("Manual payment safety invariants present.")
+          PY
       - name: Check tracking privacy and analytics safeguards
         run: |
           python3 - <<'PY'
