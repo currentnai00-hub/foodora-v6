@@ -66,6 +66,8 @@ jobs:
           PY
       - name: Check payment UI integration guards
         run: node tests/payment-ui-integration-guards.js
+      - name: Check ZIP backup format and integrity
+        run: node tests/zip-backup-format.js
       - name: Check tracking privacy and analytics safeguards
         run: |
           python3 - <<'PY'
