@@ -24,6 +24,16 @@ async function waitForServer() {
   }
   throw new Error("Foodora did not become healthy on the isolated PostgreSQL database.");
 }
+let checkoutFixture;
+async function loadCheckoutFixture() {
+  const [config, products] = await Promise.all([request("/api/config"), request("/api/products")]);
+  assert.equal(config.status, 200, "Store config should load");
+  assert.equal(products.status, 200, "Products should load");
+  assert(config.body.areas?.length, "At least one delivery area must exist in the test database");
+  const product = products.body.find(p => p.active !== false && Number(p.stock) >= 1);
+  assert(product, "At least one active in-stock product must exist in the test database");
+  checkoutFixture = { deliveryArea: config.body.areas[0].id, productId: product.id };
+}
 function checkout(paymentMethod, transactionId = "") {
   return request("/api/orders", {
     method: "POST",
@@ -31,10 +41,10 @@ function checkout(paymentMethod, transactionId = "") {
       name: "CI Test Customer",
       phone: "01700000000",
       address: "CI-only test address",
-      deliveryArea: "amirabad",
+      deliveryArea: checkoutFixture.deliveryArea,
       paymentMethod,
       transactionId,
-      items: [{ id: "p_burger", qty: 1 }]
+      items: [{ id: checkoutFixture.productId, qty: 1 }]
     })
   });
 }
@@ -49,13 +59,14 @@ function admin(path, method = "GET", body) {
 (async () => {
   try {
     await waitForServer();
+    await loadCheckoutFixture();
 
     const malformed = await checkout("bKash", "x");
     assert.equal(malformed.status, 400, "Malformed transaction ID must be rejected");
 
     const tx = "CI" + crypto.randomBytes(8).toString("hex");
     const first = await checkout("bKash", tx);
-    assert.equal(first.status, 201, "A new bKash transaction should create an order");
+    assert.equal(first.status, 201, `A new bKash transaction should create an order; received ${first.status}: ${JSON.stringify(first.body)}`);
     assert.equal(first.body.order.paymentStatus, "Pending verification");
 
     const duplicate = await checkout("bKash", tx.toLowerCase());
