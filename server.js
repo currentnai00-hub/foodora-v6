@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const { Pool } = require("pg");
 const { registerWalletRoutes } = require("./wallet");
 const { registerBackupRoutes } = require("./backup");
+const { registerAssistantRoutes } = require("./assistant");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -937,6 +938,9 @@ app.patch("/api/admin/reviews/:id",adminOnly,async(req,res)=>{
 
 
 const backupServices = usePg ? registerBackupRoutes({ app, pool, adminOnly }) : null;
+
+// The Personal AI workspace starts with authenticated, read-only store insights.
+registerAssistantRoutes({ app, adminOnly, getProducts, getOrders });
 
 const walletServices = usePg ? registerWalletRoutes({
   app,pool,signedInCustomer,adminOnly,requestIsSameOrigin,requireCustomerDatabase,clean

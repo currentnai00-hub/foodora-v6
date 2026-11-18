@@ -1,0 +1,35 @@
+name: Foodora assistant tests
+
+on:
+  pull_request:
+    paths:
+      - "assistant.js"
+      - "test/assistant.test.js"
+      - "package.json"
+      - ".github/workflows/assistant-tests.yml"
+  push:
+    branches:
+      - main
+      - "feature/foodora-personal-ai-v1"
+    paths:
+      - "assistant.js"
+      - "test/assistant.test.js"
+      - "package.json"
+      - ".github/workflows/assistant-tests.yml"
+
+jobs:
+  assistant-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check assistant backend syntax
+        run: node --check assistant.js
+      - name: Check assistant tests syntax
+        run: node --check test/assistant.test.js
+      - name: Run assistant unit tests
+        run: npm test
