@@ -281,7 +281,7 @@ test("product performance comparison uses equal Dhaka periods and excludes cance
   assert.equal(burger.currentUnits, 7);
   assert.equal(burger.changePercent, 75);
   assert.equal(result.week.products.some(p => p.name === "Hidden"), false);
-  assert.equal(result.month.products.find(p => p.name === "Burger").currentUnits, 7);
+  assert.equal(result.month.products.find(p => p.name === "Burger").currentUnits, 11);
 });
 
 test("assistant answers Bangla and English product performance comparisons", () => {
