@@ -95,6 +95,11 @@ function buildStoreContext(products, orders, now = new Date()) {
     currency: "BDT",
     periodReports: { week: buildPeriodOrderReport(safeOrders, "week", now), month: buildPeriodOrderReport(safeOrders, "month", now) },
     productAnalytics: buildProductAnalytics(active, safeOrders),
+    productSalesTrends: {
+      day: buildProductSalesTrend(active, safeOrders, "day", now),
+      week: buildProductSalesTrend(active, safeOrders, "week", now),
+      month: buildProductSalesTrend(active, safeOrders, "month", now)
+    },
     products: mappedProducts.slice(0, 500),
     productSummary: {
       total: safeProducts.length, active: active.length,
@@ -177,6 +182,80 @@ function buildProductAnalytics(products, orders) {
   };
 }
 
+
+function buildProductSalesTrend(products, orders, period = "day", now = new Date()) {
+  const sizes = { day: 7, week: 8, month: 6 };
+  const size = sizes[period];
+  if (!size) return null;
+  const todayKey = dhakaDateKey(now);
+  if (!todayKey) return null;
+  const [year, month, day] = todayKey.split("-").map(Number);
+  const today = new Date(Date.UTC(year, month - 1, day));
+  const mondayOffset = (today.getUTCDay() + 6) % 7;
+  let first;
+  if (period === "day") first = new Date(today.getTime() - (size - 1) * 86400000);
+  else if (period === "week") first = new Date(today.getTime() - (mondayOffset + (size - 1) * 7) * 86400000);
+  else first = new Date(Date.UTC(year, month - size, 1));
+  const keyFor = date => {
+    if (period === "month") return date.toISOString().slice(0, 7);
+    if (period === "week") {
+      const offset = (date.getUTCDay() + 6) % 7;
+      return new Date(date.getTime() - offset * 86400000).toISOString().slice(0, 10);
+    }
+    return date.toISOString().slice(0, 10);
+  };
+  const buckets = new Map();
+  for (let i = 0; i < size; i++) {
+    const date = period === "month"
+      ? new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + i, 1))
+      : new Date(first.getTime() + i * (period === "week" ? 7 : 1) * 86400000);
+    const key = keyFor(date);
+    buckets.set(key, { period: key, orderIds: new Set(), unitsSold: 0, listedValue: 0, productUnits: new Map() });
+  }
+  const active = (Array.isArray(products) ? products : []).filter(p => p && p.active !== false);
+  const byId = new Map(active.filter(p => p.id != null).map(p => [String(p.id), p]));
+  const byName = new Map(active.map(p => [String(p.name || "").trim().toLocaleLowerCase(), p]));
+  (Array.isArray(orders) ? orders : []).forEach((order, index) => {
+    if (!order || normaliseStatus(order.status) === "cancelled") return;
+    const created = order.createdAt || order.created_at;
+    const dateKey = created ? dhakaDateKey(created) : "";
+    if (!dateKey) return;
+    const parsed = new Date(dateKey + "T00:00:00Z");
+    const bucketKey = keyFor(parsed);
+    const bucket = buckets.get(bucketKey);
+    if (!bucket) return;
+    let orderHasTrackedItem = false;
+    for (const item of (Array.isArray(order.items) ? order.items : [])) {
+      if (!item || typeof item !== "object") continue;
+      const product = byId.get(String(item.id || "")) ||
+        byName.get(String(item.name || "").trim().toLocaleLowerCase());
+      const quantity = Number(item.qty ?? item.quantity);
+      if (!product || !Number.isFinite(quantity) || quantity <= 0) continue;
+      const qty = Math.min(Math.floor(quantity), 1000000);
+      if (!qty) continue;
+      const price = Number(item.price);
+      bucket.unitsSold += qty;
+      bucket.listedValue += (Number.isFinite(price) && price >= 0 ? price : 0) * qty;
+      const productName = String(product.name || "Unnamed product").slice(0, 80);
+      bucket.productUnits.set(productName, (bucket.productUnits.get(productName) || 0) + qty);
+      orderHasTrackedItem = true;
+    }
+    if (orderHasTrackedItem) bucket.orderIds.add(String(order.id || "row-" + index));
+  });
+  return {
+    period,
+    buckets: [...buckets.values()].map(bucket => ({
+      period: bucket.period,
+      orderCount: bucket.orderIds.size,
+      unitsSold: bucket.unitsSold,
+      listedValue: bucket.listedValue,
+      topProducts: [...bucket.productUnits.entries()]
+        .sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))
+        .slice(0, 5).map(([name, unitsSold]) => ({ name, unitsSold }))
+    }))
+  };
+}
+
 function createRateLimiter({ now = Date.now, limit = RATE_LIMIT, windowMs = RATE_WINDOW_MS } = {}) {
   const buckets = new Map();
   return function allow(key) {
@@ -233,6 +312,21 @@ function answerFreeAssistant(message, context) {
     return report ? "মাসিক অর্ডার রিপোর্ট (" + report.startDate + " থেকে " + report.endDate + "):\n• অর্ডার: " + report.orderCount + "টি\n• তালিকাভুক্ত মোট অর্ডার মূল্য: " + money(report.grossOrderValueExcludingCancelled) + "\n• স্ট্যাটাস: " + (Object.entries(report.statusCounts).map(([status, count]) => status + " " + count + "টি").join(", ") || "কোনো অর্ডার নেই") + "\nCancelled অর্ডার বাদ; এটি পেমেন্ট-যাচাইকৃত আয় বা নিট লাভ নয়।" : "মাসিক রিপোর্ট তৈরি করা যায়নি।";
   }
 
+
+
+  const trends = context.productSalesTrends || {};
+  if (has("daily sales trend", "last 7 days", "daily product trend", "দৈনিক বিক্রির প্রবণতা", "গত ৭ দিনের", "গত ৭ দিনের বিক্রি", "শেষ ৭ দিনের বিক্রি")) {
+    const report = trends.day;
+    return report ? "দৈনিক পণ্য অর্ডার-ট্রেন্ড (শেষ ৭ দিন; বাংলাদেশ সময়):\n" + report.buckets.map(b => "• " + b.period + ": " + b.unitsSold + "টি আইটেম; " + b.orderCount + "টি অর্ডার; তালিকাভুক্ত মূল্য ৳" + Math.round(b.listedValue).toLocaleString("en-BD")).join("\n") + "\nএগুলো বাতিল নয় এমন অর্ডারের আইটেম; পেমেন্ট-যাচাইকৃত বিক্রি নয়।" : "দৈনিক ট্রেন্ড তৈরি করা যায়নি।";
+  }
+  if (has("weekly sales trend", "last 8 weeks", "weekly product trend", "সাপ্তাহিক বিক্রির প্রবণতা", "গত ৮ সপ্তাহ", "শেষ ৮ সপ্তাহ")) {
+    const report = trends.week;
+    return report ? "সাপ্তাহিক পণ্য অর্ডার-ট্রেন্ড (শেষ ৮ সপ্তাহ; সপ্তাহ সোমবার থেকে রবিবার):\n" + report.buckets.map(b => "• " + b.period + ": " + b.unitsSold + "টি আইটেম; " + b.orderCount + "টি অর্ডার").join("\n") + "\nএগুলো বাতিল নয় এমন অর্ডারের আইটেম; পেমেন্ট-যাচাইকৃত বিক্রি নয়।" : "সাপ্তাহিক ট্রেন্ড তৈরি করা যায়নি।";
+  }
+  if (has("monthly sales trend", "last 6 months", "monthly product trend", "মাসিক বিক্রির প্রবণতা", "গত ৬ মাস", "শেষ ৬ মাস")) {
+    const report = trends.month;
+    return report ? "মাসিক পণ্য অর্ডার-ট্রেন্ড (শেষ ৬ মাস):\n" + report.buckets.map(b => "• " + b.period + ": " + b.unitsSold + "টি আইটেম; " + b.orderCount + "টি অর্ডার").join("\n") + "\nএগুলো বাতিল নয় এমন অর্ডারের আইটেম; পেমেন্ট-যাচাইকৃত বিক্রি নয়।" : "মাসিক ট্রেন্ড তৈরি করা যায়নি।";
+  }
 
   const analytics = context.productAnalytics || {};
   if (has("top selling", "best selling", "most sold", "সর্বাধিক বিক্রি", "সবচেয়ে বেশি বিক্রি", "সবচেয়ে বেশি বিক্রি", "বেস্ট সেলিং", "জনপ্রিয় পণ্য", "জনপ্রিয় পণ্য")) {
@@ -345,4 +439,4 @@ function registerAssistantRoutes({ app, adminOnly, getProducts, getOrders }) {
   });
 }
 
-module.exports = { registerAssistantRoutes, buildStoreContext, createRateLimiter, answerFreeAssistant, dhakaDateKey, dhakaPeriodBounds, buildPeriodOrderReport, buildProductAnalytics, normaliseStatus };
+module.exports = { registerAssistantRoutes, buildStoreContext, createRateLimiter, answerFreeAssistant, dhakaDateKey, dhakaPeriodBounds, buildPeriodOrderReport, buildProductAnalytics, buildProductSalesTrend, normaliseStatus };
