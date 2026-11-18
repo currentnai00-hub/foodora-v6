@@ -411,13 +411,13 @@ function answerFreeAssistant(message, context) {
   if (has("inventory forecast", "stock forecast", "days of stock", "reorder suggestion", "reorder list", "restock", "কতদিন চলবে", "স্টক কতদিন", "রিস্টক", "পুনরায় অর্ডার", "পুনরায় অর্ডার", "কোন পণ্য আগে অর্ডার")) {
     if (!inventory) return "স্টক পূর্বাভাস তৈরি করা যায়নি।";
     const rows = inventory.products.filter(p => p.risk !== "healthy" || p.suggestedReorder > 0).slice(0, 10);
-    return "ইনভেন্টরি পরিকল্পনা (শেষ ৩০ দিন: " + inventory.startDate + " থেকে " + inventory.endDate + "; বাংলাদেশ সময়):\\n" +
+    return "ইনভেন্টরি পরিকল্পনা (শেষ ৩০ দিন: " + inventory.startDate + " থেকে " + inventory.endDate + "; বাংলাদেশ সময়):\n" +
       (rows.length ? rows.map(p => {
         const coverage = p.estimatedDaysOfStock == null ? "সাম্প্রতিক চাহিদা নেই" : "আনুমানিক " + p.estimatedDaysOfStock + " দিন চলবে";
         const label = p.risk === "out" ? "স্টক শেষ" : p.risk === "urgent" ? "জরুরি" : p.risk === "watch" ? "সতর্কতা" : p.risk === "no_recent_demand" ? "চাহিদা নেই" : "স্বাভাবিক";
         return "• " + p.name + ": " + label + "; স্টক " + p.currentStock + "টি; ৩০ দিনে অর্ডার " + p.unitsOrderedLast30Days + "টি; " + coverage + "; পরিকল্পিত রিস্টক " + p.suggestedReorder + "টি";
-      }).join("\\n") : "বর্তমানে উল্লেখযোগ্য রিস্টক প্রয়োজন দেখা যাচ্ছে না।") +
-      "\\nএটি আগের ৩০ দিনের অর্ডার-ভিত্তিক অনুমান; সরবরাহকারীর সময়, ভবিষ্যৎ চাহিদা বা নিশ্চিত বিক্রি বিবেচনা করে না।";
+      }).join("\n") : "বর্তমানে উল্লেখযোগ্য রিস্টক প্রয়োজন দেখা যাচ্ছে না।") +
+      "\nএটি আগের ৩০ দিনের অর্ডার-ভিত্তিক অনুমান; সরবরাহকারীর সময়, ভবিষ্যৎ চাহিদা বা নিশ্চিত বিক্রি বিবেচনা করে না।";
   }
 
   if (has("low stock", "কম স্টক", "স্টক কম", "অল্প স্টক", "৫ বা কম", "পাঁচ বা কম")) {
