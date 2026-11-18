@@ -6,7 +6,9 @@ on:
       - "assistant.js"
       - "stock-alerts.js"
       - "server.js"
+      - "ai-assistant.html"
       - "test/assistant.test.js"
+      - "test/assistant-chat.test.js"
       - "test/stock-alerts.test.js"
       - "test/stock-alerts.integration.test.js"
       - "package.json"
@@ -15,12 +17,15 @@ on:
     branches:
       - main
       - "feature/foodora-personal-ai-v1"
+      - "feature/foodora-ai-conversation-v1"
       - "fix/foodora-stock-alert-delivery"
     paths:
       - "assistant.js"
       - "stock-alerts.js"
       - "server.js"
+      - "ai-assistant.html"
       - "test/assistant.test.js"
+      - "test/assistant-chat.test.js"
       - "test/stock-alerts.test.js"
       - "test/stock-alerts.integration.test.js"
       - "package.json"
@@ -55,7 +60,7 @@ jobs:
       - name: Check backend syntax
         run: node --check assistant.js && node --check stock-alerts.js && node --check server.js
       - name: Check test syntax
-        run: node --check test/assistant.test.js && node --check test/stock-alerts.test.js && node --check test/stock-alerts.integration.test.js
+        run: node --check test/assistant.test.js && node --check test/assistant-chat.test.js && node --check test/stock-alerts.test.js && node --check test/stock-alerts.integration.test.js
       - name: Run unit and PostgreSQL integration tests
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/foodora_test

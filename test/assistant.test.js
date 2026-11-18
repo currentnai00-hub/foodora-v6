@@ -5,7 +5,10 @@ const { registerAssistantRoutes } = require("../assistant");
 
 function setup({ products = [], orders = [] } = {}) {
   const routes = new Map();
-  const app = { get(path, ...handlers) { routes.set(path, handlers[handlers.length - 1]); } };
+  const app = {
+    get(path, ...handlers) { routes.set(path, handlers[handlers.length - 1]); },
+    post(path, ...handlers) { routes.set(path, handlers[handlers.length - 1]); }
+  };
   registerAssistantRoutes({
     app,
     adminOnly(_req, _res, next) { next(); },
@@ -59,7 +62,10 @@ test("overview handles empty store data", async () => {
 });
 
 test("overview returns a safe error when data loading fails", async () => {
-  const app = { get(_path, ...handlers) { this.handler = handlers[handlers.length - 1]; } };
+  const app = {
+    get(_path, ...handlers) { this.handler = handlers[handlers.length - 1]; },
+    post() {}
+  };
   registerAssistantRoutes({
     app,
     adminOnly(_req, _res, next) { next(); },
