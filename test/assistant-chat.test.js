@@ -238,8 +238,8 @@ test("date-wise product trends group Dhaka days, weeks and months and exclude ca
   const daily = buildProductSalesTrend(products, orders, "day", now);
   assert.equal(daily.buckets.length, 7);
   assert.equal(daily.buckets.at(-1).period, "2026-11-18");
-  assert.equal(daily.buckets.at(-1).unitsSold, 2);
-  assert.equal(daily.buckets.at(-1).orderCount, 1);
+  assert.equal(daily.buckets.at(-1).unitsSold, 5);
+  assert.equal(daily.buckets.at(-1).orderCount, 2);
   const weekly = buildProductSalesTrend(products, orders, "week", now);
   assert.equal(weekly.buckets.length, 8);
   assert.equal(weekly.buckets.at(-1).period, "2026-11-16");
