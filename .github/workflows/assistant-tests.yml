@@ -4,7 +4,10 @@ on:
   pull_request:
     paths:
       - "assistant.js"
+      - "stock-alerts.js"
+      - "server.js"
       - "test/assistant.test.js"
+      - "test/stock-alerts.test.js"
       - "package.json"
       - ".github/workflows/assistant-tests.yml"
   push:
@@ -27,9 +30,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Check assistant backend syntax
-        run: node --check assistant.js
-      - name: Check assistant tests syntax
-        run: node --check test/assistant.test.js
+      - name: Check backend syntax
+        run: node --check assistant.js && node --check stock-alerts.js && node --check server.js
+      - name: Check test syntax
+        run: node --check test/assistant.test.js && node --check test/stock-alerts.test.js
       - name: Run assistant unit tests
         run: npm test
