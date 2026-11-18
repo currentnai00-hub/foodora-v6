@@ -18,6 +18,7 @@ on:
       - main
       - "feature/foodora-personal-ai-v1"
       - "feature/foodora-ai-conversation-v1"
+      - "feature/foodora-free-smart-assistant-v1"
       - "fix/foodora-stock-alert-delivery"
     paths:
       - "assistant.js"
