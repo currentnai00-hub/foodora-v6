@@ -94,6 +94,7 @@ function buildStoreContext(products, orders, now = new Date()) {
   return {
     currency: "BDT",
     periodReports: { week: buildPeriodOrderReport(safeOrders, "week", now), month: buildPeriodOrderReport(safeOrders, "month", now) },
+    productAnalytics: buildProductAnalytics(active, safeOrders),
     products: mappedProducts.slice(0, 500),
     productSummary: {
       total: safeProducts.length, active: active.length,
@@ -106,6 +107,67 @@ function buildStoreContext(products, orders, now = new Date()) {
       grossOrderValueExcludingCancelled
     },
     dataNote: "Aggregated store data only. Customer names, phone numbers, addresses, payment transaction IDs, passwords and session data are excluded."
+  };
+}
+
+
+function buildProductAnalytics(products, orders) {
+  const activeProducts = (Array.isArray(products) ? products : [])
+    .filter(p => p && p.active !== false);
+  const byId = new Map();
+  const byName = new Map();
+  for (const product of activeProducts) {
+    const row = {
+      id: String(product.id || ""),
+      name: String(product.name || "Unnamed product").slice(0, 80),
+      category: String(product.category || "অন্যান্য").slice(0, 50),
+      unitsSold: 0,
+      orderCount: 0,
+      listedValue: 0
+    };
+    if (row.id) byId.set(row.id, row);
+    byName.set(row.name.toLocaleLowerCase(), row);
+  }
+
+  const categoryMap = new Map();
+  for (const order of (Array.isArray(orders) ? orders : [])) {
+    if (!order || normaliseStatus(order.status) === "cancelled") continue;
+    const seenInOrder = new Set();
+    for (const item of (Array.isArray(order.items) ? order.items : [])) {
+      if (!item || typeof item !== "object") continue;
+      const product = byId.get(String(item.id || "")) ||
+        byName.get(String(item.name || "").trim().toLocaleLowerCase());
+      if (!product) continue;
+      const quantity = Number(item.qty ?? item.quantity);
+      const price = Number(item.price);
+      if (!Number.isFinite(quantity) || quantity <= 0) continue;
+      const qty = Math.min(Math.floor(quantity), 1000000);
+      const unitPrice = Number.isFinite(price) && price >= 0 ? price : 0;
+      product.unitsSold += qty;
+      product.listedValue += unitPrice * qty;
+      if (!seenInOrder.has(product.id || product.name)) {
+        product.orderCount += 1;
+        seenInOrder.add(product.id || product.name);
+      }
+      const category = product.category || "অন্যান্য";
+      const bucket = categoryMap.get(category) || { category, unitsSold: 0, orderCount: 0 };
+      bucket.unitsSold += qty;
+      bucket.orderCount += 1;
+      categoryMap.set(category, bucket);
+    }
+  }
+
+  const rows = [...new Set(byId.size ? byId.values() : byName.values())];
+  const rank = (x, y) => y.unitsSold - x.unitsSold || y.orderCount - x.orderCount || x.name.localeCompare(y.name);
+  const topSelling = [...rows].filter(p => p.unitsSold > 0).sort(rank).slice(0, 10);
+  const leastSelling = [...rows].sort((x, y) => x.unitsSold - y.unitsSold || x.orderCount - y.orderCount || x.name.localeCompare(y.name)).slice(0, 10);
+  return {
+    productsTracked: rows.length,
+    productsWithSales: rows.filter(p => p.unitsSold > 0).length,
+    productsWithoutSales: rows.filter(p => p.unitsSold === 0).length,
+    topSelling,
+    leastSelling,
+    categories: [...categoryMap.values()].sort((x, y) => y.unitsSold - x.unitsSold || x.category.localeCompare(y.category)).slice(0, 10)
   };
 }
 
@@ -163,6 +225,33 @@ function answerFreeAssistant(message, context) {
   if (has("monthly report", "this month", "মাসিক রিপোর্ট", "এই মাসের", "মাসের রিপোর্ট")) {
     const report = context.periodReports?.month;
     return report ? "মাসিক অর্ডার রিপোর্ট (" + report.startDate + " থেকে " + report.endDate + "):\\n• অর্ডার: " + report.orderCount + "টি\\n• তালিকাভুক্ত মোট অর্ডার মূল্য: " + money(report.grossOrderValueExcludingCancelled) + "\\n• স্ট্যাটাস: " + (Object.entries(report.statusCounts).map(([status, count]) => status + " " + count + "টি").join(", ") || "কোনো অর্ডার নেই") + "\\nCancelled অর্ডার বাদ; এটি পেমেন্ট-যাচাইকৃত আয় বা নিট লাভ নয়।" : "মাসিক রিপোর্ট তৈরি করা যায়নি।";
+  }
+
+
+  const analytics = context.productAnalytics || {};
+  if (has("top selling", "best selling", "most sold", "সর্বাধিক বিক্রি", "সবচেয়ে বেশি বিক্রি", "সবচেয়ে বেশি বিক্রি", "বেস্ট সেলিং", "জনপ্রিয় পণ্য", "জনপ্রিয় পণ্য")) {
+    const rows = Array.isArray(analytics.topSelling) ? analytics.topSelling : [];
+    return rows.length
+      ? "সবচেয়ে বেশি বিক্রি হওয়া পণ্য (পরিমাণ অনুযায়ী):\\n" + rows.slice(0, 10).map((p, i) => (i + 1) + ". " + p.name + " — " + p.unitsSold + "টি; " + p.orderCount + "টি অর্ডারে").join("\\n")
+      : "এখনো কোনো পণ্যের বিক্রির আইটেম-তথ্য পাওয়া যায়নি।";
+  }
+  if (has("least selling", "slow selling", "কম বিক্রি", "কম বিক্রিত", "সবচেয়ে কম বিক্রি", "সবচেয়ে কম বিক্রি", "বিক্রি হয়নি", "বিক্রি হয়নি", "বিক্রি নেই")) {
+    const rows = Array.isArray(analytics.leastSelling) ? analytics.leastSelling : [];
+    return rows.length
+      ? "কম বিক্রি হওয়া পণ্য (সক্রিয় ক্যাটালগের মধ্যে):\\n" + rows.slice(0, 10).map(p => "• " + p.name + " — " + p.unitsSold + "টি; " + p.orderCount + "টি অর্ডার").join("\\n")
+      : "কোনো সক্রিয় পণ্য পাওয়া যায়নি।";
+  }
+  if (has("category sales", "category wise", "ক্যাটাগরিভিত্তিক বিক্রি", "ক্যাটাগরি অনুযায়ী বিক্রি", "কোন ক্যাটাগরি বেশি", "ক্যাটাগরির বিক্রি")) {
+    const rows = Array.isArray(analytics.categories) ? analytics.categories : [];
+    return rows.length
+      ? "ক্যাটাগরিভিত্তিক বিক্রি (আইটেমের পরিমাণ):\\n" + rows.map(p => "• " + p.category + " — " + p.unitsSold + "টি; " + p.orderCount + "টি অর্ডার").join("\\n")
+      : "এই সময়ের অর্ডারগুলোতে কোনো পণ্যের আইটেম-তথ্য পাওয়া যায়নি।";
+  }
+  const salesProduct = products.find(p => p.name && q.includes(p.name.toLowerCase()));
+  if (salesProduct && has("বিক্রি", "sold", "কত অর্ডার", "কয়টি অর্ডার", "কয়টি অর্ডার")) {
+    const row = [...(analytics.topSelling || []), ...(analytics.leastSelling || [])]
+      .find(p => p.id === salesProduct.id || p.name === salesProduct.name);
+    return row ? salesProduct.name + " — বিক্রি: " + row.unitsSold + "টি; যে অর্ডারগুলোতে ছিল: " + row.orderCount + "টি।" : "এই পণ্যের বিক্রির তথ্য পাওয়া যায়নি।";
   }
 
   if (has("আজকের অর্ডার", "আজ কত", "today order", "orders today", "আজ কয়টি", "আজ কয়টি")) {
@@ -250,4 +339,4 @@ function registerAssistantRoutes({ app, adminOnly, getProducts, getOrders }) {
   });
 }
 
-module.exports = { registerAssistantRoutes, buildStoreContext, createRateLimiter, answerFreeAssistant, dhakaDateKey, dhakaPeriodBounds, buildPeriodOrderReport, normaliseStatus };
+module.exports = { registerAssistantRoutes, buildStoreContext, createRateLimiter, answerFreeAssistant, dhakaDateKey, dhakaPeriodBounds, buildPeriodOrderReport, buildProductAnalytics, normaliseStatus };
