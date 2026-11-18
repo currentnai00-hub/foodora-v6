@@ -19,17 +19,22 @@ function registerAssistantRoutes({ app, adminOnly, getProducts, getOrders }) {
         .sort((a, b) => a.stock - b.stock || a.name.localeCompare(b.name));
 
       const pendingOrders = safeOrders.filter((o) => o && !["Delivered", "Cancelled"].includes(String(o.status)));
-      const today = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Dhaka", year: "numeric", month: "2-digit", day: "2-digit"
-      }).format(new Date());
+      const dhakaDateKey = (value) => {
+        const date = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(date.getTime())) return "";
+        const parts = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Dhaka", year: "numeric", month: "2-digit", day: "2-digit"
+        }).formatToParts(date);
+        const part = (type) => parts.find((item) => item.type === type)?.value || "";
+        return part("year") + "-" + part("month") + "-" + part("day");
+      };
+      const today = dhakaDateKey(new Date());
       const todayOrders = safeOrders.filter((o) => {
         const value = o.createdAt || o.created_at;
         if (!value) return false;
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return false;
-        return new Intl.DateTimeFormat("en-CA", {
-          timeZone: "Asia/Dhaka", year: "numeric", month: "2-digit", day: "2-digit"
-        }).format(date) === today;
+        return dhakaDateKey(date) === today;
       }).length;
 
       res.set("Cache-Control", "no-store").json({
