@@ -162,3 +162,64 @@ test("assistant answers weekly and monthly report requests with careful value la
   assert.match(answerFreeAssistant("monthly report", context), /৳800/);
   assert.match(answerFreeAssistant("monthly report", context), /নিট লাভ নয়/);
 });
+
+
+test("product analytics aggregates units and distinct orders while excluding cancelled and inactive products", () => {
+  const { buildProductAnalytics } = require("../assistant");
+  const products = [
+    { id:"p1", name:"Burger", category:"Food", active:true },
+    { id:"p2", name:"Tea", category:"Drinks", active:true },
+    { id:"p3", name:"Rice", category:"Food", active:true },
+    { id:"p4", name:"Hidden", category:"Food", active:false }
+  ];
+  const orders = [
+    { status:"Pending", phone:"01700000000", items:[
+      { id:"p1", name:"Burger", qty:2, price:100 },
+      { id:"p1", name:"Burger", qty:1, price:100 },
+      { id:"p2", name:"Tea", qty:1, price:20 }
+    ]},
+    { status:"Delivered", items:[
+      { id:"p1", name:"Burger", qty:1, price:100 },
+      { id:"p3", name:"Rice", qty:3, price:50 }
+    ]},
+    { status:"CANCELLED", items:[{ id:"p2", name:"Tea", qty:9, price:20 }]},
+    { status:"Pending", items:[{ id:"p4", name:"Hidden", qty:50, price:1 }]}
+  ];
+  const result = buildProductAnalytics(products, orders);
+  const burger = result.topSelling.find(p => p.name === "Burger");
+  assert.equal(burger.unitsSold, 4);
+  assert.equal(burger.orderCount, 2);
+  assert.equal(result.productsTracked, 3);
+  assert.equal(result.productsWithoutSales, 0);
+  const food = result.categories.find(c => c.category === "Food");
+  assert.equal(food.unitsSold, 7);
+  assert.equal(food.orderCount, 2);
+  assert.equal(JSON.stringify(result).includes("01700000000"), false);
+  assert.equal(JSON.stringify(result).includes("Hidden"), false);
+});
+
+test("product analytics reports active products with no sales", () => {
+  const { buildProductAnalytics } = require("../assistant");
+  const result = buildProductAnalytics([
+    { id:"p1", name:"Burger", category:"Food", active:true },
+    { id:"p2", name:"Soup", category:"Food", active:true }
+  ], [{ status:"Cancelled", items:[{ id:"p1", qty:4 }] }]);
+  assert.equal(result.productsWithoutSales, 2);
+  assert.equal(result.leastSelling[0].unitsSold, 0);
+});
+
+test("assistant answers product sales, top-selling, least-selling and category analytics in Bangla and English", () => {
+  const { buildStoreContext, answerFreeAssistant } = require("../assistant");
+  const context = buildStoreContext([
+    { id:"p1", name:"Burger", category:"Food", stock:5, price:100, active:true },
+    { id:"p2", name:"Tea", category:"Drinks", stock:8, price:20, active:true },
+    { id:"p3", name:"Soup", category:"Food", stock:4, price:60, active:true }
+  ], [
+    { status:"Pending", items:[{ id:"p1", name:"Burger", qty:2, price:100 }, { id:"p2", name:"Tea", qty:1, price:20 }] },
+    { status:"Delivered", items:[{ id:"p1", name:"Burger", qty:1, price:100 }] }
+  ], now);
+  assert.match(answerFreeAssistant("top selling products", context), /Burger/);
+  assert.match(answerFreeAssistant("সবচেয়ে কম বিক্রি হওয়া পণ্য", context), /Soup/);
+  assert.match(answerFreeAssistant("ক্যাটাগরিভিত্তিক বিক্রি দেখাও", context), /Food/);
+  assert.match(answerFreeAssistant("Burger কত বিক্রি হয়েছে?", context), /বিক্রি: 3টি/);
+});
