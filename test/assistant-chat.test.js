@@ -223,3 +223,42 @@ test("assistant answers product sales, top-selling, least-selling and category a
   assert.match(answerFreeAssistant("ক্যাটাগরিভিত্তিক বিক্রি দেখাও", context), /Food/);
   assert.match(answerFreeAssistant("Burger কত বিক্রি হয়েছে?", context), /বিক্রি: 3টি/);
 });
+
+
+test("date-wise product trends group Dhaka days, weeks and months and exclude cancelled orders", () => {
+  const { buildProductSalesTrend } = require("../assistant");
+  const products = [{ id:"p1", name:"Burger", active:true }, { id:"p2", name:"Hidden", active:false }];
+  const orders = [
+    { id:"o1", status:"Pending", createdAt:"2026-11-18T04:00:00.000Z", items:[{ id:"p1", qty:2, price:100 }] },
+    { id:"o2", status:"Delivered", createdAt:"2026-11-17T20:00:00.000Z", items:[{ id:"p1", qty:3, price:100 }] },
+    { id:"o3", status:"Cancelled", createdAt:"2026-11-18T04:00:00.000Z", items:[{ id:"p1", qty:9, price:100 }] },
+    { id:"o4", status:"Pending", createdAt:"2026-11-18T04:00:00.000Z", items:[{ id:"p2", qty:50, price:1 }] }
+  ];
+  const now = new Date("2026-11-18T06:00:00.000Z");
+  const daily = buildProductSalesTrend(products, orders, "day", now);
+  assert.equal(daily.buckets.length, 7);
+  assert.equal(daily.buckets.at(-1).period, "2026-11-18");
+  assert.equal(daily.buckets.at(-1).unitsSold, 5);
+  assert.equal(daily.buckets.at(-1).orderCount, 2);
+  const weekly = buildProductSalesTrend(products, orders, "week", now);
+  assert.equal(weekly.buckets.length, 8);
+  assert.equal(weekly.buckets.at(-1).period, "2026-11-16");
+  assert.equal(weekly.buckets.at(-1).unitsSold, 5);
+  const monthly = buildProductSalesTrend(products, orders, "month", now);
+  assert.equal(monthly.buckets.length, 6);
+  assert.equal(monthly.buckets.at(-1).period, "2026-11");
+  assert.equal(monthly.buckets.at(-1).unitsSold, 5);
+  assert.equal(JSON.stringify(monthly).includes("Hidden"), false);
+});
+
+test("assistant responds to daily, weekly and monthly product trend prompts", () => {
+  const { buildStoreContext, answerFreeAssistant } = require("../assistant");
+  const context = buildStoreContext(
+    [{ id:"p1", name:"Burger", active:true }],
+    [{ id:"o1", status:"Pending", createdAt:"2026-11-18T04:00:00.000Z", items:[{ id:"p1", qty:2, price:100 }] }],
+    new Date("2026-11-18T06:00:00.000Z")
+  );
+  assert.match(answerFreeAssistant("গত ৭ দিনের বিক্রি দেখাও", context), /2026-11-18/);
+  assert.match(answerFreeAssistant("last 8 weeks sales trend", context), /2026-11-16/);
+  assert.match(answerFreeAssistant("monthly sales trend", context), /2026-11/);
+});
