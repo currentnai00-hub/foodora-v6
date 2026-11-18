@@ -226,11 +226,11 @@ function answerFreeAssistant(message, context) {
 
   if (has("weekly report", "this week", "সাপ্তাহিক রিপোর্ট", "এই সপ্তাহের", "সপ্তাহের রিপোর্ট")) {
     const report = context.periodReports?.week;
-    return report ? "সাপ্তাহিক অর্ডার রিপোর্ট (" + report.startDate + " থেকে " + report.endDate + "):\\n• অর্ডার: " + report.orderCount + "টি\\n• তালিকাভুক্ত মোট অর্ডার মূল্য: " + money(report.grossOrderValueExcludingCancelled) + "\\n• স্ট্যাটাস: " + (Object.entries(report.statusCounts).map(([status, count]) => status + " " + count + "টি").join(", ") || "কোনো অর্ডার নেই") + "\\nCancelled অর্ডার বাদ; এটি পেমেন্ট-যাচাইকৃত আয় বা নিট লাভ নয়।" : "সাপ্তাহিক রিপোর্ট তৈরি করা যায়নি।";
+    return report ? "সাপ্তাহিক অর্ডার রিপোর্ট (" + report.startDate + " থেকে " + report.endDate + "):\n• অর্ডার: " + report.orderCount + "টি\n• তালিকাভুক্ত মোট অর্ডার মূল্য: " + money(report.grossOrderValueExcludingCancelled) + "\n• স্ট্যাটাস: " + (Object.entries(report.statusCounts).map(([status, count]) => status + " " + count + "টি").join(", ") || "কোনো অর্ডার নেই") + "\nCancelled অর্ডার বাদ; এটি পেমেন্ট-যাচাইকৃত আয় বা নিট লাভ নয়।" : "সাপ্তাহিক রিপোর্ট তৈরি করা যায়নি।";
   }
   if (has("monthly report", "this month", "মাসিক রিপোর্ট", "এই মাসের", "মাসের রিপোর্ট")) {
     const report = context.periodReports?.month;
-    return report ? "মাসিক অর্ডার রিপোর্ট (" + report.startDate + " থেকে " + report.endDate + "):\\n• অর্ডার: " + report.orderCount + "টি\\n• তালিকাভুক্ত মোট অর্ডার মূল্য: " + money(report.grossOrderValueExcludingCancelled) + "\\n• স্ট্যাটাস: " + (Object.entries(report.statusCounts).map(([status, count]) => status + " " + count + "টি").join(", ") || "কোনো অর্ডার নেই") + "\\nCancelled অর্ডার বাদ; এটি পেমেন্ট-যাচাইকৃত আয় বা নিট লাভ নয়।" : "মাসিক রিপোর্ট তৈরি করা যায়নি।";
+    return report ? "মাসিক অর্ডার রিপোর্ট (" + report.startDate + " থেকে " + report.endDate + "):\n• অর্ডার: " + report.orderCount + "টি\n• তালিকাভুক্ত মোট অর্ডার মূল্য: " + money(report.grossOrderValueExcludingCancelled) + "\n• স্ট্যাটাস: " + (Object.entries(report.statusCounts).map(([status, count]) => status + " " + count + "টি").join(", ") || "কোনো অর্ডার নেই") + "\nCancelled অর্ডার বাদ; এটি পেমেন্ট-যাচাইকৃত আয় বা নিট লাভ নয়।" : "মাসিক রিপোর্ট তৈরি করা যায়নি।";
   }
 
 
@@ -238,19 +238,19 @@ function answerFreeAssistant(message, context) {
   if (has("top selling", "best selling", "most sold", "সর্বাধিক বিক্রি", "সবচেয়ে বেশি বিক্রি", "সবচেয়ে বেশি বিক্রি", "বেস্ট সেলিং", "জনপ্রিয় পণ্য", "জনপ্রিয় পণ্য")) {
     const rows = Array.isArray(analytics.topSelling) ? analytics.topSelling : [];
     return rows.length
-      ? "সবচেয়ে বেশি বিক্রি হওয়া পণ্য (পরিমাণ অনুযায়ী):\\n" + rows.slice(0, 10).map((p, i) => (i + 1) + ". " + p.name + " — " + p.unitsSold + "টি; " + p.orderCount + "টি অর্ডারে").join("\\n")
+      ? "সবচেয়ে বেশি বিক্রি হওয়া পণ্য (পরিমাণ অনুযায়ী):\n" + rows.slice(0, 10).map((p, i) => (i + 1) + ". " + p.name + " — " + p.unitsSold + "টি; " + p.orderCount + "টি অর্ডারে").join("\n")
       : "এখনো কোনো পণ্যের বিক্রির আইটেম-তথ্য পাওয়া যায়নি।";
   }
   if (has("least selling", "slow selling", "কম বিক্রি", "কম বিক্রিত", "সবচেয়ে কম বিক্রি", "সবচেয়ে কম বিক্রি", "বিক্রি হয়নি", "বিক্রি হয়নি", "বিক্রি নেই")) {
     const rows = Array.isArray(analytics.leastSelling) ? analytics.leastSelling : [];
     return rows.length
-      ? "কম বিক্রি হওয়া পণ্য (সক্রিয় ক্যাটালগের মধ্যে):\\n" + rows.slice(0, 10).map(p => "• " + p.name + " — " + p.unitsSold + "টি; " + p.orderCount + "টি অর্ডার").join("\\n")
+      ? "কম বিক্রি হওয়া পণ্য (সক্রিয় ক্যাটালগের মধ্যে):\n" + rows.slice(0, 10).map(p => "• " + p.name + " — " + p.unitsSold + "টি; " + p.orderCount + "টি অর্ডার").join("\n")
       : "কোনো সক্রিয় পণ্য পাওয়া যায়নি।";
   }
   if (has("category sales", "category wise", "ক্যাটাগরিভিত্তিক বিক্রি", "ক্যাটাগরি অনুযায়ী বিক্রি", "কোন ক্যাটাগরি বেশি", "ক্যাটাগরির বিক্রি")) {
     const rows = Array.isArray(analytics.categories) ? analytics.categories : [];
     return rows.length
-      ? "ক্যাটাগরিভিত্তিক বিক্রি (আইটেমের পরিমাণ):\\n" + rows.map(p => "• " + p.category + " — " + p.unitsSold + "টি; " + p.orderCount + "টি অর্ডার").join("\\n")
+      ? "ক্যাটাগরিভিত্তিক বিক্রি (আইটেমের পরিমাণ):\n" + rows.map(p => "• " + p.category + " — " + p.unitsSold + "টি; " + p.orderCount + "টি অর্ডার").join("\n")
       : "এই সময়ের অর্ডারগুলোতে কোনো পণ্যের আইটেম-তথ্য পাওয়া যায়নি।";
   }
   const salesProduct = products.find(p => p.name && q.includes(p.name.toLowerCase()));
