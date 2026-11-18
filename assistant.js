@@ -101,6 +101,7 @@ function buildStoreContext(products, orders, now = new Date()) {
       month: buildProductSalesTrend(active, safeOrders, "month", now)
     },
     productPerformanceComparison: buildProductPerformanceComparison(active, safeOrders, now),
+    inventoryIntelligence: buildInventoryIntelligence(active, safeOrders, now),
     products: mappedProducts.slice(0, 500),
     productSummary: {
       total: safeProducts.length, active: active.length,
@@ -304,6 +305,64 @@ function buildProductPerformanceComparison(products, orders, now = new Date()) {
   return output;
 }
 
+
+function buildInventoryIntelligence(products, orders, now = new Date()) {
+  const todayKey = dhakaDateKey(now);
+  if (!todayKey) return null;
+  const [year, month, day] = todayKey.split("-").map(Number);
+  const today = new Date(Date.UTC(year, month - 1, day));
+  const start = new Date(today.getTime() - 29 * 86400000);
+  const startKey = start.toISOString().slice(0, 10);
+  const active = (Array.isArray(products) ? products : []).filter(p => p && p.active !== false);
+  const byId = new Map(active.filter(p => p.id != null).map(p => [String(p.id), p]));
+  const byName = new Map(active.map(p => [String(p.name || "").trim().toLocaleLowerCase(), p]));
+  const totals = new Map(active.map(p => [String(p.id || p.name), {
+    id: String(p.id || ""), name: String(p.name || "Unnamed product").slice(0, 80),
+    stock: safeNumber(p.stock), units30d: 0
+  }]));
+  for (const order of (Array.isArray(orders) ? orders : [])) {
+    if (!order || normaliseStatus(order.status) === "cancelled") continue;
+    const created = order.createdAt || order.created_at;
+    const dateKey = created ? dhakaDateKey(created) : "";
+    if (!dateKey || dateKey < startKey || dateKey > todayKey) continue;
+    for (const item of (Array.isArray(order.items) ? order.items : [])) {
+      if (!item || typeof item !== "object") continue;
+      const product = byId.get(String(item.id || "")) ||
+        byName.get(String(item.name || "").trim().toLocaleLowerCase());
+      const quantity = Number(item.qty ?? item.quantity);
+      if (!product || !Number.isFinite(quantity) || quantity <= 0) continue;
+      const qty = Math.min(Math.floor(quantity), 1000000);
+      const row = totals.get(String(product.id || product.name));
+      if (row && qty > 0) row.units30d += qty;
+    }
+  }
+  const rows = [...totals.values()].map(row => {
+    const averageDailyDemand = row.units30d / 30;
+    const daysOfStock = averageDailyDemand > 0 ? Math.floor(row.stock / averageDailyDemand) : null;
+    const targetStock = Math.ceil(averageDailyDemand * 30);
+    const suggestedReorder = Math.max(0, targetStock - row.stock);
+    const risk = row.stock <= 0 ? "out" :
+      averageDailyDemand === 0 ? "no_recent_demand" :
+      daysOfStock <= 7 ? "urgent" :
+      daysOfStock <= 14 ? "watch" : "healthy";
+    return {
+      id: row.id, name: row.name, currentStock: row.stock, unitsOrderedLast30Days: row.units30d,
+      averageDailyDemand: Number(averageDailyDemand.toFixed(2)), estimatedDaysOfStock: daysOfStock,
+      targetStockFor30Days: targetStock, suggestedReorder, risk
+    };
+  }).sort((x, y) => {
+    const rank = { out: 0, urgent: 1, watch: 2, healthy: 3, no_recent_demand: 4 };
+    return rank[x.risk] - rank[y.risk] ||
+      (x.estimatedDaysOfStock ?? -1) - (y.estimatedDaysOfStock ?? -1) ||
+      x.name.localeCompare(y.name);
+  });
+  return {
+    periodDays: 30, startDate: startKey, endDate: todayKey,
+    targetPolicy: "Suggested stock target equals observed 30-day ordered quantity; it is a planning estimate, not a supplier lead-time or guaranteed forecast.",
+    products: rows.slice(0, 100)
+  };
+}
+
 function createRateLimiter({ now = Date.now, limit = RATE_LIMIT, windowMs = RATE_WINDOW_MS } = {}) {
   const buckets = new Map();
   return function allow(key) {
@@ -347,6 +406,20 @@ function answerFreeAssistant(message, context) {
   if (has("out of stock", "out-of-stock", "স্টক শেষ", "স্টক নেই", "শূন্য স্টক", "শেষ হয়েছে", "শেষ হয়েছে")) {
     return out.length ? "স্টক শেষ পণ্য " + out.length + "টি:\n" + out.slice(0, MAX_LIST_ITEMS).map(p => "• " + p.name + " — 0টি").join("\n") : "বর্তমানে কোনো সক্রিয় পণ্যের স্টক শূন্য নেই।";
   }
+
+  const inventory = context.inventoryIntelligence;
+  if (has("inventory forecast", "stock forecast", "days of stock", "reorder suggestion", "reorder list", "restock", "কতদিন চলবে", "স্টক কতদিন", "রিস্টক", "পুনরায় অর্ডার", "পুনরায় অর্ডার", "কোন পণ্য আগে অর্ডার")) {
+    if (!inventory) return "স্টক পূর্বাভাস তৈরি করা যায়নি।";
+    const rows = inventory.products.filter(p => p.risk !== "healthy" || p.suggestedReorder > 0).slice(0, 10);
+    return "ইনভেন্টরি পরিকল্পনা (শেষ ৩০ দিন: " + inventory.startDate + " থেকে " + inventory.endDate + "; বাংলাদেশ সময়):\\n" +
+      (rows.length ? rows.map(p => {
+        const coverage = p.estimatedDaysOfStock == null ? "সাম্প্রতিক চাহিদা নেই" : "আনুমানিক " + p.estimatedDaysOfStock + " দিন চলবে";
+        const label = p.risk === "out" ? "স্টক শেষ" : p.risk === "urgent" ? "জরুরি" : p.risk === "watch" ? "সতর্কতা" : p.risk === "no_recent_demand" ? "চাহিদা নেই" : "স্বাভাবিক";
+        return "• " + p.name + ": " + label + "; স্টক " + p.currentStock + "টি; ৩০ দিনে অর্ডার " + p.unitsOrderedLast30Days + "টি; " + coverage + "; পরিকল্পিত রিস্টক " + p.suggestedReorder + "টি";
+      }).join("\\n") : "বর্তমানে উল্লেখযোগ্য রিস্টক প্রয়োজন দেখা যাচ্ছে না।") +
+      "\\nএটি আগের ৩০ দিনের অর্ডার-ভিত্তিক অনুমান; সরবরাহকারীর সময়, ভবিষ্যৎ চাহিদা বা নিশ্চিত বিক্রি বিবেচনা করে না।";
+  }
+
   if (has("low stock", "কম স্টক", "স্টক কম", "অল্প স্টক", "৫ বা কম", "পাঁচ বা কম")) {
     return low.length ? "কম স্টকে থাকা পণ্য " + low.length + "টি:\n" + low.slice(0, MAX_LIST_ITEMS).map(p => "• " + p.name + " — " + p.stock + "টি").join("\n") : "বর্তমানে ১–৫ স্টকে কোনো সক্রিয় পণ্য নেই।";
   }
@@ -501,4 +574,4 @@ function registerAssistantRoutes({ app, adminOnly, getProducts, getOrders }) {
   });
 }
 
-module.exports = { registerAssistantRoutes, buildStoreContext, createRateLimiter, answerFreeAssistant, dhakaDateKey, dhakaPeriodBounds, buildPeriodOrderReport, buildProductAnalytics, buildProductSalesTrend, buildProductPerformanceComparison, normaliseStatus };
+module.exports = { registerAssistantRoutes, buildStoreContext, createRateLimiter, answerFreeAssistant, dhakaDateKey, dhakaPeriodBounds, buildPeriodOrderReport, buildProductAnalytics, buildProductSalesTrend, buildProductPerformanceComparison, buildInventoryIntelligence, normaliseStatus };
