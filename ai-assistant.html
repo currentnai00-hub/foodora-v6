@@ -29,12 +29,12 @@ button,input{font:inherit}.shell{max-width:1400px;margin:auto;padding:26px}.top{
    <article class="panel"><div class="panel-head"><h2>Assistant Workspace</h2><span class="status" id="ai-status">Checking AI engine…</span></div><div class="assistant-box"><div class="message">Hello! I’m your Foodora Assistant. I can answer questions about verified store metrics in read-only mode. I cannot change orders, stock, payments or settings.</div><div class="message system">For safety, website changes, refunds, order cancellation, payment decisions and database restore will never run without explicit authorization.</div><div class="composer"><input id="prompt" maxlength="1200" placeholder="Ask about products, stock or orders…" autocomplete="off"><button class="btn primary" id="send">Send</button></div><div class="muted" id="chat-note">Read-only assistant · Never enter customer personal or payment information.</div></div></article>
   </div>
   <div>
-   <article class="panel"><div class="panel-head"><h2>System capabilities</h2><span class="status">V1 foundation</span></div><div class="feature-list">
+   <article class="panel"><div class="panel-head"><h2>System capabilities</h2><span class="status">V2 · Read-only</span></div><div class="feature-list">
     <div class="feature"><span class="dot ready"></span><div><b>Secure admin authentication</b><small>Uses the existing Foodora admin session</small></div></div>
     <div class="feature"><span class="dot ready"></span><div><b>Read-only store insights</b><small>Products, orders and stock counts</small></div></div>
     <div class="feature"><span class="dot" id="ai-dot"></span><div><b>Free smart assistant</b><small id="ai-capability">On-server store insights · no paid API</small></div></div>
-    <div class="feature"><span class="dot"></span><div><b>Bangla + English voice</b><small>Permission and browser support review pending</small></div></div>
-    <div class="feature"><span class="dot"></span><div><b>Notifications & automation</b><small>Event-safe stock alerts are next</small></div></div>
+    <div class="feature"><span class="dot"></span><div><b>Voice interface</b><small>Not enabled in this version · requires a separate browser and permission review</small></div></div>
+    <div class="feature"><span class="dot"></span><div><b>Stock alert automation</b><small>Transition-based alerts with a durable retry queue</small></div></div>
    </div></article>
    <article class="panel"><div class="panel-head"><h2>Today's snapshot</h2></div><div class="muted" id="snapshot">Waiting for secure data…</div></article>
   </div>
