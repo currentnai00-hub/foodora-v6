@@ -16,7 +16,7 @@ button,input{font:inherit}.shell{max-width:1400px;margin:auto;padding:26px}.top{
 <body>
 <main class="shell">
  <header class="top"><div class="brand">FOODORA <span> / PERSONAL AI</span></div><div class="top-actions"><a class="btn" href="/admin.html">← Admin Dashboard</a><button class="btn" id="refresh">↻ Refresh data</button></div></header>
- <section class="hero"><div><div class="eyebrow">YOUR STORE INTELLIGENCE CENTER</div><h1>Meet your Foodora Assistant.</h1><p>A secure control center for store insights, stock awareness and future voice-enabled workflows. The first build is read-only while the AI action layer is being developed.</p></div><div class="orb" aria-hidden="true">✦</div></section>
+ <section class="hero"><div><div class="eyebrow">YOUR STORE INTELLIGENCE CENTER</div><h1>Meet your Foodora Smart Assistant.</h1><p>A secure, free store assistant for verified product, stock and order insights. This version works without a paid AI API and is strictly read-only.</p></div><div class="orb" aria-hidden="true">✦</div></section>
  <section class="grid">
   <article class="card"><div class="metric-label">TOTAL PRODUCTS</div><div class="metric" id="products">—</div><div class="metric-note">All catalog products</div></article>
   <article class="card"><div class="metric-label">LOW STOCK</div><div class="metric" id="low">—</div><div class="metric-note">Stock at or below 5</div></article>
@@ -32,7 +32,7 @@ button,input{font:inherit}.shell{max-width:1400px;margin:auto;padding:26px}.top{
    <article class="panel"><div class="panel-head"><h2>System capabilities</h2><span class="status">V1 foundation</span></div><div class="feature-list">
     <div class="feature"><span class="dot ready"></span><div><b>Secure admin authentication</b><small>Uses the existing Foodora admin session</small></div></div>
     <div class="feature"><span class="dot ready"></span><div><b>Read-only store insights</b><small>Products, orders and stock counts</small></div></div>
-    <div class="feature"><span class="dot" id="ai-dot"></span><div><b>AI conversation engine</b><small id="ai-capability">Server-side provider configuration required</small></div></div>
+    <div class="feature"><span class="dot" id="ai-dot"></span><div><b>Free smart assistant</b><small id="ai-capability">On-server store insights · no paid API</small></div></div>
     <div class="feature"><span class="dot"></span><div><b>Bangla + English voice</b><small>Permission and browser support review pending</small></div></div>
     <div class="feature"><span class="dot"></span><div><b>Notifications & automation</b><small>Event-safe stock alerts are next</small></div></div>
    </div></article>
@@ -54,12 +54,12 @@ async function load(){
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(data.error||"Could not load assistant data.");
   const m=data.metrics||{};
-  chatReady=data.capabilities?.aiProviderConfigured===true;
+  chatReady=data.capabilities?.freeAssistantEnabled===true;
   $("prompt").disabled=!chatReady; $("send").disabled=!chatReady;
-  $("ai-status").textContent=chatReady?"AI ready · Read-only":"AI provider not configured";
+  $("ai-status").textContent=chatReady?"Free assistant ready · Read-only":"Assistant unavailable";
   $("ai-dot").classList.toggle("ready",chatReady);
-  $("ai-capability").textContent=chatReady?"Secure read-only chat enabled":"Add FOODORA_AI_API_KEY in server environment";
-  $("chat-note").textContent=chatReady?"Read-only assistant · No website changes or customer personal data access.":"Chat is waiting for server-side AI provider configuration.";
+  $("ai-capability").textContent=chatReady?"Free on-server insights · no paid API":"Assistant service unavailable";
+  $("chat-note").textContent=chatReady?"Free rule-based assistant · Read-only · No paid API or customer personal data access.":"Assistant service is unavailable. Refresh or contact the site administrator.";
   $("products").textContent=m.totalProducts??0;$("low").textContent=m.lowStockCount??0;$("out").textContent=m.outOfStockCount??0;$("pending").textContent=m.pendingOrders??0;
   const rows=Array.isArray(data.lowStock)?data.lowStock:[];
   $("stock-table").innerHTML=rows.length?'<table><thead><tr><th>Product</th><th>Available stock</th><th>Condition</th></tr></thead><tbody>'+rows.map(p=>'<tr><td>'+esc(p.name)+'</td><td class="stock '+(p.stock===0?'zero':'low')+'">'+Number(p.stock)+'</td><td>'+(p.stock===0?'<span style="color:var(--red)">Out of stock</span>':'<span style="color:var(--orange)">Low stock</span>')+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">No active products are at or below the low-stock threshold.</div>';
