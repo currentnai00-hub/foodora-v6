@@ -43,7 +43,8 @@ button,input{font:inherit}.shell{max-width:1400px;margin:auto;padding:26px}.top{
 </main>
 <script>
 const $=id=>document.getElementById(id);
-const KEY=sessionStorage.getItem("foodora_admin_key")||"";\nlet chatReady=false;
+const KEY=sessionStorage.getItem("foodora_admin_key")||"";
+let chatReady=false;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function load(){
  if(!KEY){$("stock-status").textContent="Sign-in required";$("stock-table").innerHTML='<div class="empty">Please sign in through the Admin Dashboard, then open this page again.</div>';return;}
@@ -52,7 +53,13 @@ async function load(){
   const response=await fetch("/api/admin/assistant/overview",{headers:{"x-admin-key":KEY},cache:"no-store"});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(data.error||"Could not load assistant data.");
-  const m=data.metrics||{};\n  chatReady=data.capabilities?.aiProviderConfigured===true;\n  $("prompt").disabled=!chatReady; $("send").disabled=!chatReady;\n  $("ai-status").textContent=chatReady?"AI ready · Read-only":"AI provider not configured";\n  $("ai-dot").classList.toggle("ready",chatReady);\n  $("ai-capability").textContent=chatReady?"Secure read-only chat enabled":"Add FOODORA_AI_API_KEY in server environment";\n  $("chat-note").textContent=chatReady?"Read-only assistant · No website changes or customer personal data access.":"Chat is waiting for server-side AI provider configuration.";
+  const m=data.metrics||{};
+  chatReady=data.capabilities?.aiProviderConfigured===true;
+  $("prompt").disabled=!chatReady; $("send").disabled=!chatReady;
+  $("ai-status").textContent=chatReady?"AI ready · Read-only":"AI provider not configured";
+  $("ai-dot").classList.toggle("ready",chatReady);
+  $("ai-capability").textContent=chatReady?"Secure read-only chat enabled":"Add FOODORA_AI_API_KEY in server environment";
+  $("chat-note").textContent=chatReady?"Read-only assistant · No website changes or customer personal data access.":"Chat is waiting for server-side AI provider configuration.";
   $("products").textContent=m.totalProducts??0;$("low").textContent=m.lowStockCount??0;$("out").textContent=m.outOfStockCount??0;$("pending").textContent=m.pendingOrders??0;
   const rows=Array.isArray(data.lowStock)?data.lowStock:[];
   $("stock-table").innerHTML=rows.length?'<table><thead><tr><th>Product</th><th>Available stock</th><th>Condition</th></tr></thead><tbody>'+rows.map(p=>'<tr><td>'+esc(p.name)+'</td><td class="stock '+(p.stock===0?'zero':'low')+'">'+Number(p.stock)+'</td><td>'+(p.stock===0?'<span style="color:var(--red)">Out of stock</span>':'<span style="color:var(--orange)">Low stock</span>')+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">No active products are at or below the low-stock threshold.</div>';
@@ -81,6 +88,7 @@ async function sendMessage(){
 }
 $("send").addEventListener("click",sendMessage);
 $("prompt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
-\n$("refresh").addEventListener("click",load);load();
+
+$("refresh").addEventListener("click",load);load();
 </script>
 </body></html>
