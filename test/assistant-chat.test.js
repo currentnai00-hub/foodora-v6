@@ -28,9 +28,15 @@ test("assistant rate limiter blocks requests after configured limit", () => {
   assert.equal(allow("admin"), true);
 });
 
-function createHarness({ env = {}, fetchImpl = async () => ({ ok: true, async json() { return { choices: [{ message: { content: "Hello" } }] }; }) } = {}) {
+function createHarness({ env = {}, fetchImpl = async () => ({
+  ok: true,
+  async json() { return { choices: [{ message: { content: "Hello" } }] }; }
+}) } = {}) {
   const routes = {};
-  const app = { get(path, ...handlers) { routes["GET " + path] = handlers.at(-1); }, post(path, ...handlers) { routes["POST " + path] = handlers.at(-1); } };
+  const app = {
+    get(path, ...handlers) { routes["GET " + path] = handlers.at(-1); },
+    post(path, ...handlers) { routes["POST " + path] = handlers.at(-1); }
+  };
   registerAssistantRoutes({
     app, adminOnly: (_req, _res, next) => next(),
     getProducts: async () => [{ id: "p1", name: "Burger", stock: 3, price: 200, active: true }],
@@ -41,11 +47,10 @@ function createHarness({ env = {}, fetchImpl = async () => ({ ok: true, async js
 }
 
 async function invoke(handler, body = {}) {
-  const headers = {};
   const res = {
     statusCode: 200,
     status(code) { this.statusCode = code; return this; },
-    set(name, value) { headers[name] = value; return this; },
+    set() { return this; },
     json(value) { this.body = value; return this; }
   };
   await handler({ body, ip: "127.0.0.1", socket: {} }, res);
@@ -70,7 +75,10 @@ test("chat endpoint calls provider with private-data-free context", async () => 
     env: { FOODORA_AI_API_KEY: "test-key", FOODORA_AI_MODEL: "test-model" },
     fetchImpl: async (url, options) => {
       request = { url, options };
-      return { ok: true, async json() { return { choices: [{ message: { content: "There is one low-stock product." } }] }; };
+      return {
+        ok: true,
+        async json() { return { choices: [{ message: { content: "There is one low-stock product." } }] }; }
+      };
     }
   });
   const res = await invoke(routes["POST /api/admin/assistant/chat"], { message: "How is my stock?" });
