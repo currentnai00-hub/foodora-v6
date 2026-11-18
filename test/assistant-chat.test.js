@@ -262,3 +262,38 @@ test("assistant responds to daily, weekly and monthly product trend prompts", ()
   assert.match(answerFreeAssistant("last 8 weeks sales trend", context), /2026-11-16/);
   assert.match(answerFreeAssistant("monthly sales trend", context), /2026-11/);
 });
+
+
+test("product performance comparison uses equal Dhaka periods and excludes cancelled orders", () => {
+  const { buildProductPerformanceComparison } = require("../assistant");
+  const products = [{ id:"p1", name:"Burger", active:true }, { id:"p2", name:"Tea", active:true }, { id:"p3", name:"Hidden", active:false }];
+  const orders = [
+    { id:"old", status:"Pending", createdAt:"2026-11-10T04:00:00.000Z", items:[{ id:"p1", qty:4 }] },
+    { id:"new", status:"Delivered", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p1", qty:7 }, { id:"p2", qty:2 }] },
+    { id:"cancel", status:"Cancelled", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p1", qty:99 }] },
+    { id:"hidden", status:"Pending", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p3", qty:50 }] }
+  ];
+  const result = buildProductPerformanceComparison(products, orders, new Date("2026-11-18T06:00:00.000Z"));
+  const burger = result.week.products.find(p => p.name === "Burger");
+  assert.equal(result.week.currentStart, "2026-11-12");
+  assert.equal(result.week.previousStart, "2026-11-05");
+  assert.equal(burger.previousUnits, 4);
+  assert.equal(burger.currentUnits, 7);
+  assert.equal(burger.changePercent, 75);
+  assert.equal(result.week.products.some(p => p.name === "Hidden"), false);
+  assert.equal(result.month.products.find(p => p.name === "Burger").currentUnits, 11);
+});
+
+test("assistant answers Bangla and English product performance comparisons", () => {
+  const { buildStoreContext, answerFreeAssistant } = require("../assistant");
+  const context = buildStoreContext(
+    [{ id:"p1", name:"Burger", active:true }],
+    [
+      { status:"Pending", createdAt:"2026-11-10T04:00:00.000Z", items:[{ id:"p1", qty:4 }] },
+      { status:"Pending", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p1", qty:7 }] }
+    ],
+    new Date("2026-11-18T06:00:00.000Z")
+  );
+  assert.match(answerFreeAssistant("compare product performance", context), /Burger: 4 → 7/);
+  assert.match(answerFreeAssistant("পণ্যের পারফরম্যান্স তুলনা", context), /Burger: 4 → 7/);
+});
