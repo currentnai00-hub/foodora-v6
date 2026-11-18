@@ -26,13 +26,13 @@ button,input{font:inherit}.shell{max-width:1400px;margin:auto;padding:26px}.top{
  <section class="cols">
   <div>
    <article class="panel"><div class="panel-head"><h2>Smart Stock Monitor</h2><span class="status" id="stock-status">Connecting…</span></div><p class="muted">Active products with five or fewer units. Alerts are based on the stock values currently stored by Foodora.</p><div class="table-wrap" id="stock-table"><div class="empty">Loading stock data…</div></div></article>
-   <article class="panel"><div class="panel-head"><h2>Assistant Workspace</h2><span class="status">AI engine pending</span></div><div class="assistant-box"><div class="message">Hello! I’m your Foodora Assistant workspace. I can show verified store metrics in this first version. Conversational AI will be connected after the server-side provider and permission layer are configured.</div><div class="message system">For safety, website changes, refunds, order cancellation, payment decisions and database restore will never run without explicit authorization.</div><div class="composer"><input id="prompt" placeholder="AI chat will be enabled after provider setup…" disabled><button class="btn primary" disabled>Send</button></div></div></article>
+   <article class="panel"><div class="panel-head"><h2>Assistant Workspace</h2><span class="status" id="ai-status">Checking AI engine…</span></div><div class="assistant-box"><div class="message">Hello! I’m your Foodora Assistant. I can answer questions about verified store metrics in read-only mode. I cannot change orders, stock, payments or settings.</div><div class="message system">For safety, website changes, refunds, order cancellation, payment decisions and database restore will never run without explicit authorization.</div><div class="composer"><input id="prompt" maxlength="1200" placeholder="Ask about products, stock or orders…" autocomplete="off"><button class="btn primary" id="send">Send</button></div><div class="muted" id="chat-note">Read-only assistant · Never enter customer personal or payment information.</div></div></article>
   </div>
   <div>
    <article class="panel"><div class="panel-head"><h2>System capabilities</h2><span class="status">V1 foundation</span></div><div class="feature-list">
     <div class="feature"><span class="dot ready"></span><div><b>Secure admin authentication</b><small>Uses the existing Foodora admin session</small></div></div>
     <div class="feature"><span class="dot ready"></span><div><b>Read-only store insights</b><small>Products, orders and stock counts</small></div></div>
-    <div class="feature"><span class="dot"></span><div><b>AI conversation engine</b><small>Provider integration not configured</small></div></div>
+    <div class="feature"><span class="dot" id="ai-dot"></span><div><b>AI conversation engine</b><small id="ai-capability">Server-side provider configuration required</small></div></div>
     <div class="feature"><span class="dot"></span><div><b>Bangla + English voice</b><small>Permission and browser support review pending</small></div></div>
     <div class="feature"><span class="dot"></span><div><b>Notifications & automation</b><small>Event-safe stock alerts are next</small></div></div>
    </div></article>
@@ -43,7 +43,7 @@ button,input{font:inherit}.shell{max-width:1400px;margin:auto;padding:26px}.top{
 </main>
 <script>
 const $=id=>document.getElementById(id);
-const KEY=sessionStorage.getItem("foodora_admin_key")||"";
+const KEY=sessionStorage.getItem("foodora_admin_key")||"";\nlet chatReady=false;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function load(){
  if(!KEY){$("stock-status").textContent="Sign-in required";$("stock-table").innerHTML='<div class="empty">Please sign in through the Admin Dashboard, then open this page again.</div>';return;}
@@ -52,7 +52,7 @@ async function load(){
   const response=await fetch("/api/admin/assistant/overview",{headers:{"x-admin-key":KEY},cache:"no-store"});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(data.error||"Could not load assistant data.");
-  const m=data.metrics||{};
+  const m=data.metrics||{};\n  chatReady=data.capabilities?.aiProviderConfigured===true;\n  $("prompt").disabled=!chatReady; $("send").disabled=!chatReady;\n  $("ai-status").textContent=chatReady?"AI ready · Read-only":"AI provider not configured";\n  $("ai-dot").classList.toggle("ready",chatReady);\n  $("ai-capability").textContent=chatReady?"Secure read-only chat enabled":"Add FOODORA_AI_API_KEY in server environment";\n  $("chat-note").textContent=chatReady?"Read-only assistant · No website changes or customer personal data access.":"Chat is waiting for server-side AI provider configuration.";
   $("products").textContent=m.totalProducts??0;$("low").textContent=m.lowStockCount??0;$("out").textContent=m.outOfStockCount??0;$("pending").textContent=m.pendingOrders??0;
   const rows=Array.isArray(data.lowStock)?data.lowStock:[];
   $("stock-table").innerHTML=rows.length?'<table><thead><tr><th>Product</th><th>Available stock</th><th>Condition</th></tr></thead><tbody>'+rows.map(p=>'<tr><td>'+esc(p.name)+'</td><td class="stock '+(p.stock===0?'zero':'low')+'">'+Number(p.stock)+'</td><td>'+(p.stock===0?'<span style="color:var(--red)">Out of stock</span>':'<span style="color:var(--orange)">Low stock</span>')+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">No active products are at or below the low-stock threshold.</div>';
@@ -61,6 +61,26 @@ async function load(){
   $("updated").textContent="Last synced "+new Date(data.generatedAt).toLocaleString();
  }catch(error){$("stock-status").textContent="Connection issue";$("stock-table").textContent=error.message;if(error.message.toLowerCase().includes("authentication"))$("snapshot").textContent="Your admin session may have expired. Return to the Admin Dashboard and sign in again.";}
 }
-$("refresh").addEventListener("click",load);load();
+
+async function sendMessage(){
+ if(!chatReady)return;
+ const input=$("prompt"),message=input.value.trim();
+ if(!message)return;
+ const button=$("send");button.disabled=true;input.disabled=true;
+ const box=document.querySelector(".assistant-box");
+ const user=document.createElement("div");user.className="message";user.textContent=message;box.insertBefore(user,box.querySelector(".composer"));
+ const pending=document.createElement("div");pending.className="message system";pending.textContent="Thinking…";box.insertBefore(pending,box.querySelector(".composer"));
+ input.value="";
+ try{
+  const response=await fetch("/api/admin/assistant/chat",{method:"POST",headers:{"Content-Type":"application/json","x-admin-key":KEY},body:JSON.stringify({message}),cache:"no-store"});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||"Assistant request failed.");
+  pending.textContent=data.answer||"No response.";
+ }catch(error){pending.textContent=error.message;}
+ finally{button.disabled=false;input.disabled=false;input.focus();}
+}
+$("send").addEventListener("click",sendMessage);
+$("prompt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
+\n$("refresh").addEventListener("click",load);load();
 </script>
 </body></html>
