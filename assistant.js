@@ -30,6 +30,7 @@ function buildStoreContext(products, orders, now = new Date()) {
   const safeOrders = (Array.isArray(orders) ? orders : []).filter(Boolean);
   const active = safeProducts.filter(p => p.active !== false);
   const mappedProducts = active.map(p => ({
+    id: String(p.id || ""),
     name: String(p.name || "Unnamed product").slice(0, 80),
     category: String(p.category || "").slice(0, 50),
     stock: safeNumber(p.stock),
@@ -99,7 +100,7 @@ function answerFreeAssistant(message, context) {
     .filter(([status]) => !["delivered", "cancelled"].includes(normaliseStatus(status)))
     .reduce((total, [, count]) => total + count, 0);
 
-  if (has("help", "কি কি", "কী কী", "সাহায্য", "what can you", "কী জানতে")) {
+  if (has("help", "সাহায্য", "what can you", "কি করতে পারো", "কী করতে পারো", "কীভাবে সাহায্য")) {
     return "আমি Foodora Free Smart Assistant V2। পণ্য খোঁজা, ক্যাটাগরি, স্টক, কম/শেষ স্টক, অর্ডারের অবস্থা, আজকের অর্ডার ও অর্ডার মূল্যের সারাংশ দিতে পারি। আমি শুধু পড়তে পারি—কোনো ডেটা পরিবর্তন, পেমেন্ট বা রিফান্ড করতে পারি না।";
   }
   if (has("হ্যালো", "হাই", "hello", "hi", "hey", "আসসালামু", "সালাম")) {
@@ -153,7 +154,7 @@ function registerAssistantRoutes({ app, adminOnly, getProducts, getOrders }) {
       const safeOrders = Array.isArray(orders) ? orders.filter(Boolean) : [];
       const context = buildStoreContext(safeProducts, safeOrders);
       const lowStock = context.productSummary.lowStockProducts
-        .map(p => ({ name: p.name, stock: p.stock, active: true }))
+        .map(p => ({ id: p.id, name: p.name, stock: p.stock, active: true }))
         .sort((a, b) => a.stock - b.stock || a.name.localeCompare(b.name));
       const pendingOrders = safeOrders.filter(o => !["delivered", "cancelled"].includes(normaliseStatus(o.status)));
       res.set("Cache-Control", "no-store").json({
