@@ -1,95 +1,65 @@
 "use strict";
-
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildStoreContext, createRateLimiter, registerAssistantRoutes } = require("../assistant");
+const { buildStoreContext, createRateLimiter, answerFreeAssistant, registerAssistantRoutes } = require("../assistant");
 
-test("assistant context contains store aggregates without customer personal data", () => {
-  const context = buildStoreContext(
-    [{ id: "p1", name: "Burger", category: "Food", stock: 2, price: 250, active: true }],
-    [{ id: "o1", name: "Private Customer", phone: "01700000000", address: "Private address", total: 500, status: "Pending", createdAt: new Date().toISOString() }]
-  );
+test("assistant context contains safe store data and excludes customer personal data", () => {
+  const context = buildStoreContext([{ id:"p1",name:"Burger",category:"Food",stock:2,price:250,active:true }],[{ id:"o1",name:"Private Customer",phone:"01700000000",address:"Private address",total:500,status:"Pending",createdAt:new Date().toISOString() }]);
   const serialized = JSON.stringify(context);
-  assert.equal(context.productSummary.lowStockCount, 1);
-  assert.equal(context.orderSummary.total, 1);
-  assert.equal(context.orderSummary.statusCounts.Pending, 1);
-  assert.equal(serialized.includes("Private Customer"), false);
-  assert.equal(serialized.includes("01700000000"), false);
-  assert.equal(serialized.includes("Private address"), false);
+  assert.equal(context.productSummary.lowStockCount,1);
+  assert.equal(context.orderSummary.total,1);
+  assert.equal(context.products[0].name,"Burger");
+  assert.equal(serialized.includes("Private Customer"),false);
+  assert.equal(serialized.includes("01700000000"),false);
+  assert.equal(serialized.includes("Private address"),false);
 });
-
 test("assistant rate limiter blocks requests after configured limit", () => {
-  let now = 1000;
-  const allow = createRateLimiter({ now: () => now, limit: 2, windowMs: 100 });
-  assert.equal(allow("admin"), true);
-  assert.equal(allow("admin"), true);
-  assert.equal(allow("admin"), false);
-  now += 101;
-  assert.equal(allow("admin"), true);
+  let now=1000; const allow=createRateLimiter({now:()=>now,limit:2,windowMs:100});
+  assert.equal(allow("admin"),true); assert.equal(allow("admin"),true); assert.equal(allow("admin"),false);
+  now+=101; assert.equal(allow("admin"),true);
 });
-
-function createHarness({ env = {}, fetchImpl = async () => ({
-  ok: true,
-  async json() { return { choices: [{ message: { content: "Hello" } }] }; }
-}) } = {}) {
-  const routes = {};
-  const app = {
-    get(path, ...handlers) { routes["GET " + path] = handlers.at(-1); },
-    post(path, ...handlers) { routes["POST " + path] = handlers.at(-1); }
-  };
-  registerAssistantRoutes({
-    app, adminOnly: (_req, _res, next) => next(),
-    getProducts: async () => [{ id: "p1", name: "Burger", stock: 3, price: 200, active: true }],
-    getOrders: async () => [{ id: "o1", name: "Customer secret", phone: "01811111111", address: "Private", total: 300, status: "Pending" }],
-    env, fetchImpl
-  });
+const sample=buildStoreContext([
+  {id:"p1",name:"Burger",category:"Food",stock:3,price:200,active:true},
+  {id:"p2",name:"Kebab",category:"Food",stock:0,price:170,active:true},
+  {id:"p3",name:"Rice",category:"Food",stock:20,price:80,active:true}
+],[
+  {id:"o1",name:"Private Customer",phone:"01811111111",address:"Private",total:300,status:"Pending",createdAt:new Date().toISOString()},
+  {id:"o2",total:500,status:"Delivered",createdAt:new Date().toISOString()}
+]);
+test("free assistant reports low-stock products in Bangla",()=>{
+  const answer=answerFreeAssistant("কোন পণ্যের স্টক কম?",sample);
+  assert.match(answer,/Burger/); assert.match(answer,/3টি/);
+  assert.doesNotMatch(answer,/Private Customer|01811111111|Private/);
+});
+test("free assistant reports out-of-stock products",()=>{
+  assert.match(answerFreeAssistant("Show out of stock products",sample),/Kebab/);
+});
+test("free assistant reports order aggregates without customer data",()=>{
+  const answer=answerFreeAssistant("মোট অর্ডার কত?",sample);
+  assert.match(answer,/মোট অর্ডার: 2টি/);
+  assert.doesNotMatch(answer,/Private Customer|01811111111|Private/);
+});
+test("free assistant explains scope for unsupported questions",()=>{
+  const answer=answerFreeAssistant("Tell me a poem about the moon",sample);
+  assert.match(answer,/rule-based assistant/);
+});
+function harness(products=[],orders=[]){
+  const routes={}; const app={get(p,...h){routes["GET "+p]=h.at(-1);},post(p,...h){routes["POST "+p]=h.at(-1);}};
+  registerAssistantRoutes({app,adminOnly:(_q,_s,n)=>n(),getProducts:async()=>products,getOrders:async()=>orders,env:{}});
   return routes;
 }
-
-async function invoke(handler, body = {}) {
-  const res = {
-    statusCode: 200,
-    status(code) { this.statusCode = code; return this; },
-    set() { return this; },
-    json(value) { this.body = value; return this; }
-  };
-  await handler({ body, ip: "127.0.0.1", socket: {} }, res);
-  return res;
+async function invoke(handler,body={}){
+  const res={statusCode:200,headers:{},status(c){this.statusCode=c;return this;},set(k,v){this.headers[k]=v;return this;},json(v){this.body=v;return this;}};
+  await handler({body,ip:"127.0.0.1",socket:{}},res); return res;
 }
-
-test("chat endpoint fails closed when provider is not configured", async () => {
-  const routes = createHarness();
-  const res = await invoke(routes["POST /api/admin/assistant/chat"], { message: "Show stock" });
-  assert.equal(res.statusCode, 503);
+test("chat endpoint works without a paid API key",async()=>{
+  const routes=harness([{id:"p1",name:"Burger",stock:2,price:200,active:true}]);
+  const res=await invoke(routes["POST /api/admin/assistant/chat"],{message:"স্টকের অবস্থা কী?"});
+  assert.equal(res.statusCode,200); assert.equal(res.body.mode,"free-rule-based-read-only");
+  assert.match(res.body.answer,/Burger|কম স্টক/); assert.equal(res.headers["Cache-Control"],"no-store");
 });
-
-test("chat endpoint validates message length", async () => {
-  const routes = createHarness({ env: { FOODORA_AI_API_KEY: "test-key" } });
-  const res = await invoke(routes["POST /api/admin/assistant/chat"], { message: "x".repeat(1201) });
-  assert.equal(res.statusCode, 400);
-});
-
-test("chat endpoint calls provider with private-data-free context", async () => {
-  let request;
-  const routes = createHarness({
-    env: { FOODORA_AI_API_KEY: "test-key", FOODORA_AI_MODEL: "test-model" },
-    fetchImpl: async (url, options) => {
-      request = { url, options };
-      return {
-        ok: true,
-        async json() { return { choices: [{ message: { content: "There is one low-stock product." } }] }; }
-      };
-    }
-  });
-  const res = await invoke(routes["POST /api/admin/assistant/chat"], { message: "How is my stock?" });
-  assert.equal(res.statusCode, 200);
-  assert.equal(res.body.answer, "There is one low-stock product.");
-  assert.equal(request.url, "https://api.openai.com/v1/chat/completions");
-  const body = JSON.parse(request.options.body);
-  const prompt = body.messages[0].content;
-  assert.equal(prompt.includes("Customer secret"), false);
-  assert.equal(prompt.includes("01811111111"), false);
-  assert.equal(prompt.includes("Private"), false);
-  assert.match(prompt, /strictly read-only/);
-  assert.equal(request.options.headers.Authorization, "Bearer test-key");
+test("chat endpoint validates message length and empty messages",async()=>{
+  const routes=harness();
+  assert.equal((await invoke(routes["POST /api/admin/assistant/chat"],{message:"x".repeat(1201)})).statusCode,400);
+  assert.equal((await invoke(routes["POST /api/admin/assistant/chat"],{message:"  "})).statusCode,400);
 });
