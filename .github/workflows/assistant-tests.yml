@@ -6,7 +6,9 @@ on:
       - "assistant.js"
       - "stock-alerts.js"
       - "server.js"
-      - "test/assistant.test.js"\n      - "test/assistant-chat.test.js"
+      - "ai-assistant.html"
+      - "test/assistant.test.js"
+      - "test/assistant-chat.test.js"
       - "test/stock-alerts.test.js"
       - "test/stock-alerts.integration.test.js"
       - "package.json"
@@ -14,13 +16,16 @@ on:
   push:
     branches:
       - main
-      - "feature/foodora-personal-ai-v1"\n      - "feature/foodora-ai-conversation-v1"
+      - "feature/foodora-personal-ai-v1"
+      - "feature/foodora-ai-conversation-v1"
       - "fix/foodora-stock-alert-delivery"
     paths:
       - "assistant.js"
       - "stock-alerts.js"
       - "server.js"
+      - "ai-assistant.html"
       - "test/assistant.test.js"
+      - "test/assistant-chat.test.js"
       - "test/stock-alerts.test.js"
       - "test/stock-alerts.integration.test.js"
       - "package.json"
