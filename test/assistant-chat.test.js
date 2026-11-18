@@ -309,7 +309,7 @@ test("inventory intelligence calculates 30-day demand, stock coverage and reorde
   ];
   const orders = [
     { status:"Pending", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p1", qty:10 }, { id:"p2", qty:2 }] },
-    { status:"Delivered", createdAt:"2026-10-20T04:00:00.000Z", items:[{ id:"p1", qty:100 }] },
+    { status:"Delivered", createdAt:"2026-10-19T17:59:00.000Z", items:[{ id:"p1", qty:100 }] },
     { status:"Cancelled", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p1", qty:99 }] },
     { status:"Pending", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p4", qty:50 }] }
   ];
@@ -330,7 +330,7 @@ test("inventory intelligence handles no demand, invalid quantities and date boun
   const result = buildInventoryIntelligence(
     [{ id:"p1", name:"No demand", stock:3, active:true }, { id:"p2", name:"Demand", stock:1, active:true }],
     [
-      { status:"Pending", createdAt:"2026-10-19T18:00:00.000Z", items:[{ id:"p2", qty:100 }] },
+      { status:"Pending", createdAt:"2026-10-19T17:59:00.000Z", items:[{ id:"p2", qty:100 }] },
       { status:"Pending", createdAt:"2026-11-18T04:00:00.000Z", items:[{ id:"p2", qty:-4 }] }
     ],
     new Date("2026-11-18T06:00:00.000Z")
