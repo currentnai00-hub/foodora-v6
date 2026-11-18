@@ -100,6 +100,7 @@ function buildStoreContext(products, orders, now = new Date()) {
       week: buildProductSalesTrend(active, safeOrders, "week", now),
       month: buildProductSalesTrend(active, safeOrders, "month", now)
     },
+    productPerformanceComparison: buildProductPerformanceComparison(active, safeOrders, now),
     products: mappedProducts.slice(0, 500),
     productSummary: {
       total: safeProducts.length, active: active.length,
@@ -256,6 +257,53 @@ function buildProductSalesTrend(products, orders, period = "day", now = new Date
   };
 }
 
+
+function buildProductPerformanceComparison(products, orders, now = new Date()) {
+  const todayKey = dhakaDateKey(now);
+  if (!todayKey) return null;
+  const [year, month, day] = todayKey.split("-").map(Number);
+  const today = new Date(Date.UTC(year, month - 1, day));
+  const periods = { week: 7, month: 30 };
+  const active = (Array.isArray(products) ? products : []).filter(p => p && p.active !== false);
+  const byId = new Map(active.filter(p => p.id != null).map(p => [String(p.id), p]));
+  const byName = new Map(active.map(p => [String(p.name || "").trim().toLocaleLowerCase(), p]));
+  const output = {};
+  const key = date => date.toISOString().slice(0, 10);
+  for (const [period, days] of Object.entries(periods)) {
+    const currentStart = new Date(today.getTime() - (days - 1) * 86400000);
+    const previousStart = new Date(currentStart.getTime() - days * 86400000);
+    const totals = new Map(active.map(p => [String(p.id || p.name), {
+      id: String(p.id || ""), name: String(p.name || "Unnamed product").slice(0, 80), current: 0, previous: 0
+    }]));
+    for (const order of (Array.isArray(orders) ? orders : [])) {
+      if (!order || normaliseStatus(order.status) === "cancelled") continue;
+      const created = order.createdAt || order.created_at;
+      const dateKey = created ? dhakaDateKey(created) : "";
+      if (!dateKey || dateKey < key(previousStart) || dateKey > todayKey) continue;
+      const slot = dateKey >= key(currentStart) ? "current" : "previous";
+      for (const item of (Array.isArray(order.items) ? order.items : [])) {
+        if (!item || typeof item !== "object") continue;
+        const product = byId.get(String(item.id || "")) || byName.get(String(item.name || "").trim().toLocaleLowerCase());
+        const quantity = Number(item.qty ?? item.quantity);
+        if (!product || !Number.isFinite(quantity) || quantity <= 0) continue;
+        const qty = Math.min(Math.floor(quantity), 1000000);
+        const row = totals.get(String(product.id || product.name));
+        if (row && qty > 0) row[slot] += qty;
+      }
+    }
+    const rows = [...totals.values()].map(row => ({
+      id: row.id, name: row.name, currentUnits: row.current, previousUnits: row.previous,
+      change: row.current - row.previous,
+      changePercent: row.previous > 0 ? Math.round(((row.current - row.previous) / row.previous) * 100) : null,
+      trend: row.current > row.previous ? "up" : row.current < row.previous ? "down" : "flat"
+    })).sort((a, b) => Math.abs(b.change) - Math.abs(a.change) || a.name.localeCompare(b.name));
+    output[period] = { days, currentStart: key(currentStart), currentEnd: todayKey,
+      previousStart: key(previousStart), previousEnd: key(new Date(currentStart.getTime() - 86400000)),
+      products: rows.slice(0, 20) };
+  }
+  return output;
+}
+
 function createRateLimiter({ now = Date.now, limit = RATE_LIMIT, windowMs = RATE_WINDOW_MS } = {}) {
   const buckets = new Map();
   return function allow(key) {
@@ -326,6 +374,20 @@ function answerFreeAssistant(message, context) {
   if (has("monthly sales trend", "last 6 months", "monthly product trend", "মাসিক বিক্রির প্রবণতা", "গত ৬ মাস", "শেষ ৬ মাস")) {
     const report = trends.month;
     return report ? "মাসিক পণ্য অর্ডার-ট্রেন্ড (শেষ ৬ মাস):\n" + report.buckets.map(b => "• " + b.period + ": " + b.unitsSold + "টি আইটেম; " + b.orderCount + "টি অর্ডার").join("\n") + "\nএগুলো বাতিল নয় এমন অর্ডারের আইটেম; পেমেন্ট-যাচাইকৃত বিক্রি নয়।" : "মাসিক ট্রেন্ড তৈরি করা যায়নি।";
+  }
+
+
+  const comparison = context.productPerformanceComparison || {};
+  if (has("compare product performance", "product growth", "product decline", "পণ্যের তুলনা", "পণ্যের পারফরম্যান্স তুলনা", "কোন পণ্যের বিক্রি বেড়েছে", "কোন পণ্যের বিক্রি বেড়েছে", "কোন পণ্যের বিক্রি কমেছে")) {
+    const period = has("30 day", "30 days", "মাসিক তুলনা", "শেষ ৩০ দিন") ? "month" : "week";
+    const report = comparison[period];
+    if (!report) return "পণ্যের তুলনামূলক রিপোর্ট তৈরি করা যায়নি।";
+    const changed = report.products.filter(p => p.change !== 0).slice(0, 10);
+    return "পণ্য পারফরম্যান্স তুলনা (" + report.days + " দিন বনাম আগের " + report.days + " দিন; বাংলাদেশ সময়):\\n" +
+      (changed.length ? changed.map(p => "• " + p.name + ": " + p.previousUnits + " → " + p.currentUnits + "টি (" +
+        (p.change > 0 ? "+" : "") + p.change + (p.changePercent == null ? "; আগের সময়ে অর্ডার ছিল না" : "; " + (p.changePercent > 0 ? "+" : "") + p.changePercent + "%") + ")").join("\\n")
+        : "তুলনার সময়ে কোনো পরিবর্তন নেই বা পর্যাপ্ত অর্ডার-তথ্য নেই।") +
+      "\\nএটি অর্ডার করা আইটেমের পরিমাণ; পেমেন্ট-যাচাইকৃত বিক্রি নয়।";
   }
 
   const analytics = context.productAnalytics || {};
@@ -439,4 +501,4 @@ function registerAssistantRoutes({ app, adminOnly, getProducts, getOrders }) {
   });
 }
 
-module.exports = { registerAssistantRoutes, buildStoreContext, createRateLimiter, answerFreeAssistant, dhakaDateKey, dhakaPeriodBounds, buildPeriodOrderReport, buildProductAnalytics, buildProductSalesTrend, normaliseStatus };
+module.exports = { registerAssistantRoutes, buildStoreContext, createRateLimiter, answerFreeAssistant, dhakaDateKey, dhakaPeriodBounds, buildPeriodOrderReport, buildProductAnalytics, buildProductSalesTrend, buildProductPerformanceComparison, normaliseStatus };
