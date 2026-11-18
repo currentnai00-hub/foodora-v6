@@ -297,3 +297,59 @@ test("assistant answers Bangla and English product performance comparisons", () 
   assert.match(answerFreeAssistant("compare product performance", context), /Burger: 4 → 7/);
   assert.match(answerFreeAssistant("পণ্যের পারফরম্যান্স তুলনা", context), /Burger: 4 → 7/);
 });
+
+
+test("inventory intelligence calculates 30-day demand, stock coverage and reorder suggestions safely", () => {
+  const { buildInventoryIntelligence } = require("../assistant");
+  const products = [
+    { id:"p1", name:"Burger", stock:5, active:true },
+    { id:"p2", name:"Tea", stock:40, active:true },
+    { id:"p3", name:"Rice", stock:0, active:true },
+    { id:"p4", name:"Hidden", stock:1, active:false }
+  ];
+  const orders = [
+    { status:"Pending", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p1", qty:10 }, { id:"p2", qty:2 }] },
+    { status:"Delivered", createdAt:"2026-10-20T04:00:00.000Z", items:[{ id:"p1", qty:100 }] },
+    { status:"Cancelled", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p1", qty:99 }] },
+    { status:"Pending", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p4", qty:50 }] }
+  ];
+  const result = buildInventoryIntelligence(products, orders, new Date("2026-11-18T06:00:00.000Z"));
+  const burger = result.products.find(p => p.name === "Burger");
+  assert.equal(result.startDate, "2026-10-20");
+  assert.equal(result.endDate, "2026-11-18");
+  assert.equal(burger.unitsOrderedLast30Days, 10);
+  assert.equal(burger.currentStock, 5);
+  assert.equal(burger.estimatedDaysOfStock, 15);
+  assert.equal(burger.suggestedReorder, 5);
+  assert.equal(result.products.find(p => p.name === "Rice").risk, "out");
+  assert.equal(result.products.some(p => p.name === "Hidden"), false);
+});
+
+test("inventory intelligence handles no demand, invalid quantities and date boundaries", () => {
+  const { buildInventoryIntelligence } = require("../assistant");
+  const result = buildInventoryIntelligence(
+    [{ id:"p1", name:"No demand", stock:3, active:true }, { id:"p2", name:"Demand", stock:1, active:true }],
+    [
+      { status:"Pending", createdAt:"2026-10-19T18:00:00.000Z", items:[{ id:"p2", qty:100 }] },
+      { status:"Pending", createdAt:"2026-11-18T04:00:00.000Z", items:[{ id:"p2", qty:-4 }] }
+    ],
+    new Date("2026-11-18T06:00:00.000Z")
+  );
+  assert.equal(result.products.find(p => p.name === "No demand").risk, "no_recent_demand");
+  assert.equal(result.products.find(p => p.name === "Demand").unitsOrderedLast30Days, 0);
+});
+
+test("assistant answers inventory planning prompts in Bangla and English with estimate disclaimer", () => {
+  const { buildStoreContext, answerFreeAssistant } = require("../assistant");
+  const context = buildStoreContext(
+    [{ id:"p1", name:"Burger", stock:2, active:true }],
+    [{ status:"Pending", createdAt:"2026-11-17T04:00:00.000Z", items:[{ id:"p1", qty:10 }] }],
+    new Date("2026-11-18T06:00:00.000Z")
+  );
+  const english = answerFreeAssistant("inventory forecast and reorder suggestion", context);
+  const bangla = answerFreeAssistant("কোন পণ্য আগে অর্ডার করব?", context);
+  assert.match(english, /Burger/);
+  assert.match(english, /আনুমানিক/);
+  assert.match(english, /সরবরাহকারীর সময়/);
+  assert.match(bangla, /Burger/);
+});
