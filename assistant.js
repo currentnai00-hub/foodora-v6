@@ -195,7 +195,7 @@ function buildProductSalesTrend(products, orders, period = "day", now = new Date
   let first;
   if (period === "day") first = new Date(today.getTime() - (size - 1) * 86400000);
   else if (period === "week") first = new Date(today.getTime() - (mondayOffset + (size - 1) * 7) * 86400000);
-  else first = new Date(Date.UTC(year, month - (size - 1), 1));
+  else first = new Date(Date.UTC(year, month - size, 1));
   const keyFor = date => {
     if (period === "month") return date.toISOString().slice(0, 7);
     if (period === "week") {
