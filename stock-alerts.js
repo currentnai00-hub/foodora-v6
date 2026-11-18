@@ -67,8 +67,9 @@ function createStockAlertWorker({ pool, env = process.env, fetchImpl = global.fe
   async function pollOnce() {
     if (running) return { skipped: true, reason: "already-running" };
     running = true;
-    const client = await pool.connect();
+    let client;
     try {
+      client = await pool.connect();
       await client.query("BEGIN");
       await client.query("SELECT pg_advisory_xact_lock(hashtext('foodora_stock_alert_worker'))");
       const products = await client.query(
@@ -98,7 +99,10 @@ function createStockAlertWorker({ pool, env = process.env, fetchImpl = global.fe
         }
       }
 
-      if (events.length) await sendTelegram(events);
+      if (events.length) {
+        const sent = await sendTelegram(events);
+        if (!sent) throw new Error("Telegram stock alert credentials are not configured");
+      }
       for (const item of updates) {
         await client.query(
           `INSERT INTO assistant_stock_alert_state(product_id,product_name,stock_state,stock,updated_at)
@@ -111,11 +115,11 @@ function createStockAlertWorker({ pool, env = process.env, fetchImpl = global.fe
       await client.query("COMMIT");
       return { checked: updates.length, notifications: events.length };
     } catch (error) {
-      await client.query("ROLLBACK").catch(() => {});
+      if (client) await client.query("ROLLBACK").catch(() => {});
       logger.error("Foodora stock alert poll failed:", error.message);
       throw error;
     } finally {
-      client.release();
+      if (client) client.release();
       running = false;
     }
   }
