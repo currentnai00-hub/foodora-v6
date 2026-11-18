@@ -116,6 +116,7 @@ function buildProductAnalytics(products, orders) {
     .filter(p => p && p.active !== false);
   const byId = new Map();
   const byName = new Map();
+  const allRows = [];
   for (const product of activeProducts) {
     const row = {
       id: String(product.id || ""),
@@ -125,6 +126,7 @@ function buildProductAnalytics(products, orders) {
       orderCount: 0,
       listedValue: 0
     };
+    allRows.push(row);
     if (row.id) byId.set(row.id, row);
     byName.set(row.name.toLocaleLowerCase(), row);
   }
@@ -133,6 +135,7 @@ function buildProductAnalytics(products, orders) {
   for (const order of (Array.isArray(orders) ? orders : [])) {
     if (!order || normaliseStatus(order.status) === "cancelled") continue;
     const seenInOrder = new Set();
+    const seenCategoriesInOrder = new Set();
     for (const item of (Array.isArray(order.items) ? order.items : [])) {
       if (!item || typeof item !== "object") continue;
       const product = byId.get(String(item.id || "")) ||
@@ -152,12 +155,15 @@ function buildProductAnalytics(products, orders) {
       const category = product.category || "অন্যান্য";
       const bucket = categoryMap.get(category) || { category, unitsSold: 0, orderCount: 0 };
       bucket.unitsSold += qty;
-      bucket.orderCount += 1;
+      if (!seenCategoriesInOrder.has(category)) {
+        bucket.orderCount += 1;
+        seenCategoriesInOrder.add(category);
+      }
       categoryMap.set(category, bucket);
     }
   }
 
-  const rows = [...new Set(byId.size ? byId.values() : byName.values())];
+  const rows = allRows;
   const rank = (x, y) => y.unitsSold - x.unitsSold || y.orderCount - x.orderCount || x.name.localeCompare(y.name);
   const topSelling = [...rows].filter(p => p.unitsSold > 0).sort(rank).slice(0, 10);
   const leastSelling = [...rows].sort((x, y) => x.unitsSold - y.unitsSold || x.orderCount - y.orderCount || x.name.localeCompare(y.name)).slice(0, 10);
