@@ -8,21 +8,41 @@ on:
       - "server.js"
       - "test/assistant.test.js"
       - "test/stock-alerts.test.js"
+      - "test/stock-alerts.integration.test.js"
       - "package.json"
       - ".github/workflows/assistant-tests.yml"
   push:
     branches:
       - main
       - "feature/foodora-personal-ai-v1"
+      - "fix/foodora-stock-alert-delivery"
     paths:
       - "assistant.js"
+      - "stock-alerts.js"
+      - "server.js"
       - "test/assistant.test.js"
+      - "test/stock-alerts.test.js"
+      - "test/stock-alerts.integration.test.js"
       - "package.json"
       - ".github/workflows/assistant-tests.yml"
 
 jobs:
-  assistant-unit-tests:
+  assistant-unit-and-postgres-tests:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: foodora_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d foodora_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -30,9 +50,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Install dependencies
+        run: npm install
       - name: Check backend syntax
         run: node --check assistant.js && node --check stock-alerts.js && node --check server.js
       - name: Check test syntax
-        run: node --check test/assistant.test.js && node --check test/stock-alerts.test.js
-      - name: Run assistant unit tests
+        run: node --check test/assistant.test.js && node --check test/stock-alerts.test.js && node --check test/stock-alerts.integration.test.js
+      - name: Run unit and PostgreSQL integration tests
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/foodora_test
         run: npm test
