@@ -128,3 +128,37 @@ test("overview reports active product counts and case-insensitive pending orders
   assert.equal(res.body.metrics.pendingOrders, 1);
   assert.equal(res.body.capabilities.version, "2.0.0");
 });
+
+
+test("weekly and monthly report boundaries use Asia/Dhaka calendar dates", () => {
+  const { dhakaPeriodBounds } = require("../assistant");
+  const instant = new Date("2026-11-18T06:00:00.000Z");
+  assert.deepEqual(dhakaPeriodBounds("week", instant), { startDate: "2026-11-16", endDateExclusive: "2026-11-23" });
+  assert.deepEqual(dhakaPeriodBounds("month", instant), { startDate: "2026-11-01", endDateExclusive: "2026-12-01" });
+});
+
+test("period reports exclude cancelled orders and customer personal data", () => {
+  const { buildPeriodOrderReport } = require("../assistant");
+  const orders = [
+    { total: 300, status: "Pending", createdAt: "2026-11-18T04:00:00.000Z", phone: "01700000000" },
+    { total: 500, status: "Delivered", createdAt: "2026-11-17T20:00:00.000Z" },
+    { total: 900, status: "Cancelled", createdAt: "2026-11-18T04:00:00.000Z" },
+    { total: 700, status: "Pending", createdAt: "2026-10-31T18:00:00.000Z" }
+  ];
+  const report = buildPeriodOrderReport(orders, "week", new Date("2026-11-18T06:00:00.000Z"));
+  assert.equal(report.orderCount, 2);
+  assert.equal(report.grossOrderValueExcludingCancelled, 800);
+  assert.equal(JSON.stringify(report).includes("01700000000"), false);
+});
+
+test("assistant answers weekly and monthly report requests with careful value labels", () => {
+  const { answerFreeAssistant, buildStoreContext } = require("../assistant");
+  const context = buildStoreContext([], [
+    { total: 300, status: "Pending", createdAt: "2026-11-18T04:00:00.000Z" },
+    { total: 500, status: "Delivered", createdAt: "2026-11-17T20:00:00.000Z" },
+    { total: 900, status: "Cancelled", createdAt: "2026-11-18T04:00:00.000Z" }
+  ], new Date("2026-11-18T06:00:00.000Z"));
+  assert.match(answerFreeAssistant("এই সপ্তাহের রিপোর্ট দাও", context), /৳800/);
+  assert.match(answerFreeAssistant("monthly report", context), /৳800/);
+  assert.match(answerFreeAssistant("monthly report", context), /নিট লাভ নয়/);
+});

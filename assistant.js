@@ -16,6 +16,48 @@ function dhakaDateKey(value) {
   return part("year") + "-" + part("month") + "-" + part("day");
 }
 
+function dhakaPeriodBounds(period, now = new Date()) {
+  const today = dhakaDateKey(now);
+  if (!today) return null;
+  const [year, month, day] = today.split("-").map(Number);
+  const localDay = new Date(Date.UTC(year, month - 1, day));
+  let start;
+  let end;
+  if (period === "week") {
+    const weekday = (localDay.getUTCDay() + 6) % 7;
+    start = new Date(Date.UTC(year, month - 1, day - weekday));
+    end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + 7));
+  } else if (period === "month") {
+    start = new Date(Date.UTC(year, month - 1, 1));
+    end = new Date(Date.UTC(year, month, 1));
+  } else return null;
+  const key = date => date.toISOString().slice(0, 10);
+  return { startDate: key(start), endDateExclusive: key(end) };
+}
+
+function buildPeriodOrderReport(orders, period, now = new Date()) {
+  const bounds = dhakaPeriodBounds(period, now);
+  if (!bounds) return null;
+  const rows = (Array.isArray(orders) ? orders : []).filter(order => {
+    if (!order || normaliseStatus(order.status) === "cancelled") return false;
+    const created = order.createdAt || order.created_at;
+    const day = created ? dhakaDateKey(created) : "";
+    return day >= bounds.startDate && day < bounds.endDateExclusive;
+  });
+  const statusCounts = {};
+  let grossOrderValueExcludingCancelled = 0;
+  for (const order of rows) {
+    const status = String(order.status || "Unknown").trim().slice(0, 40) || "Unknown";
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+    grossOrderValueExcludingCancelled += safeNumber(order.total);
+  }
+  const lastDay = new Date(Date.parse(bounds.endDateExclusive + "T00:00:00Z") - 86400000);
+  return {
+    period, startDate: bounds.startDate, endDate: lastDay.toISOString().slice(0, 10),
+    orderCount: rows.length, statusCounts, grossOrderValueExcludingCancelled
+  };
+}
+
 function normaliseStatus(value) {
   return String(value || "Unknown").trim().toLowerCase();
 }
@@ -51,6 +93,7 @@ function buildStoreContext(products, orders, now = new Date()) {
   }
   return {
     currency: "BDT",
+    periodReports: { week: buildPeriodOrderReport(safeOrders, "week", now), month: buildPeriodOrderReport(safeOrders, "month", now) },
     products: mappedProducts.slice(0, 500),
     productSummary: {
       total: safeProducts.length, active: active.length,
@@ -112,6 +155,16 @@ function answerFreeAssistant(message, context) {
   if (has("low stock", "কম স্টক", "স্টক কম", "অল্প স্টক", "৫ বা কম", "পাঁচ বা কম")) {
     return low.length ? "কম স্টকে থাকা পণ্য " + low.length + "টি:\n" + low.slice(0, MAX_LIST_ITEMS).map(p => "• " + p.name + " — " + p.stock + "টি").join("\n") : "বর্তমানে ১–৫ স্টকে কোনো সক্রিয় পণ্য নেই।";
   }
+
+  if (has("weekly report", "this week", "সাপ্তাহিক রিপোর্ট", "এই সপ্তাহের", "সপ্তাহের রিপোর্ট")) {
+    const report = context.periodReports?.week;
+    return report ? "সাপ্তাহিক অর্ডার রিপোর্ট (" + report.startDate + " থেকে " + report.endDate + "):\\n• অর্ডার: " + report.orderCount + "টি\\n• তালিকাভুক্ত মোট অর্ডার মূল্য: " + money(report.grossOrderValueExcludingCancelled) + "\\n• স্ট্যাটাস: " + (Object.entries(report.statusCounts).map(([status, count]) => status + " " + count + "টি").join(", ") || "কোনো অর্ডার নেই") + "\\nCancelled অর্ডার বাদ; এটি পেমেন্ট-যাচাইকৃত আয় বা নিট লাভ নয়।" : "সাপ্তাহিক রিপোর্ট তৈরি করা যায়নি।";
+  }
+  if (has("monthly report", "this month", "মাসিক রিপোর্ট", "এই মাসের", "মাসের রিপোর্ট")) {
+    const report = context.periodReports?.month;
+    return report ? "মাসিক অর্ডার রিপোর্ট (" + report.startDate + " থেকে " + report.endDate + "):\\n• অর্ডার: " + report.orderCount + "টি\\n• তালিকাভুক্ত মোট অর্ডার মূল্য: " + money(report.grossOrderValueExcludingCancelled) + "\\n• স্ট্যাটাস: " + (Object.entries(report.statusCounts).map(([status, count]) => status + " " + count + "টি").join(", ") || "কোনো অর্ডার নেই") + "\\nCancelled অর্ডার বাদ; এটি পেমেন্ট-যাচাইকৃত আয় বা নিট লাভ নয়।" : "মাসিক রিপোর্ট তৈরি করা যায়নি।";
+  }
+
   if (has("আজকের অর্ডার", "আজ কত", "today order", "orders today", "আজ কয়টি", "আজ কয়টি")) {
     return "আজকের অর্ডার: " + (orders.today || 0) + "টি। সময় অঞ্চল: বাংলাদেশ (Asia/Dhaka)।";
   }
@@ -197,4 +250,4 @@ function registerAssistantRoutes({ app, adminOnly, getProducts, getOrders }) {
   });
 }
 
-module.exports = { registerAssistantRoutes, buildStoreContext, createRateLimiter, answerFreeAssistant, dhakaDateKey, normaliseStatus };
+module.exports = { registerAssistantRoutes, buildStoreContext, createRateLimiter, answerFreeAssistant, dhakaDateKey, dhakaPeriodBounds, buildPeriodOrderReport, normaliseStatus };
