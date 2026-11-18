@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1210">
+<title>Foodora AI · Personal Assistant</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1210;--panel:#121e19;--panel2:#192720;--line:#26382e;--text:#f3f7f3;--muted:#91a49a;--green:#b8f36b;--orange:#ffad65;--red:#ff7777}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 85% 0%,#1b3325 0,transparent 35%),var(--bg);color:var(--text);font:14px Inter,system-ui,Arial}
+button,input{font:inherit}.shell{max-width:1400px;margin:auto;padding:26px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}.brand{font-size:13px;letter-spacing:2px;color:var(--green);font-weight:900}.brand span{color:var(--muted);font-weight:600}.top-actions{display:flex;gap:9px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;cursor:pointer}.btn.primary{background:var(--green);color:#172111;border:0}.hero{padding:28px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(120deg,#17291f,#111b16 68%);margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:20px}.eyebrow{color:var(--green);font-size:11px;font-weight:800;letter-spacing:2px}.hero h1{font-size:clamp(26px,4vw,42px);margin:9px 0}.hero p{color:var(--muted);max-width:660px;line-height:1.65;margin:0}.orb{width:112px;height:112px;flex:0 0 112px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#e0ffb2,#8bcf4e 42%,#345b2e 72%);box-shadow:0 0 55px #9be65a35;color:#14210f;font-size:40px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:18px}.card,.panel{background:#121e19eF;border:1px solid var(--line);border-radius:17px;padding:18px}.metric-label{color:var(--muted);font-size:12px}.metric{font-size:30px;font-weight:850;margin-top:10px}.metric-note{font-size:11px;color:var(--muted);margin-top:5px}.cols{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(290px,.85fr);gap:16px}.panel{margin-bottom:16px}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}.panel h2{font-size:16px;margin:0}.muted{color:var(--muted);line-height:1.55}.status{font-size:11px;color:var(--green);border:1px solid #3c5738;background:#1b2b1d;padding:6px 9px;border-radius:20px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:380px}th,td{text-align:left;padding:12px 9px;border-bottom:1px solid var(--line)}th{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}td{font-size:13px}.stock{font-weight:800}.stock.zero{color:var(--red)}.stock.low{color:var(--orange)}.empty{padding:28px;text-align:center;color:var(--muted)}.assistant-box{min-height:300px;display:flex;flex-direction:column;gap:12px}.message{background:#1a2a20;border:1px solid #304635;padding:13px;border-radius:13px;line-height:1.6}.message.system{background:#18231d;border-color:var(--line);color:var(--muted)}.composer{display:flex;gap:8px;margin-top:auto}.composer input{flex:1;min-width:0;background:#0b1510;border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--text)}.composer button:disabled{opacity:.45;cursor:not-allowed}.feature-list{display:grid;gap:10px}.feature{display:flex;gap:11px;align-items:center;padding:11px;border-radius:11px;background:#0e1812}.feature b{display:block;font-size:13px}.feature small{color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--orange);flex:none}.dot.ready{background:var(--green)}.foot{color:var(--muted);font-size:11px;text-align:center;padding:15px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}.hero{align-items:flex-start}.orb{width:80px;height:80px;flex-basis:80px;font-size:30px}}
+@media(max-width:520px){.shell{padding:14px}.top{align-items:flex-start;flex-direction:column}.hero{padding:20px}.orb{display:none}.grid{gap:9px}.card{padding:13px}.metric{font-size:24px}.composer{flex-direction:column}.composer button{width:100%}}
+</style>
+</head>
+<body>
+<main class="shell">
+ <header class="top"><div class="brand">FOODORA <span> / PERSONAL AI</span></div><div class="top-actions"><a class="btn" href="/admin.html">← Admin Dashboard</a><button class="btn" id="refresh">↻ Refresh data</button></div></header>
+ <section class="hero"><div><div class="eyebrow">YOUR STORE INTELLIGENCE CENTER</div><h1>Meet your Foodora Assistant.</h1><p>A secure control center for store insights, stock awareness and future voice-enabled workflows. The first build is read-only while the AI action layer is being developed.</p></div><div class="orb" aria-hidden="true">✦</div></section>
+ <section class="grid">
+  <article class="card"><div class="metric-label">TOTAL PRODUCTS</div><div class="metric" id="products">—</div><div class="metric-note">All catalog products</div></article>
+  <article class="card"><div class="metric-label">LOW STOCK</div><div class="metric" id="low">—</div><div class="metric-note">Stock at or below 5</div></article>
+  <article class="card"><div class="metric-label">OUT OF STOCK</div><div class="metric" id="out">—</div><div class="metric-note">Active products at zero</div></article>
+  <article class="card"><div class="metric-label">PENDING ORDERS</div><div class="metric" id="pending">—</div><div class="metric-note">Not delivered or cancelled</div></article>
+ </section>
+ <section class="cols">
+  <div>
+   <article class="panel"><div class="panel-head"><h2>Smart Stock Monitor</h2><span class="status" id="stock-status">Connecting…</span></div><p class="muted">Active products with five or fewer units. Alerts are based on the stock values currently stored by Foodora.</p><div class="table-wrap" id="stock-table"><div class="empty">Loading stock data…</div></div></article>
+   <article class="panel"><div class="panel-head"><h2>Assistant Workspace</h2><span class="status">AI engine pending</span></div><div class="assistant-box"><div class="message">Hello! I’m your Foodora Assistant workspace. I can show verified store metrics in this first version. Conversational AI will be connected after the server-side provider and permission layer are configured.</div><div class="message system">For safety, website changes, refunds, order cancellation, payment decisions and database restore will never run without explicit authorization.</div><div class="composer"><input id="prompt" placeholder="AI chat will be enabled after provider setup…" disabled><button class="btn primary" disabled>Send</button></div></div></article>
+  </div>
+  <div>
+   <article class="panel"><div class="panel-head"><h2>System capabilities</h2><span class="status">V1 foundation</span></div><div class="feature-list">
+    <div class="feature"><span class="dot ready"></span><div><b>Secure admin authentication</b><small>Uses the existing Foodora admin session</small></div></div>
+    <div class="feature"><span class="dot ready"></span><div><b>Read-only store insights</b><small>Products, orders and stock counts</small></div></div>
+    <div class="feature"><span class="dot"></span><div><b>AI conversation engine</b><small>Provider integration not configured</small></div></div>
+    <div class="feature"><span class="dot"></span><div><b>Bangla + English voice</b><small>Permission and browser support review pending</small></div></div>
+    <div class="feature"><span class="dot"></span><div><b>Notifications & automation</b><small>Event-safe stock alerts are next</small></div></div>
+   </div></article>
+   <article class="panel"><div class="panel-head"><h2>Today's snapshot</h2></div><div class="muted" id="snapshot">Waiting for secure data…</div></article>
+  </div>
+ </section>
+ <div class="foot">Foodora Personal AI · Read-only foundation · <span id="updated">Not yet synced</span></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const KEY=sessionStorage.getItem("foodora_admin_key")||"";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function load(){
+ if(!KEY){$("stock-status").textContent="Sign-in required";$("stock-table").innerHTML='<div class="empty">Please sign in through the Admin Dashboard, then open this page again.</div>';return;}
+ $("stock-status").textContent="Updating…";
+ try{
+  const response=await fetch("/api/admin/assistant/overview",{headers:{"x-admin-key":KEY},cache:"no-store"});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw Error(data.error||"Could not load assistant data.");
+  const m=data.metrics||{};
+  $("products").textContent=m.totalProducts??0;$("low").textContent=m.lowStockCount??0;$("out").textContent=m.outOfStockCount??0;$("pending").textContent=m.pendingOrders??0;
+  const rows=Array.isArray(data.lowStock)?data.lowStock:[];
+  $("stock-table").innerHTML=rows.length?'<table><thead><tr><th>Product</th><th>Available stock</th><th>Condition</th></tr></thead><tbody>'+rows.map(p=>'<tr><td>'+esc(p.name)+'</td><td class="stock '+(p.stock===0?'zero':'low')+'">'+Number(p.stock)+'</td><td>'+(p.stock===0?'<span style="color:var(--red)">Out of stock</span>':'<span style="color:var(--orange)">Low stock</span>')+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">No active products are at or below the low-stock threshold.</div>';
+  $("stock-status").textContent="Live data · Read-only";
+  $("snapshot").textContent=(m.todayOrders||0)+" orders today · "+(m.activeProducts||0)+" active products · "+(m.pendingOrders||0)+" open orders.";
+  $("updated").textContent="Last synced "+new Date(data.generatedAt).toLocaleString();
+ }catch(error){$("stock-status").textContent="Connection issue";$("stock-table").textContent=error.message;if(error.message.toLowerCase().includes("authentication"))$("snapshot").textContent="Your admin session may have expired. Return to the Admin Dashboard and sign in again.";}
+}
+$("refresh").addEventListener("click",load);load();
+</script>
+</body></html>
