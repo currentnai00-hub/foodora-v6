@@ -25,7 +25,9 @@ jobs:
       - name: Check customer account JavaScript syntax
         run: node --check account.js
       - name: Check customer tracking JavaScript syntax
-        run: node --check track.js
+        run: |
+          node --check track.js
+          node tests/customer-order-stream-guards.js
       - name: Check customer menu JavaScript syntax
         run: node --check script.js
       - name: Check Admin dashboard JavaScript syntax
@@ -85,6 +87,7 @@ jobs:
       - name: Check realtime event stream syntax and safety
         run: |
           node --check event-stream.js
+          node --check customer-order-stream.js
           node tests/realtime-event-stream-guards.js
       - name: Check PWA JavaScript syntax
         run: |
@@ -145,6 +148,8 @@ jobs:
         run: node tests/postgres-payment-e2e.js
       - name: Run PostgreSQL realtime event outbox E2E tests
         run: node tests/realtime-event-stream-e2e.js
+      - name: Run PostgreSQL customer order event E2E tests
+        run: node tests/customer-order-stream-e2e.js
       - name: Run isolated PostgreSQL ZIP backup and restore end-to-end tests
         run: node tests/postgres-backup-restore-e2e.js
       - name: Show server log on failure
