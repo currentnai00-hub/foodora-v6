@@ -10,7 +10,8 @@ assert.match(js,/data-quick-view/, "Product cards must expose a quick-view actio
 assert.match(js,/MutationObserver/, "Quick view must support products rendered asynchronously or after filtering");
 assert.match(js,/aria-modal="true"/, "Quick view must use modal dialog semantics");
 assert.match(js,/event\.key === "Escape"/, "Quick view must close with Escape");
-assert.match(js,/currentAdd\.click\(\)/, "Quick view must use the existing cart action");
+assert.match(js,/window\.addToCart\(activeProductId\)/, "Quick view must use the canonical cart function after product re-render");
+assert.match(js,/activeProductId = String\(originalAdd\.dataset\.add/, "Quick view must retain the selected product ID independently of rendered cards");
 assert.match(js,/originalAdd\.disabled/, "Unavailable items must remain unavailable in quick view");
 assert.match(js,/returnFocus\.isConnected/, "Quick view must restore focus when possible");
 assert.match(css,/prefers-reduced-motion:reduce/, "Quick-view motion must respect reduced-motion preferences");
