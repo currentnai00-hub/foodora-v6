@@ -18,5 +18,5 @@ assert.match(js, /Math\.random\(\)/, "Tied menu suggestions must be selected wit
 assert.match(js, /prefers-reduced-motion: reduce/, "Result scrolling must respect reduced motion");
 assert.match(css, /prefers-reduced-motion:reduce/, "Animations must respect reduced motion");
 assert.match(css, /:focus-visible/, "Interactive controls must expose keyboard focus");
-assert.match(js, /localStorage|sessionStorage/, "No persistent storage should be introduced");
+assert.doesNotMatch(js, /localStorage|sessionStorage/, "Flavor answers must not be persisted");
 console.log("Homepage Flavorverse guards passed.");
