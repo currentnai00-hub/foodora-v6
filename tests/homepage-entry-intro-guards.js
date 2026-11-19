@@ -13,7 +13,10 @@ assert.match(html, /id="fdEntryIntro"/, "Homepage must expose the entry overlay"
 assert.match(html, /data-entry-skip/, "Visitors must be able to skip the intro");
 assert.match(html, /foodora<span>\.<\/span>/, "The animated Foodora wordmark must include its signature dot");
 assert.match(css, /fd-entry-wordmark-zoomout/, "Wordmark must animate from large to normal scale");
-assert.match(css, /scale\(2\.55\)/, "Wordmark must begin enlarged and zoom out");
+assert.match(css, /scale\(3\.15\)/, "Wordmark must begin dramatically enlarged and zoom out");
+assert.match(css, /fd-entry-sheen/, "Wordmark must receive a controlled premium light sweep");
+assert.match(css, /fd-entry-halo/, "The logo must have a restrained ambient halo");
+assert.match(css, /border:1px solid rgba\(235,198,158,\.16\)/, "The intro must include a subtle signature frame");
 assert.match(css, /prefers-reduced-motion:reduce/, "Reduced-motion preferences must be respected");
 assert.match(css, /z-index:100000/, "Entry overlay must appear above existing homepage experiences");
 assert.match(js, /sessionStorage\.setItem/, "Intro completion must persist for the current tab");
@@ -21,4 +24,4 @@ assert.match(js, /event\.key === "Escape"/, "Escape must skip the intro");
 assert.match(js, /setTimeout\(finish, 2850\)/, "Intro must finish automatically");
 assert.match(js, /document\.body\.style\.overflow = "hidden"/, "Background scrolling must be locked during intro");
 assert.match(js, /pagehide/, "Page navigation must clean up the intro state");
-console.log("Foodora entry intro guards passed.");
+console.log("Foodora premium entry intro guards passed.");
