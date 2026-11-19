@@ -57,7 +57,7 @@
     if (/(filter|ফিল্টার|ঝাল|নিরামিষ|vegetarian|sugar.?free|চিনি ছাড়া|breakfast|নাশতা|দুপুর|lunch|dinner|রাতের খাবার)/i.test(q)) {
       return en ? "Use the menu filters to narrow dishes by meal time, dietary type, spice level and minimum/maximum price. You can also search and sort the menu." : "মেনুতে সময় (নাশতা/দুপুর/রাত), খাবারের ধরন (নিরামিষ/চিনি ছাড়া), ঝালের মাত্রা এবং সর্বনিম্ন/সর্বোচ্চ দাম দিয়ে খাবার ফিল্টার করতে পারবেন। সার্চ ও সাজানোর অপশনও আছে।";
     }
-    if (/(cart|কার্ট|coupon|কুপন|promo code|প্রোমো কোড)/i.test(q)) {
+    if (/(cart|কার্ট)/i.test(q)) {
       return en ? "Add dishes to your cart, enter an available coupon in the cart and tap Apply. Coupon eligibility and final totals are confirmed at checkout." : "পছন্দের খাবার কার্টে যোগ করুন। কার্টে কুপন কোড লিখে ‘প্রয়োগ করুন’ চাপুন। কুপনের যোগ্যতা ও চূড়ান্ত মূল্য চেকআউটে যাচাই হবে।";
     }
     if (/(checkout|চেকআউট|অর্ডার নিশ্চিত|কী তথ্য|কি তথ্য|phone number|মোবাইল নম্বর)/i.test(q)) {
