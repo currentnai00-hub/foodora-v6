@@ -3,7 +3,7 @@
   const grid = document.getElementById("products");
   if (!grid) return;
 
-  let activeCard = null;
+  let activeProductId = null;
   let returnFocus = null;
   let previousOverflow = "";
 
@@ -28,7 +28,6 @@
     </section>`;
   document.body.appendChild(modal);
 
-  const dialog = modal.querySelector('[role="dialog"]');
   const closeButton = modal.querySelector(".fd-quick-view-close");
   const addButton = modal.querySelector(".fd-quick-view-add");
 
@@ -55,7 +54,8 @@
     const originalAdd = card.querySelector(".add");
     if (!name || !originalAdd) return;
 
-    activeCard = card;
+    activeProductId = String(originalAdd.dataset.add || "");
+    if (!activeProductId) return;
     returnFocus = trigger;
     previousOverflow = document.body.style.overflow;
     modal.querySelector(".fd-quick-view-image").src = image?.src || "";
@@ -77,8 +77,9 @@
     if (modal.hidden) return;
     modal.hidden = true;
     document.body.style.overflow = previousOverflow;
-    activeCard = null;
+    activeProductId = null;
     if (returnFocus && returnFocus.isConnected) returnFocus.focus();
+    else document.getElementById("search")?.focus();
     returnFocus = null;
   }
 
@@ -90,13 +91,18 @@
   });
 
   addButton.addEventListener("click", () => {
-    if (!activeCard) return;
-    const id = activeCard.querySelector("[data-add]")?.dataset.add;
-    const currentCard = Array.from(grid.querySelectorAll(".product")).find(card =>
-      card.querySelector("[data-add]")?.dataset.add === id
-    );
-    const currentAdd = currentCard?.querySelector(".add");
-    if (currentAdd && !currentAdd.disabled) currentAdd.click();
+    if (!activeProductId) return;
+    // Use the application's canonical cart function so stock is rechecked
+    // against the latest product data, even if filters re-rendered the grid.
+    if (typeof window.addToCart === "function") {
+      window.addToCart(activeProductId);
+    } else {
+      const currentCard = Array.from(grid.querySelectorAll(".product")).find(card =>
+        card.querySelector("[data-add]")?.dataset.add === activeProductId
+      );
+      const currentAdd = currentCard?.querySelector(".add");
+      if (currentAdd && !currentAdd.disabled) currentAdd.click();
+    }
     close();
   });
 
