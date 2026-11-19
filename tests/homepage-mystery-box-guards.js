@@ -17,6 +17,7 @@ assert.match(js, /Math\.random\(\)/, "Mystery selection must choose a random ava
 assert.match(js, /lastProductId/, "Consecutive reveals should avoid repeating the same item when possible");
 assert.match(js, /openMysteryBox/, "Opening must run through the cinematic reveal sequence");
 assert.match(js, /isOpening/, "Repeated clicks must not start overlapping reveal sequences");
+assert.match(js, /result\.hidden = true/, "Previous result must hide while the next reveal is opening");
 assert.match(js, /1900/, "Reveal result must wait for the animation sequence");
 assert.match(js, /prefers-reduced-motion: reduce/, "Reveal timing must respect reduced motion");
 assert.match(js, /result\.scrollIntoView/, "Revealed result should be brought into view");
