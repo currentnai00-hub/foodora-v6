@@ -18,7 +18,9 @@ assert.match(js, /lastProductId/, "Consecutive reveals should avoid repeating th
 assert.match(js, /openMysteryBox/, "Opening must run through the cinematic reveal sequence");
 assert.match(js, /isOpening/, "Repeated clicks must not start overlapping reveal sequences");
 assert.match(js, /result\.hidden = true/, "Previous result must hide while the next reveal is opening");
-assert.match(js, /2950/, "Reveal result must wait for the full-screen animation sequence");
+assert.match(js, /2950/, "Foodora signature must follow the grand opening");
+assert.match(js, /4950/, "Congratulations must follow the Foodora signature");
+assert.match(js, /6750/, "Prize must be revealed only after the congratulations screen");
 assert.match(js, /prefers-reduced-motion: reduce/, "Reveal timing must respect reduced motion");
 assert.match(js, /result\.scrollIntoView/, "Revealed result should be brought into view");
 assert.match(css, /fd-mystery-lid-open/, "The lid must visibly open");
@@ -46,3 +48,11 @@ assert.match(css, /fd-fullscreen-sweep/, "The light sweep must have a complete a
 assert.match(js, /2950/, "The result must wait until all cinematic effects finish");
 
 console.log("Homepage Mystery Food Box guards passed.");
+
+assert.match(html, /data-mystery-signature/, "Reveal must include the Foodora signature screen");
+assert.match(html, /foodora<span>\.<\\/span>/, "Signature screen must display the Foodora wordmark");
+assert.match(html, /data-mystery-congrats/, "Reveal must include a separate congratulations screen");
+assert.match(js, /is-signature/, "The signature screen must have its own timed phase");
+assert.match(js, /is-congrats/, "The congratulations screen must have its own timed phase");
+assert.match(css, /fd-mystery-signature-mark/, "Foodora signature must have a branded visual mark");
+assert.match(css, /fd-mystery-congrats h3/, "Congratulations must have dedicated premium typography");
