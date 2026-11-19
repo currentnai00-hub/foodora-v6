@@ -23,6 +23,11 @@ function registerOrderEventStream({ app, pool, adminOnly }) {
       CREATE OR REPLACE FUNCTION foodora_capture_order_event() RETURNS trigger AS $$
       DECLARE event_id BIGINT;
       BEGIN
+        -- A database restore must reproduce the archived outbox exactly; replaying
+        -- order triggers during restore would manufacture new, non-archived events.
+        IF current_setting('foodora.restore_mode', true) = 'on' THEN
+          RETURN NEW;
+        END IF;
         IF TG_OP = 'INSERT' THEN
           INSERT INTO order_event_outbox(order_id,event_type,payload)
             VALUES(NEW.id,'order.created',jsonb_build_object(
