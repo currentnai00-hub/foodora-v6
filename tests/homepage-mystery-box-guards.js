@@ -8,7 +8,7 @@ assert.match(html, /id="fdMysteryBox"/, "Homepage must expose the Mystery Food B
 assert.match(html, /data-mystery-reveal/, "Mystery reveal must be user initiated");
 assert.match(html, /data-mystery-result[^>]*hidden/, "Mystery result must remain hidden until requested");
 assert.match(html, /homepage-mystery-box\.js/, "Mystery Box controller must load");
-assert.match(js, /#products/, "Mystery selection must use the real menu");
+assert.match(js, /getElementById\\("products"\\)/, "Mystery selection must use the real menu");
 assert.match(js, /\.add:disabled/, "Unavailable menu items must be excluded");
 assert.match(js, /window\.addToCart\(id\)/, "Cart action must use the canonical cart function");
 assert.match(js, /currentCard\.querySelector\("\.add"\)\.disabled/, "Stock must be rechecked before adding");
