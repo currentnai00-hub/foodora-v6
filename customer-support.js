@@ -89,7 +89,8 @@
     $("foodoraChatLauncher").addEventListener("click", () => {
       $("foodoraChatPanel").hidden = false;
       $("foodoraChatLauncher").hidden = true;
-      restorePosition();\n      $("foodoraChatInput").focus();
+      restorePosition();
+      $("foodoraChatInput").focus();
       if (!$("foodoraChatMessages").children.length) addMessage("স্বাগতম Foodora-তে! আমি আপনার সাধারণ প্রশ্নে সাহায্য করতে পারি। গুরুত্বপূর্ণ বা অর্ডার-সংক্রান্ত সমস্যায় WhatsApp Support-এ যোগাযোগ করুন।", "bot");
     });
     const panel = $("foodoraChatPanel");
