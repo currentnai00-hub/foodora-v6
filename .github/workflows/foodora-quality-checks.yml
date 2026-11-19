@@ -72,6 +72,10 @@ jobs:
         run: node tests/static-private-data-guards.js
       - name: Check response security headers
         run: node tests/security-response-headers-guards.js
+      - name: Check Operations Control Tower JavaScript and safety guards
+        run: |
+          node --check operations.js
+          node tests/operations-control-tower-guards.js
       - name: Check PWA JavaScript syntax
         run: |
           node --check sw.js
