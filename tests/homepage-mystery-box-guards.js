@@ -18,7 +18,7 @@ assert.match(js, /lastProductId/, "Consecutive reveals should avoid repeating th
 assert.match(js, /openMysteryBox/, "Opening must run through the cinematic reveal sequence");
 assert.match(js, /isOpening/, "Repeated clicks must not start overlapping reveal sequences");
 assert.match(js, /result\.hidden = true/, "Previous result must hide while the next reveal is opening");
-assert.match(js, /1900/, "Reveal result must wait for the animation sequence");
+assert.match(js, /2600/, "Reveal result must wait for the full-screen animation sequence");
 assert.match(js, /prefers-reduced-motion: reduce/, "Reveal timing must respect reduced motion");
 assert.match(js, /result\.scrollIntoView/, "Revealed result should be brought into view");
 assert.match(css, /fd-mystery-lid-open/, "The lid must visibly open");
@@ -27,8 +27,6 @@ assert.match(css, /fd-mystery-particle/, "The reveal must include particle effec
 assert.match(css, /prefers-reduced-motion:reduce/, "Animations must respect reduced motion");
 assert.match(css, /:focus-visible/, "Controls must expose keyboard focus");
 assert.match(js, /typeof window\.addToCart !== "function"/, "Cart action must fail safely when unavailable");
-console.log("Homepage Mystery Food Box guards passed.");
-
 assert.match(html, /data-mystery-immersive/, "Opening must provide a dedicated full-screen reveal layer");
 assert.match(html, /aria-modal="true"/, "Full-screen reveal must be announced as a modal dialog");
 assert.match(html, /data-mystery-skip/, "Users must be able to skip the animation");
@@ -38,3 +36,5 @@ assert.match(js, /fd-mystery-immersive-open/, "Full-screen reveal must lock back
 assert.match(css, /position:fixed; z-index:99999; inset:0/, "Reveal layer must cover the viewport");
 assert.match(css, /fd-fullscreen-lid/, "Full-screen gift lid must animate open");
 assert.match(css, /prefers-reduced-motion:reduce/, "Full-screen animation must respect reduced motion");
+
+console.log("Homepage Mystery Food Box guards passed.");
