@@ -7,6 +7,7 @@ const HEARTBEAT_MS = 20000;
 
 function registerCustomerOrderStream({ app, pool }) {
   const tickets = new Map();
+  const ticketAttempts = new Map();
   let activeStreams = 0;
 
   function pruneTickets() {
@@ -37,6 +38,7 @@ function registerCustomerOrderStream({ app, pool }) {
       );
       if (!found.rowCount) return res.status(404).json({ error: "Order verification failed." });
       pruneTickets();
+      if (tickets.size >= 5000) return res.status(503).json({ error: "Live tracking capacity is temporarily full." });
       const ticket = crypto.randomBytes(32).toString("hex");
       tickets.set(ticket, { orderId: found.rows[0].id, expiresAt: Date.now() + TICKET_TTL_MS });
       res.set("Cache-Control", "no-store").json({ ticket, expiresIn: TICKET_TTL_MS / 1000 });
