@@ -57,15 +57,25 @@ function registerCustomerOrderStream({ app, pool }) {
       return res.status(400).json({ error: "Enter your Order ID and checkout phone number." });
     }
     try {
+      // Capture the latest visible event cursor at ticket issuance. The stream
+      // replays from this point so connection setup cannot silently skip updates.
       const found = await pool.query(
-        "SELECT id FROM orders WHERE LOWER(id)=LOWER($1) AND regexp_replace(phone,'[^0-9]','','g')=$2 LIMIT 1",
+        `SELECT o.id,
+          COALESCE((SELECT MAX(e.id) FROM order_event_outbox e WHERE e.order_id=o.id),0)::text AS event_cursor
+         FROM orders o
+         WHERE LOWER(o.id)=LOWER($1) AND regexp_replace(o.phone,'[^0-9]','','g')=$2
+         LIMIT 1`,
         [orderId, phone]
       );
       if (!found.rowCount) return res.status(404).json({ error: "Order verification failed." });
       pruneTickets();
       if (tickets.size >= 5000) return res.status(503).json({ error: "Live tracking capacity is temporarily full." });
       const ticket = crypto.randomBytes(32).toString("hex");
-      tickets.set(ticket, { orderId: found.rows[0].id, expiresAt: Date.now() + TICKET_TTL_MS });
+      tickets.set(ticket, {
+        orderId: found.rows[0].id,
+        cursor: found.rows[0].event_cursor,
+        expiresAt: Date.now() + TICKET_TTL_MS
+      });
       res.set("Cache-Control", "no-store").json({ ticket, expiresIn: TICKET_TTL_MS / 1000 });
     } catch {
       res.status(503).json({ error: "Live tracking is temporarily unavailable." });
@@ -83,7 +93,7 @@ function registerCustomerOrderStream({ app, pool }) {
     activeStreams += 1;
     let client;
     let closed = false;
-    let cursor = 0;
+    let cursor = String(grant.cursor || "0");
     let chain = Promise.resolve();
     const orderId = grant.orderId;
 
@@ -114,7 +124,7 @@ function registerCustomerOrderStream({ app, pool }) {
       );
       for (const row of result.rows) {
         if (closed) break;
-        cursor = Number(row.id);
+        cursor = String(row.id);
         // Only the already-verified order's minimal status fields are sent.
         res.write("id: " + row.id + "\n");
         res.write("event: order.update\n");
@@ -146,11 +156,9 @@ function registerCustomerOrderStream({ app, pool }) {
       if (closed) return client.release();
       client.on("notification", onNotification);
       await client.query("LISTEN foodora_order_events");
-      const latest = await client.query(
-        "SELECT COALESCE(MAX(id),0)::text AS id FROM order_event_outbox WHERE order_id=$1",
-        [orderId]
-      );
-      cursor = Number(latest.rows[0].id);
+      // LISTEN is active before replay begins. The ticket cursor was captured
+      // during verification, so updates during connection setup are not skipped.
+      await drain();
       res.write("event: ready\ndata: {}\n\n");
     } catch (err) {
       console.error("Customer order stream connection failed:", err.message);

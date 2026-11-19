@@ -96,6 +96,16 @@ async function jsonResponse(response) {
     assert.equal(failedRestoreResponse.status, 400,
       "Intentional restore failure must be reported as a client-safe restore error");
     assert.match(failedRestore.error || "", /intentional CI restore rollback probe/);
+    // The automatic safety snapshot must represent the exact locked state immediately
+    // before replacement, including the deliberate mutation made above.
+    const safetySnapshot = await pool.query(
+      "SELECT backup_data FROM foodora_backup_history WHERE backup_id LIKE 'fd_pre_%' ORDER BY created_at DESC LIMIT 1"
+    );
+    assert.equal(safetySnapshot.rowCount, 1, "Failed restore must retain its pre-restore safety snapshot");
+    const safetyProducts = safetySnapshot.rows[0].backup_data.tables.find(table => table.name === "products");
+    const safetyProduct = safetyProducts.rows.find(row => String(row.id) === String(before.id));
+    assert.equal(Number(safetyProduct.stock), Number(before.stock) + 7,
+      "Pre-restore snapshot must capture the current database state before any restore changes");
     const afterRollback = await pool.query("SELECT stock FROM products WHERE id = $1", [before.id]);
     assert.equal(Number(afterRollback.rows[0].stock), Number(before.stock) + 7,
       "Failed restore must roll back DELETEs and preserve the mutated product row");

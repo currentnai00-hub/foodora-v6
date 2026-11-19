@@ -74,6 +74,8 @@ jobs:
         run: node tests/payment-ui-integration-guards.js
       - name: Check ZIP backup format and integrity
         run: node tests/zip-backup-format.js
+      - name: Check backup and restore V2 safety guards
+        run: node tests/backup-restore-v2-guards.js
       - name: Check private data is not statically exposed
         run: node tests/static-private-data-guards.js
       - name: Check response security headers

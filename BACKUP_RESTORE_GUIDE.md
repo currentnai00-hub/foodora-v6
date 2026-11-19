@@ -17,6 +17,14 @@ The ZIP contains backup.json and manifest.json. The manifest records the archive
 - Restore resets serial sequences after inserting rows.
 - Only the supported ZIP format using stored (uncompressed) entries is accepted.
 
+## Restore concurrency and consistency
+
+- Restore requests are serialized with a transaction-scoped PostgreSQL advisory lock.
+- Restore takes exclusive locks on all application tables before capturing the automatic pre-restore snapshot.
+- The snapshot is therefore captured from the locked live state immediately before replacement; application writes wait while restore is in progress.
+- If the lock cannot be acquired within five seconds, the transaction fails safely before deleting application rows.
+- The restore transaction verifies persisted row counts before commit. A mismatch or insert failure rolls back the replacement, while the pre-restore safety snapshot remains in backup history.
+
 ## Operational limits
 - Logical table-data backup only; it does not include database roles, extensions, schema migrations, or database-level settings.
 - Backup history contains sensitive database snapshots; protect the Admin Key and restrict database access.
