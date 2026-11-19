@@ -1,0 +1,24 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const html = fs.readFileSync("index.html", "utf8");
+const css = fs.readFileSync("homepage-entry-intro.css", "utf8");
+const js = fs.readFileSync("homepage-entry-intro.js", "utf8");
+
+assert.match(html, /homepage-entry-intro\.css/, "Homepage must load entry intro styles");
+assert.match(html, /homepage-entry-intro\.js/, "Homepage must load entry intro behavior");
+assert.match(html, /fd-entry-pending/, "First-visit state must be decided before page paint");
+assert.match(html, /foodora_entry_intro_seen/, "Intro must be limited to once per tab session");
+assert.match(html, /id="fdEntryIntro"/, "Homepage must expose the entry overlay");
+assert.match(html, /data-entry-skip/, "Visitors must be able to skip the intro");
+assert.match(html, /foodora<span>\.<\/span>/, "The animated Foodora wordmark must include its signature dot");
+assert.match(css, /fd-entry-wordmark-zoomout/, "Wordmark must animate from large to normal scale");
+assert.match(css, /scale\(2\.55\)/, "Wordmark must begin enlarged and zoom out");
+assert.match(css, /prefers-reduced-motion:reduce/, "Reduced-motion preferences must be respected");
+assert.match(css, /z-index:100000/, "Entry overlay must appear above existing homepage experiences");
+assert.match(js, /sessionStorage\.setItem/, "Intro completion must persist for the current tab");
+assert.match(js, /event\.key === "Escape"/, "Escape must skip the intro");
+assert.match(js, /setTimeout\(finish, 2850\)/, "Intro must finish automatically");
+assert.match(js, /document\.body\.style\.overflow = "hidden"/, "Background scrolling must be locked during intro");
+assert.match(js, /pagehide/, "Page navigation must clean up the intro state");
+console.log("Foodora entry intro guards passed.");

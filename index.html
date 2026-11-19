@@ -10,8 +10,23 @@
 <link rel="stylesheet" href="/homepage-quick-view.css?v=1">
 <link rel="stylesheet" href="/homepage-mystery-box.css?v=1">
 <link rel="stylesheet" href="/homepage-flavorverse.css?v=1">
+<link rel="stylesheet" href="/homepage-entry-intro.css?v=1">
+<script>try{if(!sessionStorage.getItem("foodora_entry_intro_seen"))document.documentElement.classList.add("fd-entry-pending");}catch(_){document.documentElement.classList.add("fd-entry-pending");}</script>
 </head>
 <body>
+<div class="fd-entry-intro" id="fdEntryIntro" role="dialog" aria-modal="true" aria-label="Foodora welcome" aria-hidden="true">
+  <div class="fd-entry-noise" aria-hidden="true"></div>
+  <div class="fd-entry-orbit fd-entry-orbit-a" aria-hidden="true"></div><div class="fd-entry-orbit fd-entry-orbit-b" aria-hidden="true"></div>
+  <div class="fd-entry-content">
+    <span class="fd-entry-overline">A BETTER WAY TO FEEL GOOD</span>
+    <div class="fd-entry-wordmark" aria-label="Foodora">foodora<span>.</span></div>
+    <span class="fd-entry-rule" aria-hidden="true"></span>
+    <p class="fd-entry-tagline">GOOD FOOD. GOOD MOOD.</p>
+    <span class="fd-entry-local">MADE FOR YOUR MOMENTS · CHITTAGONG</span>
+  </div>
+  <button type="button" class="fd-entry-skip" data-entry-skip>Skip intro <span aria-hidden="true">↗</span></button>
+  <span class="fd-entry-progress" aria-hidden="true"><i></i></span>
+</div>
 <header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="#menu">মেনু</a><a href="#offers">অফার</a><a href="/track">অর্ডার ট্র্যাক</a><a href="/account">আমার অ্যাকাউন্ট</a><a href="#about">আমাদের সম্পর্কে</a></nav><button class="cart-button" id="cartOpen">কার্ট <b id="cartCount">0</b></button></header>
 <section class="hero fd-home-slider" id="homeHero" aria-label="Foodora featured highlights" aria-roledescription="carousel">
 <div class="hero-slides" id="heroSlides">
@@ -327,6 +342,7 @@ class="primary-button full" style="display:none;">
 <script src="/homepage-quick-view.js?v=1" defer></script>
 <script src="/homepage-mystery-box.js?v=1" defer></script>
 <script src="/homepage-flavorverse.js?v=1" defer></script>
+<script src="/homepage-entry-intro.js?v=1" defer></script>
 <script src="/customer-support.js?v=2" defer></script>
 <script src="/app-pwa.js?v=1" defer></script>
 </body></html>
