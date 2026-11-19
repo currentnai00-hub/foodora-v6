@@ -226,6 +226,64 @@ function admin(path, method = "GET", body) {
     assert.equal(cod.status, 201, "COD order should still be accepted");
     assert.equal(cod.body.order.paymentStatus, "Awaiting payment");
 
+    // ETA must persist and be visible to the customer tracking endpoint.
+    const etaUpdate = await admin("/api/admin/orders/" + cod.body.order.id, "PATCH", { status: "Confirmed", etaMinutes: 35 });
+    assert.equal(etaUpdate.status, 200, "Admin should be able to set an ETA");
+    assert.equal(etaUpdate.body.prep_minutes, 35, "ETA minutes should be persisted");
+    assert(etaUpdate.body.estimated_delivery_at, "ETA should include an estimated delivery timestamp");
+    const trackedEta = await request("/api/orders/track", {
+      method: "POST",
+      body: JSON.stringify({ orderId: cod.body.order.id, phone: "01700000000" })
+    });
+    assert.equal(trackedEta.status, 200, "Customer should be able to track an ETA order");
+    assert.equal(trackedEta.body.canCancel, true, "Confirmed order should be cancellable");
+    assert(trackedEta.body.estimatedDeliveryAt, "Tracking response should expose estimated delivery time");
+    const invalidEta = await admin("/api/admin/orders/" + cod.body.order.id, "PATCH", { etaMinutes: 4 });
+    assert.equal(invalidEta.status, 400, "ETA below 5 minutes must be rejected");
+    const startPreparing = await admin("/api/admin/orders/" + cod.body.order.id, "PATCH", { status: "Preparing" });
+    assert.equal(startPreparing.status, 200);
+    const preparingTrack = await request("/api/orders/track", {
+      method: "POST",
+      body: JSON.stringify({ orderId: cod.body.order.id, phone: "01700000000" })
+    });
+    assert.equal(preparingTrack.status, 200);
+    assert.equal(preparingTrack.body.canCancel, false, "Preparing orders must not be customer-cancellable");
+    const preparingCancel = await request("/api/customer/orders/" + cod.body.order.id + "/cancel", {
+      method: "POST", body: JSON.stringify({ phone: "01700000000" })
+    });
+    assert.equal(preparingCancel.status, 409, "Customer cancellation must be blocked after preparation starts");
+    const wrongPhoneCancel = await request("/api/customer/orders/" + cod.body.order.id + "/cancel", {
+      method: "POST", body: JSON.stringify({ phone: "01711111111" })
+    });
+    assert.equal(wrongPhoneCancel.status, 404, "Cancellation must reject an incorrect checkout phone");
+
+    // A separate pending COD order verifies successful cancellation and exact stock restoration.
+    const stockBeforeCancel = await pool.query("SELECT stock FROM products WHERE id=$1", [checkoutFixture.productId]);
+    const cancellable = await checkout("Cash on Delivery");
+    assert.equal(cancellable.status, 201, "A second COD fixture order should be accepted");
+    const stockAfterCheckout = await pool.query("SELECT stock FROM products WHERE id=$1", [checkoutFixture.productId]);
+    assert.equal(Number(stockAfterCheckout.rows[0].stock), Number(stockBeforeCancel.rows[0].stock) - 1,
+      "Checkout should reserve one product unit before cancellation");
+    const customerCancel = await request("/api/customer/orders/" + cancellable.body.order.id + "/cancel", {
+      method: "POST", body: JSON.stringify({ phone: "01700000000" })
+    });
+    assert.equal(customerCancel.status, 200, "Pending order should be cancellable by its checkout phone");
+    assert.equal(customerCancel.body.status, "Cancelled");
+    const stockAfterCancel = await pool.query("SELECT stock FROM products WHERE id=$1", [checkoutFixture.productId]);
+    assert.equal(Number(stockAfterCancel.rows[0].stock), Number(stockBeforeCancel.rows[0].stock),
+      "Successful cancellation should restore exactly one inventory unit");
+    const cancelledTrack = await request("/api/orders/track", {
+      method: "POST",
+      body: JSON.stringify({ orderId: cancellable.body.order.id, phone: "01700000000" })
+    });
+    assert.equal(cancelledTrack.status, 200);
+    assert.equal(cancelledTrack.body.status, "Cancelled");
+    assert.equal(cancelledTrack.body.canCancel, false);
+    const repeatedCancel = await request("/api/customer/orders/" + cancellable.body.order.id + "/cancel", {
+      method: "POST", body: JSON.stringify({ phone: "01700000000" })
+    });
+    assert.equal(repeatedCancel.status, 409, "Already-cancelled orders must not be cancelled or restocked twice");
+
     // Wallet cancellation must credit the customer's wallet exactly once.
     const topupTx = "CIWALLET" + crypto.randomBytes(6).toString("hex");
     const topup = await request("/api/customer/wallet/topups", {
@@ -296,7 +354,7 @@ function admin(path, method = "GET", body) {
     assert.equal(allOrders.status, 200);
     assert(allOrders.body.some(order => order.id === oldOrderId), "Existing orders must remain readable");
 
-    console.log("PostgreSQL payment E2E passed: malformed ID, duplicate guard, pending status, approve/reject, authenticated resubmission, unauthenticated rejection, cross-customer read/resubmit isolation, cross-origin rejection, admin authorization, customer payment history, concurrent duplicate race, COD, lookup index, and legacy order visibility.");
+    console.log("PostgreSQL payment/order E2E passed: payment safety, ETA persistence/tracking, ETA validation, preparation-stage cancellation lock, wrong-phone rejection, pending-order cancellation, exactly-once stock restoration, and legacy order visibility.");
   } catch (error) {
     console.error(error);
     process.exitCode = 1;
