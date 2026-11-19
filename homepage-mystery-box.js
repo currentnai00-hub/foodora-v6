@@ -71,7 +71,7 @@
       const currentAdd = card.querySelector(".add");
       return currentAdd && String(currentAdd.dataset.add) === id;
     });
-    if (!currentCard || currentCard.querySelector(".add").disabled) {
+    if (currentCard && currentCard.querySelector(".add").disabled) {
       status.textContent = "এই খাবারটি এখন আর অর্ডারের জন্য উপলব্ধ নয়। নতুন রহস্য খুলে দেখুন।";
       addButton.disabled = true;
       return;
