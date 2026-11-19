@@ -163,7 +163,7 @@
       result.hidden = true;
       selectedProductId = "";
       setStep(0);
-      root.querySelector("[data-flavor-step='0']")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      root.querySelector("[data-flavor-step='0']")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
       return;
     }
 
