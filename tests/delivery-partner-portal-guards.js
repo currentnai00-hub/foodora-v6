@@ -17,5 +17,5 @@ assert.match(html,/loginForm/);assert.match(js,/data-assignment/);
 assert.match(js,/credentials:"same-origin"/);assert.match(js,/api\("\/api\/partner\/orders"/);
 assert.match(dispatch,/Admin Key/);assert.match(dispatchJs,/"x-admin-key":key/);
 assert.doesNotMatch(dispatchJs,/localStorage/);
-assert.match(sw,/foodora-shell-v3/);assert.match(sw,/homepage-sliders\\.js\\?v=1/);assert.match(sw,/"\/partner"/);assert.match(sw,/"\/dispatch"/);
+assert.match(sw,/foodora-shell-v3/);assert.match(sw,/homepage-sliders[.]js[?]v=1/);assert.match(sw,/"\/partner"/);assert.match(sw,/"\/dispatch"/);
 console.log("Delivery partner portal auth, isolation, workflow, audit, and cache guards passed.");
