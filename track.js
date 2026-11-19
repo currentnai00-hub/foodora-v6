@@ -11,8 +11,23 @@
   {key:"Delivered",title:"Delivered",desc:"Your order has arrived. Enjoy!"}
  ];
  const form=$("trackingForm"),button=$("trackButton"),refreshButton=$("refreshTracking");
- let activeId="",activePhone="",pollTimer=null,etaTimer=null,busy=false,lastStatus="";
- const stopTimers=()=>{if(pollTimer){clearInterval(pollTimer);pollTimer=null;}if(etaTimer){clearInterval(etaTimer);etaTimer=null;}};
+ let activeId="",activePhone="",pollTimer=null,etaTimer=null,busy=false,lastStatus="",eventSource=null;
+ const stopTimers=()=>{if(pollTimer){clearInterval(pollTimer);pollTimer=null;}if(etaTimer){clearInterval(etaTimer);etaTimer=null;}if(eventSource){eventSource.close();eventSource=null;}};
+ const startPolling=(interval=20000)=>{if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(()=>{if(!document.hidden)fetchAndRender(true)},interval);};
+ async function connectLiveUpdates(){
+  if(!window.EventSource||!activeId||!activePhone)return false;
+  try{
+   const response=await fetch("/api/customer/events/ticket",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({orderId:activeId,phone:activePhone}),cache:"no-store"});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||!data.ticket)throw new Error(data.error||"Live tracking unavailable");
+   if(eventSource)eventSource.close();
+   eventSource=new EventSource("/api/customer/events/stream?ticket="+encodeURIComponent(data.ticket));
+   eventSource.addEventListener("ready",()=>{startPolling(60000);fetchAndRender(true);});
+   eventSource.addEventListener("order.update",()=>fetchAndRender(true));
+   eventSource.onerror=()=>{startPolling(20000);};
+   return true;
+  }catch(_){startPolling(20000);return false;}
+ }
  const normalizeStatus=value=>{const s=String(value||"Pending").trim().toLowerCase();if(s==="out for delivery"||s==="shipped")return "Shipped";return steps.find(x=>x.key.toLowerCase()===s)?.key||"Pending";};
  form.addEventListener("submit",async e=>{
   e.preventDefault();
@@ -23,7 +38,7 @@
   activeId=id;activePhone=phone;button.disabled=true;button.textContent="Verifying order…";
   try{
    await fetchAndRender(false);
-   if(lastStatus!=="Delivered"&&lastStatus!=="Cancelled")pollTimer=setInterval(()=>{if(!document.hidden)fetchAndRender(true)},20000);
+   if(lastStatus!=="Delivered"&&lastStatus!=="Cancelled"){startPolling(20000);connectLiveUpdates();}
    result.hidden=false;result.scrollIntoView({behavior:"smooth",block:"start"});
   }catch(err){msg.textContent=err.message;activeId="";activePhone="";}
   finally{button.disabled=false;button.innerHTML='Track my order <span aria-hidden="true">→</span>';}
