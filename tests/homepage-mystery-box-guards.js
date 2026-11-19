@@ -18,7 +18,7 @@ assert.match(js, /lastProductId/, "Consecutive reveals should avoid repeating th
 assert.match(js, /openMysteryBox/, "Opening must run through the cinematic reveal sequence");
 assert.match(js, /isOpening/, "Repeated clicks must not start overlapping reveal sequences");
 assert.match(js, /result\.hidden = true/, "Previous result must hide while the next reveal is opening");
-assert.match(js, /2600/, "Reveal result must wait for the full-screen animation sequence");
+assert.match(js, /2950/, "Reveal result must wait for the full-screen animation sequence");
 assert.match(js, /prefers-reduced-motion: reduce/, "Reveal timing must respect reduced motion");
 assert.match(js, /result\.scrollIntoView/, "Revealed result should be brought into view");
 assert.match(css, /fd-mystery-lid-open/, "The lid must visibly open");
@@ -37,5 +37,12 @@ assert.match(js, /fd-mystery-immersive-open/, "Full-screen reveal must lock back
 assert.match(css, /position:fixed; z-index:99999; inset:0/, "Reveal layer must cover the viewport");
 assert.match(css, /fd-fullscreen-lid/, "Full-screen gift lid must animate open");
 assert.match(css, /prefers-reduced-motion:reduce/, "Full-screen animation must respect reduced motion");
+
+
+assert.match(css, /fd-mystery-immersive-shockwave/, "The cinematic reveal must include an expanding shockwave");
+assert.match(css, /fd-mystery-immersive-light-sweep/, "The reveal must include a travelling light sweep");
+assert.match(css, /fd-fullscreen-shockwave/, "The shockwave must have a complete animation");
+assert.match(css, /fd-fullscreen-sweep/, "The light sweep must have a complete animation");
+assert.match(js, /2950/, "The result must wait until all cinematic effects finish");
 
 console.log("Homepage Mystery Food Box guards passed.");
