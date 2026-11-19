@@ -10,17 +10,21 @@ import org.springframework.security.web.*;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.http.HttpStatus;
 @Configuration public class SecurityConfiguration {
  @Bean PasswordEncoder passwordEncoder(){return new BCryptPasswordEncoder(12);}
+ @Bean CookieCsrfTokenRepository csrfTokenRepository(){
+  var repository=CookieCsrfTokenRepository.withHttpOnlyFalse();
+  repository.setCookiePath("/");
+  repository.setCookieName("XSRF-TOKEN");
+  repository.setHeaderName("X-XSRF-TOKEN");
+  return repository;
+ }
  @Bean SessionAuthenticationFilter sessionAuthenticationFilter(JdbcTemplate jdbc,@Value("${foodora.auth.cookie-name}")String name){return new SessionAuthenticationFilter(jdbc,name);}
- @Bean SecurityFilterChain securityFilterChain(HttpSecurity http,SessionAuthenticationFilter filter)throws Exception{
-  var csrfRepository=CookieCsrfTokenRepository.withHttpOnlyFalse();
-  csrfRepository.setCookiePath("/");
-  var csrfHandler=new CsrfTokenRequestAttributeHandler();
+ @Bean SecurityFilterChain securityFilterChain(HttpSecurity http,SessionAuthenticationFilter filter,CsrfTokenRepository csrfTokenRepository)throws Exception{
   return http
-   .csrf(c->c.csrfTokenRepository(csrfRepository).csrfTokenRequestHandler(csrfHandler))
+   .csrf(c->c.csrfTokenRepository(csrfTokenRepository))
    .sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
    .exceptionHandling(e->e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
    .authorizeHttpRequests(a->a.requestMatchers("/actuator/health/**","/actuator/info","/api/v1/auth/register","/api/v1/auth/login","/api/v1/auth/logout","/api/v1/auth/csrf").permitAll().anyRequest().authenticated())
