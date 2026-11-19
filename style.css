@@ -2051,3 +2051,133 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 .wallet-credit{color:#16804b}.wallet-debit{color:#b54737}
 .wallet-status{font-size:12px;font-weight:600}
 @media(max-width:600px){.wallet-panel{padding:15px}.wallet-transaction{align-items:flex-start;flex-direction:column}.wallet-balance{font-size:29px}}
+
+
+/* FOODORA HOMEPAGE SLIDERS V1 */
+.fd-home-slider {
+  position: relative;
+  min-height: 650px;
+  padding-bottom: 118px;
+  isolation: isolate;
+}
+.hero-slides { display: grid; width: 100%; }
+.hero-slide {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  align-items: center;
+  gap: clamp(20px,4vw,64px);
+  min-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(22px);
+  transition: opacity 520ms ease, transform 650ms cubic-bezier(.2,.7,.2,1), visibility 520ms;
+}
+.hero-slide.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0);
+  z-index: 1;
+}
+.hero-slide .hero-copy,.hero-slide .hero-art { min-width: 0; }
+.hero-slide .hero-copy { max-width: 590px; }
+.hero-slide .hero-art { width: 100%; }
+.hero-slide .hero-photo-wrap { width: min(390px,90%); }
+.hero-slider-controls {
+  position: absolute;
+  z-index: 3;
+  left: 10%;
+  bottom: 44px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.hero-arrow,.hero-pause {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(18,55,43,.16);
+  border-radius: 50%;
+  background: rgba(255,255,255,.78);
+  color: var(--green);
+  font: 600 24px/1 'DM Sans',sans-serif;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+.hero-pause { font-size: 15px; }
+.hero-arrow:hover,.hero-pause:hover { background: var(--green); color: #fff; transform: translateY(-2px); }
+.hero-dots { display: flex; align-items: center; gap: 8px; padding: 0 5px; }
+.hero-dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: rgba(18,55,43,.28);
+  cursor: pointer;
+  transition: width .25s ease, background .25s ease;
+}
+.hero-dot.is-active { width: 27px; background: var(--orange); }
+.hero-arrow:focus-visible,.hero-pause:focus-visible,.hero-dot:focus-visible,.category-arrow:focus-visible {
+  outline: 3px solid rgba(217,130,67,.75);
+  outline-offset: 3px;
+}
+.category-slider { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.category-track {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 10px;
+  padding: 5px 2px 13px;
+  margin: 0;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+}
+.category-track::-webkit-scrollbar { display: none; }
+.category-track .chip { flex: 0 0 auto; scroll-snap-align: start; white-space: nowrap; }
+.category-arrow {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--green);
+  font: 600 22px/1 'DM Sans',sans-serif;
+  cursor: pointer;
+  transition: background .2s ease,color .2s ease;
+}
+.category-arrow:hover { background: var(--green); color: #fff; }
+@media (max-width: 760px) {
+  .fd-home-slider { min-height: 790px; padding: 48px 7% 115px; }
+  .hero-slide { grid-template-columns: 1fr; gap: 0; align-content: start; }
+  .hero-slide .hero-copy { max-width: 100%; }
+  .hero-slide .hero-art { min-height: 285px; height: 285px; margin-top: 5px; }
+  .hero-slide .hero-orbit { width: 215px; height: 215px; }
+  .hero-slide .hero-photo-wrap { width: min(255px,72vw); }
+  .hero-slide .hero-food { font-size: 130px; }
+  .hero-slide .hero-copy h1 { font-size: clamp(39px,9vw,57px); }
+  .hero-slider-controls { left: 7%; bottom: 35px; }
+  .hero-slider-controls .hero-arrow,.hero-slider-controls .hero-pause { width: 38px; height: 38px; }
+  .category-slider { gap: 6px; }
+  .category-arrow { flex-basis: 32px; width: 32px; height: 32px; }
+}
+@media (max-width: 420px) {
+  .fd-home-slider { min-height: 760px; padding-left: 6%; padding-right: 6%; }
+  .hero-slide .hero-art { min-height: 245px; height: 245px; }
+  .hero-slide .hero-orbit { width: 185px; height: 185px; }
+  .hero-slide .hero-photo-wrap { width: min(220px,70vw); }
+  .hero-slider-controls { left: 6%; gap: 8px; }
+  .hero-arrow,.hero-pause { width: 35px; height: 35px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide,.hero-arrow,.hero-pause,.hero-dot,.category-track { transition: none !important; scroll-behavior: auto; }
+}
