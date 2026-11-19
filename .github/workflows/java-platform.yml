@@ -17,6 +17,20 @@ permissions:
 jobs:
   java-platform:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: foodora_java_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d foodora_java_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -26,6 +40,13 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - name: Run Java tests
+      - name: Run Java tests on H2
         working-directory: platform/java-backend
+        run: mvn --batch-mode --no-transfer-progress verify
+      - name: Run full Java test suite on isolated PostgreSQL 16
+        working-directory: platform/java-backend
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/foodora_java_test
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgres
         run: mvn --batch-mode --no-transfer-progress verify
