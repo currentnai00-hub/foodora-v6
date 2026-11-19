@@ -14,6 +14,8 @@
   const details = section.querySelector("[data-mystery-details]");
   const addButton = section.querySelector("[data-mystery-add]");
   const status = section.querySelector("[data-mystery-status]");
+  const immersive = document.querySelector("[data-mystery-immersive]");
+  const skipReveal = immersive?.querySelector("[data-mystery-skip]");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let lastProductId = "";
   let isOpening = false;
@@ -63,6 +65,27 @@
     return true;
   }
 
+  function finishOpening() {
+    if (!isOpening) return;
+    if (revealTimer !== null) window.clearTimeout(revealTimer);
+    immersive.hidden = true;
+    document.body.classList.remove("fd-mystery-immersive-open");
+    revealTimer = null;
+    immersive.hidden = true;
+    immersive.classList.remove("is-active");
+    immersive.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("fd-mystery-immersive-open");
+    section.classList.remove("is-opening");
+    const didReveal = reveal();
+    if (didReveal) section.classList.add("is-revealed");
+    section.removeAttribute("aria-busy");
+    revealButton.removeAttribute("aria-busy");
+    revealButton.disabled = availableProducts().length === 0;
+    revealButton.textContent = "আরেকটি রহস্য খুলুন ✨";
+    isOpening = false;
+    revealButton.focus({ preventScroll: true });
+  }
+
   function openMysteryBox() {
     if (isOpening) return;
     if (!availableProducts().length) {
@@ -80,24 +103,23 @@
     section.classList.add("is-opening");
     section.setAttribute("aria-busy", "true");
     status.textContent = "রহস্যের বাক্স খুলছে… অপেক্ষা করুন!";
+    immersive.hidden = false;
+    immersive.setAttribute("aria-hidden", "false");
+    immersive.classList.remove("is-active");
+    void immersive.offsetWidth;
+    immersive.classList.add("is-active");
+    document.body.classList.add("fd-mystery-immersive-open");
+    skipReveal?.focus({ preventScroll: true });
 
-    const duration = reducedMotion.matches ? 0 : 1900;
-    revealTimer = window.setTimeout(() => {
-      section.classList.remove("is-opening");
-      const didReveal = reveal();
-      if (didReveal) {
-        section.classList.add("is-revealed");
-      }
-      section.removeAttribute("aria-busy");
-      revealButton.removeAttribute("aria-busy");
-      revealButton.disabled = availableProducts().length === 0;
-      revealButton.textContent = "আরেকটি রহস্য খুলুন ✨";
-      isOpening = false;
-      revealTimer = null;
-    }, duration);
+    const duration = reducedMotion.matches ? 0 : 2600;
+    revealTimer = window.setTimeout(finishOpening, duration);
   }
 
   revealButton.addEventListener("click", openMysteryBox);
+  skipReveal?.addEventListener("click", finishOpening);
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && isOpening) finishOpening();
+  });
   addButton.addEventListener("click", () => {
     const id = addButton.dataset.productId;
     if (!id || typeof window.addToCart !== "function") {
