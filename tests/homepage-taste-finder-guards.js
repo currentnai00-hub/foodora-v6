@@ -14,6 +14,8 @@ assert.match(js, /prefers-reduced-motion/, "Menu navigation must respect reduced
 assert.match(js, /#products \.product/, "Surprise choice must use actual rendered menu items");
 assert.match(js, /\.add:disabled/, "Surprise choice must exclude unavailable products");
 assert.match(js, /নিজেই কার্টে যোগ করুন/, "Surprise must not silently add items to cart");
+assert.match(js, /selected\.scrollIntoView/, "Surprise selection must bring the chosen product into view");
+assert.match(js, /selectedName/, "Surprise selection should announce the chosen product name");
 assert.match(css, /@media\(prefers-reduced-motion:reduce\)/, "Taste finder must respect reduced motion");
 assert.match(css, /:focus-visible/, "Taste finder controls must have visible keyboard focus");
 console.log("Homepage taste finder guards passed.");
