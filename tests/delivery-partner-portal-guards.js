@@ -13,7 +13,7 @@ assert.match(portal,/adminOnly/);assert.match(portal,/delivery_assignment_events
 assert.match(portal,/password\.length<10/);assert.match(portal,/rateLimited/);
 assert.match(portal,/requestIsSameOrigin/);assert.match(portal,/Cache-Control/);
 assert.match(portal,/REFERENCES orders\(id\) ON DELETE CASCADE/);
-assert.match(html,/loginForm/);assert.match(html,/data-assignment/);
+assert.match(html,/loginForm/);assert.match(js,/data-assignment/);
 assert.match(js,/credentials:"same-origin"/);assert.match(js,/api\("\/api\/partner\/orders"/);
 assert.match(dispatch,/Admin Key/);assert.match(dispatchJs,/"x-admin-key":key/);
 assert.doesNotMatch(dispatchJs,/localStorage/);
