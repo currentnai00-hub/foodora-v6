@@ -2060,7 +2060,7 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
   padding-bottom: 118px;
   isolation: isolate;
 }
-.hero-slides { display: grid; width: 100%; }
+.hero-slides { display: grid; grid-column: 1 / -1; width: 100%; }
 .hero-slide {
   grid-area: 1 / 1;
   display: grid;
