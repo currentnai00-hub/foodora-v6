@@ -58,9 +58,9 @@ const origin = base;
       received += new TextDecoder().decode(next.value);
     }
     assert.match(received, /event: order\.update/);
-    const frame = received.split("\\n\\n").find(part => part.includes("event: order.update"));
+    const frame = received.split("\n\n").find(part => part.includes("event: order.update"));
     assert(frame, "customer stream must emit a complete event frame");
-    const payloadLine = frame.split("\\n").find(line => line.startsWith("data: "));
+    const payloadLine = frame.split("\n").find(line => line.startsWith("data: "));
     const payload = JSON.parse(payloadLine.slice(6));
     assert.equal(payload.orderId, id);
     assert.equal(payload.status, "Confirmed");
