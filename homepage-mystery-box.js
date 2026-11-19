@@ -68,8 +68,6 @@
   function finishOpening() {
     if (!isOpening) return;
     if (revealTimer !== null) window.clearTimeout(revealTimer);
-    immersive.hidden = true;
-    document.body.classList.remove("fd-mystery-immersive-open");
     revealTimer = null;
     immersive.hidden = true;
     immersive.classList.remove("is-active");
@@ -118,7 +116,12 @@
   revealButton.addEventListener("click", openMysteryBox);
   skipReveal?.addEventListener("click", finishOpening);
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && isOpening) finishOpening();
+    if (!isOpening) return;
+    if (event.key === "Escape") finishOpening();
+    if (event.key === "Tab") {
+      event.preventDefault();
+      skipReveal?.focus({ preventScroll: true });
+    }
   });
   addButton.addEventListener("click", () => {
     const id = addButton.dataset.productId;
@@ -153,5 +156,7 @@
   revealButton.disabled = availableProducts().length === 0;
   window.addEventListener("pagehide", () => {
     if (revealTimer !== null) window.clearTimeout(revealTimer);
+    immersive.hidden = true;
+    document.body.classList.remove("fd-mystery-immersive-open");
   }, { once: true });
 })();
