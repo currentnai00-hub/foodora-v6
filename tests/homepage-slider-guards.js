@@ -17,7 +17,8 @@ assert.match(html, /id="heroDots"/, "Hero carousel must provide direct slide nav
 assert.match(html, /homepage-sliders\.js/, "Homepage must load the slider controller");
 assert.match(html, /class="chips category-track"/, "Menu categories must use the horizontal slider track");
 assert.match(script, /prefers-reduced-motion/, "Slider must respect reduced-motion preferences");
-assert.match(script, /mobileView\.matches/, "Automatic rotation must be disabled on mobile");
+assert.doesNotMatch(script, /mobileView\.matches/, "Automatic rotation must remain available on mobile");
+assert.match(script, /userPaused/, "Customers must be able to pause automatic rotation");
 assert.match(script, /pointerdown/, "Hero slider must support touch interaction");
 assert.match(script, /aria-hidden/, "Inactive slides must be hidden from assistive technology");
 assert.match(css, /\.category-track/, "Category slider styling must be present");
