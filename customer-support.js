@@ -6,6 +6,7 @@
   const money = (value) => "৳" + Number(value || 0).toLocaleString("en-BD");
   const state = { products: [], config: null, offers: [] };
   const waUrl = (message) => "https://wa.me/" + SUPPORT_NUMBER + "?text=" + encodeURIComponent(message);
+  const logo = '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 28c-7 0-11-5-9-11 1-5 6-8 11-7 2-7 11-10 17-5 3 2 4 5 4 8 7-2 14 3 14 10 0 6-5 10-11 10H18Z" fill="currentColor"/><path d="M22 34h22l-3 17H25l-3-17Zm-4 0h30M28 52v5m10-5v5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const addMessage = (text, who, html = false) => {
     const list = $("foodoraChatMessages");
     const item = document.createElement("div");
@@ -83,17 +84,51 @@
   const init = async () => {
     const root = document.createElement("div");
     root.id = "foodoraSupportWidget";
-    root.innerHTML = '<button id="foodoraChatLauncher" class="foodora-chat-launcher" type="button" aria-label="Open Foodora support chat"><span aria-hidden="true">✦</span><span>সাপোর্ট</span></button><section id="foodoraChatPanel" class="foodora-chat-panel" aria-label="Foodora customer support" hidden><header class="foodora-chat-header"><div><strong>Foodora Support</strong><small>কাস্টমার সাপোর্ট · বাংলা / English</small></div><button id="foodoraChatClose" type="button" aria-label="Close chat">×</button></header><div id="foodoraChatMessages" class="foodora-chat-messages" aria-live="polite"></div><div class="foodora-chat-quick"><button type="button" data-question="ডেলিভারি চার্জ কত?">ডেলিভারি চার্জ</button><button type="button" data-question="কোন কোন এলাকায় ডেলিভারি হয়?">ডেলিভারি এলাকা</button><button type="button" data-question="কীভাবে অর্ডার করব?">অর্ডার করার নিয়ম</button><button type="button" data-question="আমার অর্ডার ট্র্যাক করতে চাই">অর্ডার ট্র্যাক</button></div><form id="foodoraChatForm" class="foodora-chat-form"><input id="foodoraChatInput" maxlength="500" autocomplete="off" placeholder="আপনার প্রশ্ন লিখুন..." aria-label="Your question"><button type="submit">পাঠান</button></form><a class="foodora-chat-whatsapp" href="' + waUrl("Hello Foodora Support, I need assistance.") + '" target="_blank" rel="noopener noreferrer">WhatsApp Support ↗</a></section>';
+    root.innerHTML = '<button id="foodoraChatLauncher" class="foodora-chat-launcher" type="button" aria-label="Open Foodora support chat"><span class="foodora-logo-mark">' + logo + '</span><span>Foodora Support</span></button><section id="foodoraChatPanel" class="foodora-chat-panel" aria-label="Foodora customer support" hidden><header id="foodoraChatDragHandle" class="foodora-chat-header"><div class="foodora-chat-brand"><span class="foodora-chat-logo">' + logo + '</span><div><strong>Foodora</strong><small>Customer Support · <i></i> Online</small></div></div><div class="foodora-chat-actions"><button id="foodoraChatMinimize" type="button" aria-label="Minimize chat">−</button><button id="foodoraChatClose" type="button" aria-label="Close chat">×</button></div></header><div id="foodoraChatMessages" class="foodora-chat-messages" aria-live="polite"></div><div class="foodora-chat-quick"><button type="button" data-question="ডেলিভারি চার্জ কত?">ডেলিভারি চার্জ</button><button type="button" data-question="কোন কোন এলাকায় ডেলিভারি হয়?">ডেলিভারি এলাকা</button><button type="button" data-question="কীভাবে অর্ডার করব?">অর্ডার করার নিয়ম</button><button type="button" data-question="আমার অর্ডার ট্র্যাক করতে চাই">অর্ডার ট্র্যাক</button></div><form id="foodoraChatForm" class="foodora-chat-form"><input id="foodoraChatInput" maxlength="500" autocomplete="off" placeholder="আপনার প্রশ্ন লিখুন..." aria-label="Your question"><button type="submit">পাঠান</button></form><a class="foodora-chat-whatsapp" href="' + waUrl("Hello Foodora Support, I need assistance.") + '" target="_blank" rel="noopener noreferrer">WhatsApp Support ↗</a></section>';
     document.body.appendChild(root);
     $("foodoraChatLauncher").addEventListener("click", () => {
       $("foodoraChatPanel").hidden = false;
       $("foodoraChatLauncher").hidden = true;
-      $("foodoraChatInput").focus();
+      restorePosition();\n      $("foodoraChatInput").focus();
       if (!$("foodoraChatMessages").children.length) addMessage("স্বাগতম Foodora-তে! আমি আপনার সাধারণ প্রশ্নে সাহায্য করতে পারি। গুরুত্বপূর্ণ বা অর্ডার-সংক্রান্ত সমস্যায় WhatsApp Support-এ যোগাযোগ করুন।", "bot");
     });
+    const panel = $("foodoraChatPanel");
+    const dragHandle = $("foodoraChatDragHandle");
+    const restorePosition = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem("foodoraSupportPosition") || "null");
+        if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
+          panel.style.left = Math.max(8, Math.min(saved.left, innerWidth - panel.offsetWidth - 8)) + "px";
+          panel.style.top = Math.max(8, Math.min(saved.top, innerHeight - panel.offsetHeight - 8)) + "px";
+          panel.style.right = "auto"; panel.style.bottom = "auto";
+        }
+      } catch (_) {}
+    };
+    dragHandle.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("button")) return;
+      const rect = panel.getBoundingClientRect();
+      const startX = event.clientX, startY = event.clientY;
+      const originX = rect.left, originY = rect.top;
+      dragHandle.setPointerCapture(event.pointerId);
+      const move = (e) => {
+        const left = Math.max(8, Math.min(originX + e.clientX - startX, innerWidth - panel.offsetWidth - 8));
+        const top = Math.max(8, Math.min(originY + e.clientY - startY, innerHeight - panel.offsetHeight - 8));
+        panel.style.left = left + "px"; panel.style.top = top + "px";
+        panel.style.right = "auto"; panel.style.bottom = "auto";
+      };
+      const stop = () => {
+        dragHandle.removeEventListener("pointermove", move);
+        dragHandle.removeEventListener("pointerup", stop);
+        try { localStorage.setItem("foodoraSupportPosition", JSON.stringify({left: panel.offsetLeft, top: panel.offsetTop})); } catch (_) {}
+      };
+      dragHandle.addEventListener("pointermove", move);
+      dragHandle.addEventListener("pointerup", stop, { once: true });
+    });
+    $("foodoraChatMinimize").addEventListener("click", () => {
+      panel.hidden = true; $("foodoraChatLauncher").hidden = false;
+    });
     $("foodoraChatClose").addEventListener("click", () => {
-      $("foodoraChatPanel").hidden = true;
-      $("foodoraChatLauncher").hidden = false;
+      panel.hidden = true; $("foodoraChatLauncher").hidden = false;
     });
     $("foodoraChatForm").addEventListener("submit", (event) => { event.preventDefault(); send(); });
     root.addEventListener("click", (event) => {
