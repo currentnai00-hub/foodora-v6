@@ -56,6 +56,10 @@ jobs:
         run: |
           node --check homepage-flavorverse.js
           node tests/homepage-flavorverse-guards.js
+      - name: Check Foodora entry animation
+        run: |
+          node --check homepage-entry-intro.js
+          node tests/homepage-entry-intro-guards.js
       - name: Check Admin dashboard JavaScript syntax
         run: node --check admin.js
       - name: Check payment guide JavaScript syntax
