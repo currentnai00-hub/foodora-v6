@@ -89,14 +89,14 @@ function registerCustomerOrderStream({ app, pool }) {
         if (closed) break;
         cursor = Number(row.id);
         // Only the already-verified order's minimal status fields are sent.
-        res.write("id: " + row.id + "\\n");
-        res.write("event: order.update\\n");
+        res.write("id: " + row.id + "\n");
+        res.write("event: order.update\n");
         res.write("data: " + JSON.stringify({
           orderId: row.payload.orderId,
           status: row.payload.status,
           paymentStatus: row.payload.paymentStatus,
           eventType: row.event_type
-        }) + "\\n\\n");
+        }) + "\n\n");
       }
     };
     const scheduleDrain = () => {
@@ -108,7 +108,7 @@ function registerCustomerOrderStream({ app, pool }) {
       if (message.channel === "foodora_order_events") scheduleDrain();
     };
     const heartbeat = setInterval(() => {
-      if (!closed) res.write(": keep-alive\\n\\n");
+      if (!closed) res.write(": keep-alive\n\n");
     }, HEARTBEAT_MS);
     heartbeat.unref?.();
     req.on("close", cleanup);
@@ -124,7 +124,7 @@ function registerCustomerOrderStream({ app, pool }) {
         [orderId]
       );
       cursor = Number(latest.rows[0].id);
-      res.write("event: ready\\ndata: {}\\n\\n");
+      res.write("event: ready\ndata: {}\n\n");
     } catch (err) {
       console.error("Customer order stream connection failed:", err.message);
       if (!closed) res.end();
