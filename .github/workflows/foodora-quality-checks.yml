@@ -18,6 +18,12 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
+      - name: Run complete Node.js test suite
+        run: npm test
+      - name: Check homepage product quick view
+        run: |
+          node --check homepage-quick-view.js
+          node tests/homepage-quick-view-guards.js
       - name: Check backend JavaScript syntax
         run: node --check server.js
       - name: Check wallet service JavaScript syntax

@@ -1,0 +1,18 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const html = fs.readFileSync("index.html","utf8");
+const css = fs.readFileSync("homepage-quick-view.css","utf8");
+const js = fs.readFileSync("homepage-quick-view.js","utf8");
+assert.match(html,/homepage-quick-view\.js/, "Homepage must load the quick-view controller");
+assert.match(html,/homepage-quick-view\.css/, "Homepage must load quick-view styling");
+assert.match(js,/data-quick-view/, "Product cards must expose a quick-view action");
+assert.match(js,/MutationObserver/, "Quick view must support products rendered asynchronously or after filtering");
+assert.match(js,/aria-modal="true"/, "Quick view must use modal dialog semantics");
+assert.match(js,/event\.key === "Escape"/, "Quick view must close with Escape");
+assert.match(js,/currentAdd\.click\(\)/, "Quick view must use the existing cart action");
+assert.match(js,/originalAdd\.disabled/, "Unavailable items must remain unavailable in quick view");
+assert.match(js,/returnFocus\.isConnected/, "Quick view must restore focus when possible");
+assert.match(css,/prefers-reduced-motion:reduce/, "Quick-view motion must respect reduced-motion preferences");
+assert.match(css,/\.fd-quick-view-backdrop\[hidden\]/, "Closed quick view must not intercept page interaction");
+console.log("Homepage quick-view guards passed.");
