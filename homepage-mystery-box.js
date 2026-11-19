@@ -78,7 +78,7 @@
     signatureTimer = null;
     congratulationsTimer = null;
     immersive.hidden = true;
-    immersive.classList.remove("is-active");
+    immersive.classList.remove("is-active", "is-signature", "is-congrats");
     immersive.setAttribute("aria-hidden", "true");
     document.body.classList.remove("fd-mystery-immersive-open");
     section.classList.remove("is-opening");
@@ -186,6 +186,7 @@
     if (signatureTimer !== null) window.clearTimeout(signatureTimer);
     if (congratulationsTimer !== null) window.clearTimeout(congratulationsTimer);
     immersive.hidden = true;
+    immersive.classList.remove("is-active", "is-signature", "is-congrats");
     document.body.classList.remove("fd-mystery-immersive-open");
   }, { once: true });
 })();
