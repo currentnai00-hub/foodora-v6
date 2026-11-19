@@ -1,7 +1,11 @@
+-- Keep each ADD COLUMN separate for H2 PostgreSQL-mode and PostgreSQL compatibility.
 ALTER TABLE platform_identity.products
-  ADD COLUMN submitted_at TIMESTAMP WITH TIME ZONE,
-  ADD COLUMN reviewed_at TIMESTAMP WITH TIME ZONE,
-  ADD COLUMN reviewed_by UUID REFERENCES platform_identity.users(id),
+  ADD COLUMN submitted_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE platform_identity.products
+  ADD COLUMN reviewed_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE platform_identity.products
+  ADD COLUMN reviewed_by UUID REFERENCES platform_identity.users(id);
+ALTER TABLE platform_identity.products
   ADD COLUMN review_note VARCHAR(500);
 
 CREATE INDEX products_review_queue_idx
