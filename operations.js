@@ -30,7 +30,7 @@ async function connectLiveEvents(){
   streamRetry=1000;$("#syncState").textContent="Live · real-time event stream connected";
   const reader=response.body.getReader(),decoder=new TextDecoder();let buffer="";
   while(true){const {value,done}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let boundary;
-   while((boundary=buffer.indexOf("\\n\\n"))>=0){const frame=buffer.slice(0,boundary);buffer=buffer.slice(boundary+2);if(frame.startsWith(":"))continue;if(/^event: (order\\.|payment\\.)/.test(frame)){refresh();}}
+   while((boundary=buffer.indexOf("\n\n"))>=0){const frame=buffer.slice(0,boundary);buffer=buffer.slice(boundary+2);if(frame.startsWith(":"))continue;if(/event: (order\.|payment\.)/.test(frame)){refresh();}}
   }
  }catch(error){if(error.name!=="AbortError"&&key)$("#syncState").textContent="Live reconnecting · polling fallback active";}
  finally{streamAbort=null;if(key){const delay=streamRetry;streamRetry=Math.min(streamRetry*2,15000);setTimeout(connectLiveEvents,delay);}}
