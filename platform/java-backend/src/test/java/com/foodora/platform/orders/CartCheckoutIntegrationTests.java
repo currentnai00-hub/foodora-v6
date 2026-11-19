@@ -29,6 +29,8 @@ class CartCheckoutIntegrationTests {
     @BeforeEach
     void cleanDatabase() {
         jdbc.update("DELETE FROM platform_identity.checkout_idempotency");
+        jdbc.update("DELETE FROM platform_identity.payment_review_events");
+        jdbc.update("DELETE FROM platform_identity.order_payments");
         jdbc.update("DELETE FROM platform_identity.order_status_events");
         jdbc.update("DELETE FROM platform_identity.order_items");
         jdbc.update("DELETE FROM platform_identity.orders");
@@ -252,6 +254,89 @@ class CartCheckoutIntegrationTests {
         org.junit.jupiter.api.Assertions.assertEquals(0L, jdbc.queryForObject(
             "SELECT reserved FROM platform_identity.inventory_balances WHERE variant_id = ?",
             Long.class, f.variantId()));
+    }
+
+    private String adminSession() {
+        UUID adminId = UUID.randomUUID();
+        jdbc.update("""
+            INSERT INTO platform_identity.users(id, full_name, phone, password_hash, role)
+            VALUES (?, 'Payment Reviewer', '01912345678', 'test-only-hash', 'ADMIN')
+            """, adminId);
+        String token = UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
+        jdbc.update("""
+            INSERT INTO platform_identity.sessions(token_hash, user_id, expires_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP + INTERVAL '1' DAY)
+            """, sha256(token), adminId);
+        return token;
+    }
+
+    @Test
+    void manualPaymentRequiresAdminReviewBeforeOrderConfirmation() throws Exception {
+        String customer = register("01712345678");
+        Fixture f = fixture(customer);
+        var cart = mvc.perform(postCsrf("/api/v1/stores/" + f.storeId() + "/carts")
+                .cookie(new Cookie("foodora_platform_session", customer)))
+            .andExpect(status().isCreated()).andReturn();
+        String cartId = com.jayway.jsonpath.JsonPath.read(cart.getResponse().getContentAsString(), "$.cartId");
+        mvc.perform(postCsrf("/api/v1/carts/" + cartId + "/items")
+                .cookie(new Cookie("foodora_platform_session", customer))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"variantId\":\"" + f.variantId() + "\",\"quantity\":1}"))
+            .andExpect(status().isCreated());
+        String checkout = """
+            {"recipientName":"Checkout Customer","recipientPhone":"01812345678",
+             "deliveryAddress":"Agrabad, Chattogram"}
+            """;
+        var placed = mvc.perform(postCsrf("/api/v1/carts/" + cartId + "/checkout")
+                .cookie(new Cookie("foodora_platform_session", customer))
+                .header("Idempotency-Key", UUID.randomUUID().toString())
+                .contentType(MediaType.APPLICATION_JSON).content(checkout))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value("AWAITING_PAYMENT"))
+            .andReturn();
+        String orderId = com.jayway.jsonpath.JsonPath.read(
+            placed.getResponse().getContentAsString(), "$.orderId");
+
+        var submitted = mvc.perform(postCsrf("/api/v1/orders/" + orderId + "/payments")
+                .cookie(new Cookie("foodora_platform_session", customer))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentMethod\":\"bKash\",\"transactionId\":\"TXN-ABC-1234\"}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value("PENDING"))
+            .andReturn();
+        String paymentId = com.jayway.jsonpath.JsonPath.read(
+            submitted.getResponse().getContentAsString(), "$.paymentId");
+        org.junit.jupiter.api.Assertions.assertEquals("PAYMENT_REVIEW", jdbc.queryForObject(
+            "SELECT status FROM platform_identity.orders WHERE id = ?", String.class, UUID.fromString(orderId)));
+
+        mvc.perform(get("/api/v1/admin/payments/pending")
+                .cookie(new Cookie("foodora_platform_session", customer)))
+            .andExpect(status().isForbidden());
+
+        String admin = adminSession();
+        mvc.perform(get("/api/v1/admin/payments/pending")
+                .cookie(new Cookie("foodora_platform_session", admin)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].transactionId").value("TXN-ABC-1234"));
+
+        mvc.perform(postCsrf("/api/v1/admin/payments/" + paymentId + "/review")
+                .cookie(new Cookie("foodora_platform_session", admin))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"action\":\"approve\",\"note\":\"Verified against provider statement\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.paymentStatus").value("APPROVED"))
+            .andExpect(jsonPath("$.orderStatus").value("CONFIRMED"));
+
+        org.junit.jupiter.api.Assertions.assertEquals("CONFIRMED", jdbc.queryForObject(
+            "SELECT status FROM platform_identity.orders WHERE id = ?", String.class, UUID.fromString(orderId)));
+        org.junit.jupiter.api.Assertions.assertEquals(3L, jdbc.queryForObject(
+            "SELECT COUNT(*) FROM platform_identity.order_status_events WHERE order_id = ?",
+            Long.class, UUID.fromString(orderId)));
+        mvc.perform(postCsrf("/api/v1/admin/payments/" + paymentId + "/review")
+                .cookie(new Cookie("foodora_platform_session", admin))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"action\":\"approve\"}"))
+            .andExpect(status().isConflict());
     }
 
     private record Fixture(UUID storeId, UUID variantId) {}
