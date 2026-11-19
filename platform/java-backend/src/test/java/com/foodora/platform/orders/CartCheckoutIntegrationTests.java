@@ -29,6 +29,8 @@ class CartCheckoutIntegrationTests {
     @BeforeEach
     void cleanDatabase() {
         jdbc.update("DELETE FROM platform_identity.checkout_idempotency");
+        jdbc.update("DELETE FROM platform_identity.payment_review_events");
+        jdbc.update("DELETE FROM platform_identity.order_payments");
         jdbc.update("DELETE FROM platform_identity.order_status_events");
         jdbc.update("DELETE FROM platform_identity.order_items");
         jdbc.update("DELETE FROM platform_identity.orders");
