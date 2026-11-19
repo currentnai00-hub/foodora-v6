@@ -34,3 +34,32 @@ Flyway creates a separate `platform_identity` schema. No legacy customer records
 ## Tests
 
 `mvn --batch-mode verify` uses an isolated in-memory H2 database; it does not connect to production.
+
+## Vendor onboarding & store management API v1
+
+- `POST /api/v1/vendor/applications` — authenticated customer submits one vendor application.
+- `GET /api/v1/vendor/applications/me` — reads the caller's application status.
+- `GET /api/v1/admin/vendor/applications` — ADMIN-only pending application queue.
+- `POST /api/v1/admin/vendor/applications/{id}/approve` — ADMIN-only approval; atomically creates an ACTIVE store and OWNER membership.
+- `POST /api/v1/admin/vendor/applications/{id}/reject` — ADMIN-only rejection with an optional review note.
+- `GET /api/v1/vendor/stores/me` — lists only stores where the caller has an active membership.
+- `PUT /api/v1/vendor/stores/{storeId}` — OWNER/MANAGER-only store profile update; inaccessible store IDs return 404.
+
+### Authorization boundaries
+
+Vendor permissions are scoped to `store_memberships`, not inferred from a client-supplied role or a global VENDOR flag. Public registration still creates CUSTOMER only. ADMIN is a privileged platform role and must be provisioned through a separately controlled operator process; there is no public admin-registration endpoint. A user with no active store membership cannot read or update another vendor's store.
+
+Each account may submit one application in this foundation. Approval is transactional: the application status, store, and OWNER membership are committed together. A unique application-to-store relationship and membership primary key prevent duplicate store creation.
+
+### Browser CSRF flow
+
+First call `GET /api/v1/auth/csrf`, then send the returned `XSRF-TOKEN` cookie value in `X-XSRF-TOKEN` for state-changing requests. Keep the session cookie HttpOnly; do not expose it to JavaScript.
+
+## Vendor integration tests
+
+The vendor integration suite uses only the test profile's isolated H2 database. It covers pending application workflow, ADMIN-only review, store creation, owner access, duplicate applications, and cross-account store isolation. No production database or legacy Node tables are used.
+
+
+### Migration compatibility note
+
+The V1 identity migration is immutable. V2 is a Flyway Java migration because V1's inline role CHECK constraint has a database-generated name that differs between PostgreSQL and H2. V2 resolves the existing constraint from database metadata, replaces it with the CUSTOMER/ADMIN policy, and then creates the vendor/store tables. This keeps test and PostgreSQL migration behavior aligned without editing an already-versioned SQL migration.
