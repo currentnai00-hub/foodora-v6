@@ -6,14 +6,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.time.Duration;
 @RestController @RequestMapping("/api/v1/auth")
 public class AuthController {
- private final AuthService service;private final String cookieName;private final Duration ttl;private final boolean secure;
- public AuthController(AuthService service,@Value("${foodora.auth.cookie-name}")String cookieName,@Value("${foodora.auth.session-ttl}")Duration ttl,@Value("${foodora.auth.cookie-secure}")boolean secure){this.service=service;this.cookieName=cookieName;this.ttl=ttl;this.secure=secure;}
- @GetMapping("/csrf") public ResponseEntity<Void> csrf(CsrfToken token){token.getToken();return ResponseEntity.noContent().build();}
+ private final AuthService service;private final String cookieName;private final Duration ttl;private final boolean secure;private final CsrfTokenRepository csrfRepository;
+ public AuthController(AuthService service,@Value("${foodora.auth.cookie-name}")String cookieName,@Value("${foodora.auth.session-ttl}")Duration ttl,@Value("${foodora.auth.cookie-secure}")boolean secure,CsrfTokenRepository csrfRepository){this.service=service;this.cookieName=cookieName;this.ttl=ttl;this.secure=secure;this.csrfRepository=csrfRepository;}
+ @GetMapping("/csrf") public ResponseEntity<Void> csrf(HttpServletRequest request,HttpServletResponse response){CsrfToken token=csrfRepository.generateToken(request);csrfRepository.saveToken(token,request,response);return ResponseEntity.noContent().build();}
  @PostMapping("/register") public ResponseEntity<AuthDtos.AuthResponse> register(@Valid @RequestBody AuthDtos.RegisterRequest r,HttpServletRequest req,HttpServletResponse res){checkOrigin(req);var issued=service.register(r);setCookie(res,issued.token(),ttl);return ResponseEntity.status(201).body(new AuthDtos.AuthResponse(issued.user()));}
  @PostMapping("/login") public AuthDtos.AuthResponse login(@Valid @RequestBody AuthDtos.LoginRequest r,HttpServletRequest req,HttpServletResponse res){checkOrigin(req);var issued=service.login(r.phone(),r.password());setCookie(res,issued.token(),ttl);return new AuthDtos.AuthResponse(issued.user());}
  @PostMapping("/logout") public ResponseEntity<Void> logout(HttpServletRequest req,HttpServletResponse res){checkOrigin(req);service.logout(readToken(req));res.addHeader("Set-Cookie",ResponseCookie.from(cookieName,"").httpOnly(true).secure(secure).sameSite("Lax").path("/").maxAge(Duration.ZERO).build().toString());return ResponseEntity.noContent().build();}
