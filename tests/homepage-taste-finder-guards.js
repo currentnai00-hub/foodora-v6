@@ -8,6 +8,8 @@ assert.match(html, /id="tasteFinder"/, "Homepage must expose the taste finder");
 for (const preset of ["mild", "hot", "breakfast", "popular", "surprise"]) {
   assert.match(html, new RegExp('data-taste-preset="' + preset + '"'), "Missing taste preset: " + preset);
 }
+assert.match(html, /Foodora নির্বাচিত/, "Featured products must not be described as customer popularity without order data");
+assert.doesNotMatch(html, /কাস্টমারদের পছন্দের আইটেম/, "Do not imply customer popularity without verified popularity data");
 assert.match(html, /homepage-taste-finder\.js/, "Taste finder controller must be loaded");
 assert.match(js, /clearCurrentFilters/, "Taste presets must start from a clean filter state");
 assert.match(js, /prefers-reduced-motion/, "Menu navigation must respect reduced motion");
