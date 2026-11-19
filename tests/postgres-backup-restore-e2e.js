@@ -111,9 +111,11 @@ async function jsonResponse(response) {
     // Verify a trigger that silently suppresses restored rows cannot commit.
     await pool.query(`
       CREATE OR REPLACE FUNCTION ci_skip_foodora_restore_row() RETURNS trigger
-      LANGUAGE plpgsql AS $
-      BEGIN RETURN NULL; END;
-      $;
+      LANGUAGE plpgsql AS $function$
+      BEGIN
+        RETURN NULL;
+      END;
+      $function$;
       CREATE TRIGGER ci_skip_foodora_restore_row
       BEFORE INSERT ON products FOR EACH ROW
       EXECUTE FUNCTION ci_skip_foodora_restore_row();
