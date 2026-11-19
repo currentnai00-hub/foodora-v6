@@ -72,6 +72,12 @@ jobs:
         run: node tests/static-private-data-guards.js
       - name: Check response security headers
         run: node tests/security-response-headers-guards.js
+      - name: Check PWA JavaScript syntax
+        run: |
+          node --check sw.js
+          node --check app-pwa.js
+      - name: Check PWA manifest and offline cache safety
+        run: node tests/pwa-safety-guards.js
       - name: Check tracking privacy and analytics safeguards
         run: |
           python3 - <<'PY'
