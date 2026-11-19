@@ -122,9 +122,9 @@ public class OrderService {
 
         // Serialize this customer's checkout requests so the same key cannot create two orders.
         Integer locked = jdbc.queryForObject("""
-            SELECT COUNT(*) FROM platform_identity.users WHERE id = ? FOR UPDATE
-            """, Integer.class, customerId);
-        if (locked == null || locked == 0)
+            SELECT id FROM platform_identity.users WHERE id = ? FOR UPDATE
+            """, (rs, n) -> rs.getObject("id", UUID.class), customerId);
+        if (locked.isEmpty())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Customer account পাওয়া যায়নি।");
 
         var previous = jdbc.query("""
@@ -145,7 +145,7 @@ public class OrderService {
               ON p.id = v.product_id AND p.store_id = v.store_id
             JOIN platform_identity.inventory_balances b
               ON b.variant_id = v.id AND b.store_id = v.store_id
-            WHERE ci.cart_id = ?
+            WHERE ci.cart_id = ? AND v.active = TRUE AND p.status = 'ACTIVE'
             ORDER BY ci.variant_id
             FOR UPDATE
             """, (rs, n) -> new CheckoutLine(
