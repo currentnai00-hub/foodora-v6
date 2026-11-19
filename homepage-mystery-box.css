@@ -80,7 +80,7 @@
 .fd-mystery-immersive-star { position:absolute; color:#ffe4b1; opacity:0; font-size:clamp(18px,3vw,32px); text-shadow:0 0 18px #ffcf84; }
 .star-one{left:12%;top:32%}.star-two{right:12%;top:25%}.star-three{left:22%;bottom:18%}.star-four{right:20%;bottom:16%}
 .fd-mystery-immersive-caption { margin:0; color:rgba(255,255,255,.78); font-size:clamp(13px,2vw,17px); opacity:0; }
-.fd-mystery-immersive-skip { margin-top:26px; padding:11px 18px; border:1px solid rgba(255,255,255,.48); border-radius:999px; color:#fff; background:rgba(255,255,255,.08); font:600 13px 'Hind Siliguri',sans-serif; cursor:pointer; opacity:0; }
+.fd-mystery-immersive-skip { margin-top:26px; padding:11px 18px; border:1px solid rgba(255,255,255,.48); border-radius:999px; color:#fff; background:rgba(255,255,255,.08); font:600 13px 'Hind Siliguri',sans-serif; cursor:pointer; opacity:1; }
 .fd-mystery-immersive-skip:focus-visible { outline:3px solid #fff; outline-offset:4px; }
 .fd-mystery-immersive.is-active .fd-mystery-immersive-kicker { animation:fd-fullscreen-fade .45s .12s both; }
 .fd-mystery-immersive.is-active h2 { animation:fd-fullscreen-title .65s .25s both; }
@@ -92,7 +92,6 @@
 .fd-mystery-immersive.is-active .immersive-box-lid { animation:fd-fullscreen-lid 1.05s cubic-bezier(.16,.8,.2,1) 1.2s both; }
 .fd-mystery-immersive.is-active .fd-mystery-immersive-star { animation:fd-fullscreen-star 1.35s ease-out 1.35s both; }
 .fd-mystery-immersive.is-active .fd-mystery-immersive-caption { animation:fd-fullscreen-fade .5s 1.15s both; }
-.fd-mystery-immersive.is-active .fd-mystery-immersive-skip { animation:fd-fullscreen-fade .35s .55s both; }
 @keyframes fd-fullscreen-fade { from{opacity:0}to{opacity:1} }
 @keyframes fd-fullscreen-title { from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)} }
 @keyframes fd-fullscreen-ring { 0%{opacity:0;transform:scale(.2) rotate(-25deg)}35%{opacity:.8}100%{opacity:0;transform:scale(1.45) rotate(35deg)} }
