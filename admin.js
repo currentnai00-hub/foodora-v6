@@ -23,7 +23,7 @@ async function loadOrders(){
       '<td>'+esc(o.name)+'<br>'+esc(o.phone)+'<br><small>'+esc(o.address)+'</small></td>'+
       '<td>'+items+'</td><td>'+money(o.total)+'</td>'+
       '<td><b>'+esc(o.paymentStatus||"Unknown")+'</b><br><small>'+esc(o.paymentMethod)+'<br>Sender: '+esc(o.senderNumber||"Not provided")+'<br>Txn ID: '+esc(o.transactionId||"No Txn ID")+'</small>'+actions+'</td>'+
-      '<td><select data-status="'+id+'">'+statusOptions+'</select></td>'+
+      '<td><select data-status="'+id+'">'+statusOptions+'</select><br><small>ETA minutes</small><input type="number" min="5" max="240" placeholder="e.g. 35" value="'+(o.prepMinutes||'')+'" data-eta="'+id+'" style="width:85px"></td>'+
       '<td><button class="small-button" data-save="'+id+'">Save status</button></td></tr>';
   }).join("");
   $("#ordersTable").innerHTML=orders.length
@@ -32,7 +32,7 @@ async function loadOrders(){
   $("#ordersTable").querySelectorAll("[data-save]").forEach(button=>button.onclick=async()=>{
     const id=button.dataset.save;
     try{
-      await req("/api/admin/orders/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({status:$('[data-status="'+id+'"]').value})});
+      await req("/api/admin/orders/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({status:$('[data-status="'+id+'"]').value,etaMinutes:$('[data-eta="'+id+'"]').value?Number($('[data-eta="'+id+'"]').value):undefined})});
       await loadStats();await loadOrders();alert("Order status updated");
     }catch(error){alert(error.message);}
   });
