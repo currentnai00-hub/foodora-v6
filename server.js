@@ -546,17 +546,21 @@ app.get("/api/customer/orders/:id",async(req,res)=>{
 
 app.post("/api/customer/orders/:id/cancel",async(req,res)=>{
   if(!requestIsSameOrigin(req))return res.status(403).json({error:"অনুগ্রহ করে Foodora ওয়েবসাইট থেকেই অনুরোধ করুন।"});
-  if(!requireCustomerDatabase(res))return;
+  const orderId=clean(req.params.id,60),phone=String(req.body.phone||"").replace(/\D/g,"");
+  if(!orderId||!/^01[0-9]{9}$/.test(phone))return res.status(400).json({error:"সঠিক Order ID ও checkout phone number দিন।"});
   try{
-    const customer=await signedInCustomer(req);
-    if(!customer)return res.status(401).json({error:"অর্ডার বাতিল করতে লগইন করুন।"});
-    const orderId=clean(req.params.id,60);
-    const found=await pool.query("SELECT id,status FROM orders WHERE id=$1 AND customer_id=$2",[orderId,customer.id]);
-    if(!found.rowCount)return res.status(404).json({error:"আপনার অ্যাকাউন্টে এই অর্ডারটি পাওয়া যায়নি।"});
-    if(!["Pending","Confirmed"].includes(found.rows[0].status))
-      return res.status(409).json({error:"রান্না শুরু হয়ে যাওয়ায় এখন অনলাইনে অর্ডার বাতিল করা যাচ্ছে না। Foodora Support-এ যোগাযোগ করুন।"});
-    const result=await walletServices.cancelOrderAndRefund(orderId,{customerInitiated:true});
-    res.set("Cache-Control","no-store").json({ok:true,...result,message:result.refundIssued?"অর্ডার বাতিল হয়েছে এবং Wallet-এ রিফান্ড যোগ হয়েছে।":"অর্ডার বাতিলের অনুরোধ সম্পন্ন হয়েছে। প্রযোজ্য পেমেন্ট রিফান্ড যাচাই করে দেওয়া হবে।"});
+    if(usePg){
+      const found=await pool.query("SELECT id,status FROM orders WHERE id=$1 AND regexp_replace(phone,'[^0-9]','','g')=$2",[orderId,phone]);
+      if(!found.rowCount)return res.status(404).json({error:"অর্ডার আইডি অথবা ফোন নম্বর সঠিক নয়।"});
+      if(!["Pending","Confirmed"].includes(found.rows[0].status))return res.status(409).json({error:"রান্না শুরু হয়ে যাওয়ায় এখন অনলাইনে অর্ডার বাতিল করা যাচ্ছে না। Foodora Support-এ যোগাযোগ করুন।"});
+      const result=await walletServices.cancelOrderAndRefund(orderId,{customerInitiated:true});
+      return res.set("Cache-Control","no-store").json({ok:true,...result,message:result.refundIssued?"অর্ডার বাতিল হয়েছে এবং Wallet-এ রিফান্ড যোগ হয়েছে।":"অর্ডার বাতিল হয়েছে। প্রযোজ্য পেমেন্ট রিফান্ড যাচাই করে দেওয়া হবে।"});
+    }
+    const orders=readJson(ORDERS_FILE,[]),order=orders.find(o=>String(o.id).toLowerCase()===orderId.toLowerCase()&&String(o.phone||"").replace(/\D/g,"")===phone);
+    if(!order)return res.status(404).json({error:"অর্ডার আইডি অথবা ফোন নম্বর সঠিক নয়।"});
+    if(!["Pending","Confirmed"].includes(order.status))return res.status(409).json({error:"রান্না শুরু হয়ে যাওয়ায় এখন অনলাইনে অর্ডার বাতিল করা যাচ্ছে না।"});
+    order.status="Cancelled";writeJson(ORDERS_FILE,orders);
+    return res.set("Cache-Control","no-store").json({ok:true,status:"Cancelled",message:"অর্ডার বাতিল হয়েছে।"});
   }catch(e){res.status(e.status||500).json({error:e.message||"অর্ডার বাতিল করা যায়নি।"});}
 });
 
