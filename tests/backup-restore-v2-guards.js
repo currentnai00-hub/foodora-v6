@@ -23,6 +23,8 @@ assert(snapshot > tableLock && safetyRecord > snapshot && deletion > snapshot,
   "The pre-restore snapshot must be captured after table locks and before any DELETE");
 assert.match(backup, /snapshot\(client\)/,
   "Snapshot helper must support using the already-locked restore connection");
+assert.match(backup, /t\\.table_type='BASE TABLE'/,
+  "Backup validation must inventory base tables, not views");
 assert.match(backup, /archive\.length>MAX_BYTES/,
   "Generated ZIP archives must respect the upload size limit");
 assert.match(restore, /row-count verification failed/i,
