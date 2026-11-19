@@ -339,5 +339,72 @@ class CartCheckoutIntegrationTests {
             .andExpect(status().isConflict());
     }
 
+    @Test
+    void rejectedPaymentCanBeResubmittedWithNewTransactionReference() throws Exception {
+        String customer = register("01712345678");
+        Fixture f = fixture(customer);
+        var cart = mvc.perform(postCsrf("/api/v1/stores/" + f.storeId() + "/carts")
+                .cookie(new Cookie("foodora_platform_session", customer)))
+            .andExpect(status().isCreated()).andReturn();
+        String cartId = com.jayway.jsonpath.JsonPath.read(cart.getResponse().getContentAsString(), "$.cartId");
+        mvc.perform(postCsrf("/api/v1/carts/" + cartId + "/items")
+                .cookie(new Cookie("foodora_platform_session", customer))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"variantId\":\"" + f.variantId() + "\",\"quantity\":1}"))
+            .andExpect(status().isCreated());
+        String checkout = """
+            {"recipientName":"Checkout Customer","recipientPhone":"01812345678",
+             "deliveryAddress":"Agrabad, Chattogram"}
+            """;
+        var placed = mvc.perform(postCsrf("/api/v1/carts/" + cartId + "/checkout")
+                .cookie(new Cookie("foodora_platform_session", customer))
+                .header("Idempotency-Key", UUID.randomUUID().toString())
+                .contentType(MediaType.APPLICATION_JSON).content(checkout))
+            .andExpect(status().isCreated()).andReturn();
+        String orderId = com.jayway.jsonpath.JsonPath.read(
+            placed.getResponse().getContentAsString(), "$.orderId");
+
+        var first = mvc.perform(postCsrf("/api/v1/orders/" + orderId + "/payments")
+                .cookie(new Cookie("foodora_platform_session", customer))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentMethod\":\"bKash\",\"transactionId\":\"TXN-REJECT-1001\"}"))
+            .andExpect(status().isCreated()).andReturn();
+        String firstPaymentId = com.jayway.jsonpath.JsonPath.read(
+            first.getResponse().getContentAsString(), "$.paymentId");
+
+        String admin = adminSession();
+        mvc.perform(postCsrf("/api/v1/admin/payments/" + firstPaymentId + "/review")
+                .cookie(new Cookie("foodora_platform_session", admin))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"action\":\"reject\",\"note\":\"Reference not found in provider record\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.paymentStatus").value("REJECTED"))
+            .andExpect(jsonPath("$.orderStatus").value("AWAITING_PAYMENT"));
+
+        var second = mvc.perform(postCsrf("/api/v1/orders/" + orderId + "/payments")
+                .cookie(new Cookie("foodora_platform_session", customer))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentMethod\":\"Nagad\",\"transactionId\":\"NGD-RESUBMIT-2002\"}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value("PENDING"))
+            .andReturn();
+        String secondPaymentId = com.jayway.jsonpath.JsonPath.read(
+            second.getResponse().getContentAsString(), "$.paymentId");
+
+        org.junit.jupiter.api.Assertions.assertNotEquals(firstPaymentId, secondPaymentId);
+        org.junit.jupiter.api.Assertions.assertEquals("REJECTED", jdbc.queryForObject(
+            "SELECT status FROM platform_identity.order_payments WHERE id = ?",
+            String.class, UUID.fromString(firstPaymentId)));
+        org.junit.jupiter.api.Assertions.assertEquals("PENDING", jdbc.queryForObject(
+            "SELECT status FROM platform_identity.order_payments WHERE id = ?",
+            String.class, UUID.fromString(secondPaymentId)));
+        org.junit.jupiter.api.Assertions.assertEquals("PAYMENT_REVIEW", jdbc.queryForObject(
+            "SELECT status FROM platform_identity.orders WHERE id = ?",
+            String.class, UUID.fromString(orderId)));
+        org.junit.jupiter.api.Assertions.assertEquals(4L, jdbc.queryForObject(
+            "SELECT COUNT(*) FROM platform_identity.order_status_events WHERE order_id = ?",
+            Long.class, UUID.fromString(orderId)));
+    }
+
     private record Fixture(UUID storeId, UUID variantId) {}
 }

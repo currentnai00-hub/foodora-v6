@@ -72,3 +72,8 @@ The server derives the amount from the stored order total. The client cannot set
 Only a session whose database role is `ADMIN` can access the review queue or review action. Public registration always creates `CUSTOMER`; it cannot create an administrator. An authorized database operator must provision the initial administrator through a controlled, private database procedure. Do not expose an admin-creation endpoint or reuse the legacy Node `x-admin-key` mechanism.
 
 No provider API, automatic verification, capture, or refund is implemented. Admins must verify the exact incoming amount and transaction reference directly in the provider's official app or statement before approving. Never approve based only on a customer screenshot or submitted transaction ID.
+
+
+## Java PostgreSQL verification
+
+The Java platform CI runs the complete Maven verification suite twice: first against the fast H2 test profile, then against a dedicated PostgreSQL 16 service database created for that CI job. The PostgreSQL database is ephemeral and contains test fixtures only. This validates Flyway migrations and the same controller/service integration tests against the production database engine without connecting to production.
