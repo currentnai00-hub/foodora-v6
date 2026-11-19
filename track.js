@@ -28,7 +28,7 @@
    return true;
   }catch(_){startPolling(20000);return false;}
  }
- const normalizeStatus=value=>{const s=String(value||"Pending").trim().toLowerCase();if(s==="out for delivery"||s==="shipped")return "Shipped";return steps.find(x=>x.key.toLowerCase()===s)?.key||"Pending";};
+ const normalizeStatus=value=>{const s=String(value||"Pending").trim().toLowerCase();if(s==="cancelled")return "Cancelled";if(s==="out for delivery"||s==="shipped")return "Shipped";return steps.find(x=>x.key.toLowerCase()===s)?.key||"Pending";};
  form.addEventListener("submit",async e=>{
   e.preventDefault();
   const id=$("orderId").value.trim(),phone=$("phone").value.replace(/\D/g,"");
@@ -59,6 +59,7 @@
    if(silent&&changed){$("statusTitle").setAttribute("aria-label","Order status updated: "+lastStatus);$("statusTitle").focus?.();}
    if(lastStatus==="Delivered"||lastStatus==="Cancelled"){
     if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+    if(eventSource){eventSource.close();eventSource=null;}
     $("lastUpdated").textContent="Order complete · Automatic updates stopped";
    }
   }catch(err){
