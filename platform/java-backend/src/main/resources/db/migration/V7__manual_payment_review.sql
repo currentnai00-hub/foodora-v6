@@ -9,6 +9,8 @@ CREATE TABLE platform_identity.order_payments (
   customer_id UUID NOT NULL REFERENCES platform_identity.users(id),
   payment_method VARCHAR(12) NOT NULL CHECK (payment_method IN ('bKash','Nagad')),
   transaction_id VARCHAR(80) NOT NULL,
+  payment_method_key VARCHAR(12) NOT NULL,
+  transaction_id_key VARCHAR(80) NOT NULL,
   status VARCHAR(12) NOT NULL DEFAULT 'PENDING'
     CHECK (status IN ('PENDING','APPROVED','REJECTED')),
   review_note VARCHAR(300) NOT NULL DEFAULT '',
@@ -19,9 +21,7 @@ CREATE TABLE platform_identity.order_payments (
     CHECK (CHAR_LENGTH(transaction_id) BETWEEN 4 AND 80)
 );
 CREATE UNIQUE INDEX order_payments_method_transaction_unique
-  ON platform_identity.order_payments (LOWER(payment_method), LOWER(BTRIM(transaction_id)));
-CREATE UNIQUE INDEX order_payments_one_pending_per_order
-  ON platform_identity.order_payments(order_id) WHERE status = 'PENDING';
+  ON platform_identity.order_payments (payment_method_key, transaction_id_key);
 CREATE INDEX order_payments_status_submitted_idx
   ON platform_identity.order_payments(status, submitted_at, id);
 
