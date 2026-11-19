@@ -1,11 +1,12 @@
 "use strict";
-const CACHE_VERSION = "foodora-shell-v2";
+const CACHE_VERSION = "foodora-shell-v3";
 const SHELL_CACHE = CACHE_VERSION + "-shell";
 const ASSET_CACHE = CACHE_VERSION + "-assets";
 const SHELL_URLS = ["/", "/offline.html"];
 const STATIC_ASSETS = [
-  "/style.css?v=foodora-payment-v3",
+  "/style.css?v=foodora-home-sliders-v1",
   "/script.js?v=foodora-payment-v3",
+  "/homepage-sliders.js?v=1",
   "/customer-support.css?v=2",
   "/customer-support.js?v=2",
   "/icons/foodora-icon.svg"

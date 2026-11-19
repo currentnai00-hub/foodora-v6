@@ -3,19 +3,70 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#102c23"><meta name="description" content="চট্টগ্রামে আপনার পছন্দের খাবার অনলাইনে অর্ডার করুন।"><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icons/foodora-icon.svg" type="image/svg+xml"><title>Foodora — পছন্দের খাবার, পৌঁছে যাবে ঘরে</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/style.css?v=foodora-payment-v3">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/style.css?v=foodora-home-sliders-v1">
 <link rel="stylesheet" href="/customer-support.css?v=2">
 </head>
 <body>
 <header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="#menu">মেনু</a><a href="#offers">অফার</a><a href="/track">অর্ডার ট্র্যাক</a><a href="/account">আমার অ্যাকাউন্ট</a><a href="#about">আমাদের সম্পর্কে</a></nav><button class="cart-button" id="cartOpen">কার্ট <b id="cartCount">0</b></button></header>
-<section class="hero"><div class="hero-copy"><p class="eyebrow">ভালো খাবার, ভালো মুহূর্ত</p><h1>আপনার পছন্দের খাবার,<br><em>টাটকা পৌঁছে যাবে ঘরে।</em></h1><p>চট্টগ্রামে আপনার পছন্দের খাবার, ন্যায্য দাম আর ঘরে বসেই সহজ ডেলিভারি।</p><a class="primary-link" href="#menu">মেনু দেখুন <span>↗</span></a><div class="hero-meta"><span>✦ টাটকা রান্না</span><span>✦ দ্রুত ডেলিভারি</span></div></div><div class="hero-art">
-<div class="hero-orbit"></div>
-<div class="hero-photo-wrap">
-<img class="hero-photo" src="https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1100&q=90" alt="Fresh delicious restaurant food">
+<section class="hero fd-home-slider" id="homeHero" aria-label="Foodora featured highlights" aria-roledescription="carousel">
+<div class="hero-slides" id="heroSlides">
+  <article class="hero-slide is-active" role="group" aria-roledescription="slide" aria-label="১ / ৩" aria-hidden="false">
+    <div class="hero-copy">
+      <p class="eyebrow">ভালো খাবার, ভালো মুহূর্ত</p>
+      <h1>চট্টগ্রামের স্বাদ,<br><em>এবার আপনার ঘরে।</em></h1>
+      <p>পছন্দের খাবার বেছে নিন সহজে। যত্নে তৈরি খাবার পৌঁছে যাবে আপনার ঠিকানায়।</p>
+      <a class="primary-link" href="#menu">মেনু দেখুন <span>↗</span></a>
+      <div class="hero-meta"><span>✦ টাটকা রান্না</span><span>✦ সহজ অর্ডার</span></div>
+    </div>
+    <div class="hero-art">
+      <div class="hero-orbit"></div>
+      <div class="hero-photo-wrap"><img class="hero-photo" src="https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1100&q=85" alt="টাটকা সবজি ও সুস্বাদু খাবারের আয়োজন" fetchpriority="high"></div>
+      <div class="floating-tag tag-one">✦ Freshly prepared</div>
+      <div class="floating-tag tag-two">♥ যত্নে তৈরি</div>
+    </div>
+  </article>
+  <article class="hero-slide" role="group" aria-roledescription="slide" aria-label="২ / ৩" aria-hidden="true">
+    <div class="hero-copy">
+      <p class="eyebrow">আপনার পছন্দ, আপনার মুহূর্ত</p>
+      <h1>আজ কী খেতে চান?<br><em>পছন্দটা হোক সহজ।</em></h1>
+      <p>সুস্বাদু খাবারের সংগ্রহ থেকে বেছে নিন আপনার প্রিয় পদ—অর্ডার করুন কয়েকটি সহজ ধাপে।</p>
+      <a class="primary-link" href="#menu">খাবার বেছে নিন <span>↗</span></a>
+      <div class="hero-meta"><span>✦ সহজ ব্রাউজিং</span><span>✦ নিরাপদ চেকআউট</span></div>
+    </div>
+    <div class="hero-art">
+      <div class="hero-orbit"></div>
+      <div class="hero-photo-wrap"><img class="hero-photo" src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1100&q=85" alt="তাজা বেকড পিৎজা পরিবেশন" loading="lazy"></div>
+      <div class="floating-tag tag-one">✦ Made for sharing</div>
+      <div class="floating-tag tag-two">♥ আপনার পছন্দ</div>
+    </div>
+  </article>
+  <article class="hero-slide" role="group" aria-roledescription="slide" aria-label="৩ / ৩" aria-hidden="true">
+    <div class="hero-copy">
+      <p class="eyebrow">অর্ডার থাকুক আপনার নজরে</p>
+      <h1>অর্ডার থেকে দরজা,<br><em>প্রতিটি ধাপে পাশে।</em></h1>
+      <p>অর্ডারের বর্তমান অবস্থা জানতে Foodora-র লাইভ ট্র্যাকিং পেজ ব্যবহার করুন।</p>
+      <a class="primary-link" href="/track">অর্ডার ট্র্যাক করুন <span>↗</span></a>
+      <div class="hero-meta"><span>✦ অর্ডার আপডেট</span><span>✦ সহজ ট্র্যাকিং</span></div>
+    </div>
+    <div class="hero-art">
+      <div class="hero-orbit"></div>
+      <div class="hero-photo-wrap"><img class="hero-photo" src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1100&q=85" alt="বন্ধুদের সঙ্গে খাবার উপভোগের আয়োজন" loading="lazy"></div>
+      <div class="floating-tag tag-one">✦ Order updates</div>
+      <div class="floating-tag tag-two">♥ আপনার সঙ্গেই</div>
+    </div>
+  </article>
 </div>
-<div class="floating-tag tag-one">✦ Freshly prepared</div>
-<div class="floating-tag tag-two">♥ যত্নে তৈরি</div>
-</div></section>
+<div class="hero-slider-controls" aria-label="স্লাইড নিয়ন্ত্রণ">
+  <button type="button" class="hero-arrow" id="heroPrev" aria-label="আগের স্লাইড">‹</button>
+  <div class="hero-dots" id="heroDots" aria-label="স্লাইড নির্বাচন">
+    <button type="button" class="hero-dot is-active" data-slide="0" aria-label="স্লাইড ১ দেখুন" aria-current="true"></button>
+    <button type="button" class="hero-dot" data-slide="1" aria-label="স্লাইড ২ দেখুন"></button>
+    <button type="button" class="hero-dot" data-slide="2" aria-label="স্লাইড ৩ দেখুন"></button>
+  </div>
+  <button type="button" class="hero-arrow" id="heroNext" aria-label="পরের স্লাইড">›</button>
+  <button type="button" class="hero-pause" id="heroPause" aria-label="স্লাইড অটো-প্লে বন্ধ করুন" aria-pressed="false">Ⅱ</button>
+</div>
+</section>
 <section class="trust-strip" aria-label="ফুডোরার সুবিধাসমূহ">
 <div class="trust-item"><span>✦</span><div><b>মানসম্মত উপকরণ</b><small>প্রতিটি কামড়ে যত্ন</small></div></div>
 <div class="trust-item"><span>⚡</span><div><b>দ্রুত ডেলিভারি</b><small>খাবার আপনার দরজায়</small></div></div>
@@ -30,7 +81,7 @@
 <label>ঝালের মাত্রা <select id="spiceFilter"><option value="all">সব</option><option value="mild">কম ঝাল</option><option value="medium">মাঝারি</option><option value="hot">বেশি ঝাল</option></select></label>
 <label>সর্বনিম্ন দাম <input id="minPrice" type="number" min="0" placeholder="৳ ০"></label>
 <label>সর্বোচ্চ দাম <input id="maxPrice" type="number" min="0" placeholder="৳ ১০০০"></label>
-</div><div id="categories" class="chips"></div><div id="products" class="product-grid"><p>মেনু লোড হচ্ছে…</p></div></section>
+</div><div class="category-slider" aria-label="খাবারের ক্যাটাগরি স্লাইডার"><button type="button" class="category-arrow" data-category-scroll="-1" aria-label="আগের ক্যাটাগরি">‹</button><div id="categories" class="chips category-track"></div><button type="button" class="category-arrow" data-category-scroll="1" aria-label="পরের ক্যাটাগরি">›</button></div><div id="products" class="product-grid"><p>মেনু লোড হচ্ছে…</p></div></section>
 <section class="offer-banner" id="offers">
 <div class="offer-copy">
 <p class="eyebrow">আপনার জন্য বিশেষ</p>
@@ -66,6 +117,7 @@ class="primary-button full" style="display:none;">
   </section>
 </div>
 <script src="/script.js?v=foodora-payment-v3"></script>
+<script src="/homepage-sliders.js?v=1" defer></script>
 <script src="/customer-support.js?v=2" defer></script>
 <script src="/app-pwa.js?v=1" defer></script>
 </body></html>
