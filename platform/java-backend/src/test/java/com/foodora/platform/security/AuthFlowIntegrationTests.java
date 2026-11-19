@@ -17,6 +17,7 @@ class AuthFlowIntegrationTests {
  @Autowired JdbcTemplate jdbc;
  @BeforeEach void cleanDatabase(){
   jdbc.update("DELETE FROM platform_identity.checkout_idempotency");
+  jdbc.update("DELETE FROM platform_identity.order_status_events");
   jdbc.update("DELETE FROM platform_identity.order_items");
   jdbc.update("DELETE FROM platform_identity.orders");
   jdbc.update("DELETE FROM platform_identity.cart_items");
