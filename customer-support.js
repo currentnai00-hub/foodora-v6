@@ -86,6 +86,45 @@
     root.id = "foodoraSupportWidget";
     root.innerHTML = '<button id="foodoraChatLauncher" class="foodora-chat-launcher" type="button" aria-label="Open Foodora support chat"><span class="foodora-logo-mark">' + logo + '</span><span class="foodora-launcher-label"><strong>Foodora</strong><small>সাপোর্ট</small></span></button><section id="foodoraChatPanel" class="foodora-chat-panel" aria-label="Foodora customer support" hidden><header id="foodoraChatDragHandle" class="foodora-chat-header"><div class="foodora-chat-brand"><span class="foodora-chat-logo">' + logo + '</span><div><strong>Foodora</strong><small>Customer Support · <i></i> Online</small></div></div><div class="foodora-chat-actions"><button id="foodoraChatMinimize" type="button" aria-label="Minimize chat">−</button><button id="foodoraChatClose" type="button" aria-label="Close chat">×</button></div></header><div id="foodoraChatMessages" class="foodora-chat-messages" aria-live="polite"></div><div class="foodora-chat-quick"><button type="button" data-question="ডেলিভারি চার্জ কত?">ডেলিভারি চার্জ</button><button type="button" data-question="কোন কোন এলাকায় ডেলিভারি হয়?">ডেলিভারি এলাকা</button><button type="button" data-question="কীভাবে অর্ডার করব?">অর্ডার করার নিয়ম</button><button type="button" data-question="আমার অর্ডার ট্র্যাক করতে চাই">অর্ডার ট্র্যাক</button></div><form id="foodoraChatForm" class="foodora-chat-form"><input id="foodoraChatInput" maxlength="500" autocomplete="off" placeholder="আপনার প্রশ্ন লিখুন..." aria-label="Your question"><button type="submit">পাঠান</button></form><a class="foodora-chat-whatsapp" href="' + waUrl("Hello Foodora Support, I need assistance.") + '" target="_blank" rel="noopener noreferrer">WhatsApp Support ↗</a></section>';
     document.body.appendChild(root);
+    const launcher = $("foodoraChatLauncher");
+    let launcherDragged = false;
+    try {
+      const savedLauncher = JSON.parse(localStorage.getItem("foodoraSupportLauncherPosition") || "null");
+      if (savedLauncher && Number.isFinite(savedLauncher.left) && Number.isFinite(savedLauncher.top)) {
+        launcher.style.left = Math.max(8, Math.min(savedLauncher.left, innerWidth - launcher.offsetWidth - 8)) + "px";
+        launcher.style.top = Math.max(8, Math.min(savedLauncher.top, innerHeight - launcher.offsetHeight - 8)) + "px";
+        launcher.style.right = "auto"; launcher.style.bottom = "auto";
+      }
+    } catch (_) {}
+    launcher.addEventListener("pointerdown", (event) => {
+      if (event.button !== undefined && event.button !== 0) return;
+      const rect = launcher.getBoundingClientRect();
+      const startX = event.clientX, startY = event.clientY;
+      const originX = rect.left, originY = rect.top;
+      let moved = false;
+      launcher.setPointerCapture(event.pointerId);
+      const move = (e) => {
+        const dx = e.clientX - startX, dy = e.clientY - startY;
+        if (!moved && Math.hypot(dx, dy) < 7) return;
+        moved = true; launcherDragged = true;
+        const left = Math.max(8, Math.min(originX + dx, innerWidth - launcher.offsetWidth - 8));
+        const top = Math.max(8, Math.min(originY + dy, innerHeight - launcher.offsetHeight - 8));
+        launcher.style.left = left + "px"; launcher.style.top = top + "px";
+        launcher.style.right = "auto"; launcher.style.bottom = "auto";
+      };
+      const stop = () => {
+        launcher.removeEventListener("pointermove", move);
+        launcher.removeEventListener("pointerup", stop);
+        launcher.removeEventListener("pointercancel", stop);
+        if (moved) {
+          try { localStorage.setItem("foodoraSupportLauncherPosition", JSON.stringify({left: launcher.offsetLeft, top: launcher.offsetTop})); } catch (_) {}
+          setTimeout(() => { launcherDragged = false; }, 0);
+        }
+      };
+      launcher.addEventListener("pointermove", move);
+      launcher.addEventListener("pointerup", stop, { once: true });
+      launcher.addEventListener("pointercancel", stop, { once: true });
+    });
     $("foodoraChatLauncher").addEventListener("click", () => {
       $("foodoraChatPanel").hidden = false;
       $("foodoraChatLauncher").hidden = true;
