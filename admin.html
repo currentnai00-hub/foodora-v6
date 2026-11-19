@@ -230,6 +230,15 @@ td select{padding:8px;max-width:160px}
     <div class="full"><p class="muted">উদাহরণ: padua|পদুয়া ইউনিয়ন। ID ইংরেজি অক্ষর/সংখ্যায় রাখুন। কোনো এলাকা বাদ দিতে চাইলে তার লাইন মুছে দিন।</p><button class="btn primary" type="submit">Save Delivery Settings</button></div>
    </form>
   </div>
+  <div class="panel" style="margin-top:18px">
+   <div class="panelhead"><div><h2>Customer Purchase Rewards</h2><span class="muted">সফল cumulative purchase অনুযায়ী ফ্রি খাবার ও ফ্রি ডেলিভারি</span></div></div>
+   <form id="customerRewardForm" class="formgrid">
+    <label class="full" style="display:flex;align-items:center;gap:10px"><input id="customerRewardEnabled" type="checkbox" style="width:auto;min-width:0"> Customer Rewards চালু রাখুন</label>
+    <label>কত টাকার সফল কেনাকাটায় ১টি রিওয়ার্ড (৳)<input id="customerRewardThreshold" type="number" min="1" max="10000000" step="1" required></label>
+    <label>ফ্রি খাবারের সর্বোচ্চ মূল্য (৳)<input id="customerRewardMaxValue" type="number" min="1" max="1000000" step="1" required></label>
+    <div class="full"><p class="muted">উদাহরণ: ৳৫,০০০ cumulative successful purchase হলে সর্বোচ্চ ৳৫০০ মূল্যের একটি খাবার ফ্রি। একাধিক অর্ডারের যোগফল গণনা হবে। রিওয়ার্ড অর্ডারের ডেলিভারি চার্জ ৳০।</p><button class="btn primary" type="submit">Save Customer Reward Settings</button></div>
+   </form>
+  </div>
  </section>
  <section id="reviews" class="section">
   <div class="panel">
@@ -266,7 +275,7 @@ td select{padding:8px;max-width:160px}
 <script>
 const $=id=>document.getElementById(id);
 let KEY=sessionStorage.getItem("foodora_admin_key")||"";
-let products=[],orders=[],coupons=[],reviews=[],summary={},analytics={days:[],statuses:{}},deliverySettings={areas:[]};
+let products=[],orders=[],coupons=[],reviews=[],summary={},analytics={days:[],statuses:{}},deliverySettings={areas:[]},customerRewardSettings={enabled:true,spendThreshold:5000,maxItemValue:500};
 let orderPollTimer=null, knownOrderIds=null, orderPollBusy=false;
 const statuses=["Pending","Confirmed","Preparing","Shipped","Out for delivery","Delivered","Cancelled"];
 const payments=["Awaiting payment","Pending verification","Verified","Rejected"];
@@ -364,10 +373,10 @@ async function refreshAll(){
  try{
   const results=await Promise.all([
    api("/api/admin/summary"),api("/api/admin/products"),api("/api/admin/orders"),
-   api("/api/admin/coupons"),api("/api/admin/reviews"),api("/api/admin/analytics"),api("/api/admin/delivery-settings")
+   api("/api/admin/coupons"),api("/api/admin/reviews"),api("/api/admin/analytics"),api("/api/admin/delivery-settings"),api("/api/admin/customer-reward-settings")
   ]);
-  [summary,products,orders,coupons,reviews,analytics,deliverySettings]=results;
-  renderDeliverySettings();
+  [summary,products,orders,coupons,reviews,analytics,deliverySettings,customerRewardSettings]=results;
+  renderDeliverySettings();renderCustomerRewardSettings();
   if(knownOrderIds===null)knownOrderIds=new Set(orders.map(o=>String(orderId(o))).filter(id=>id!=="—"));
   renderAll();
   startOrderPolling();
@@ -575,6 +584,19 @@ $("deliveryForm").addEventListener("submit",async e=>{
  try{const saved=await api("/api/admin/delivery-settings",{method:"PUT",body:JSON.stringify({deliveryFee:Number($("deliveryFeeInput").value),freeDeliveryFrom:Number($("freeDeliveryInput").value),areas})});deliverySettings=saved;renderDeliverySettings();toast("Delivery settings saved");}
  catch(e){toast(e.message)}
 });
+function renderCustomerRewardSettings(){
+ $("customerRewardEnabled").checked=customerRewardSettings.enabled!==false;
+ $("customerRewardThreshold").value=Number(customerRewardSettings.spendThreshold??5000);
+ $("customerRewardMaxValue").value=Number(customerRewardSettings.maxItemValue??500);
+}
+$("customerRewardForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const settings={enabled:$("customerRewardEnabled").checked,spendThreshold:Number($("customerRewardThreshold").value),maxItemValue:Number($("customerRewardMaxValue").value)};
+ if(!Number.isSafeInteger(settings.spendThreshold)||settings.spendThreshold<1||settings.spendThreshold>10000000||!Number.isSafeInteger(settings.maxItemValue)||settings.maxItemValue<1||settings.maxItemValue>1000000){toast("Please enter valid reward limits");return;}
+ try{customerRewardSettings=await api("/api/admin/customer-reward-settings",{method:"PUT",body:JSON.stringify(settings)});renderCustomerRewardSettings();toast("Customer reward settings saved");}
+ catch(error){toast(error.message);}
+});
+
 function renderReviews(){
  $("reviewsTable").innerHTML=table(["Customer","Product ID","Rating","Review","Purchase","Status","Actions"],reviews.map(r=>[
   esc(val(r,"name","customerName")||"Customer"),esc(val(r,"productId","product_id")),"⭐ "+esc(r.rating||0)+"/5",esc(r.comment),
