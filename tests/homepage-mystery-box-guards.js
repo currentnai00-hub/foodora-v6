@@ -47,12 +47,12 @@ assert.match(css, /fd-fullscreen-shockwave/, "The shockwave must have a complete
 assert.match(css, /fd-fullscreen-sweep/, "The light sweep must have a complete animation");
 assert.match(js, /2950/, "The result must wait until all cinematic effects finish");
 
-console.log("Homepage Mystery Food Box guards passed.");
-
 assert.match(html, /data-mystery-signature/, "Reveal must include the Foodora signature screen");
-assert.match(html, /foodora<span>\.<\\/span>/, "Signature screen must display the Foodora wordmark");
+assert.ok(html.includes('<p class="fd-mystery-signature-word">foodora<span>.</span></p>'), "Signature screen must display the Foodora wordmark");
 assert.match(html, /data-mystery-congrats/, "Reveal must include a separate congratulations screen");
 assert.match(js, /is-signature/, "The signature screen must have its own timed phase");
 assert.match(js, /is-congrats/, "The congratulations screen must have its own timed phase");
 assert.match(css, /fd-mystery-signature-mark/, "Foodora signature must have a branded visual mark");
 assert.match(css, /fd-mystery-congrats h3/, "Congratulations must have dedicated premium typography");
+
+console.log("Homepage Mystery Food Box guards passed.");
