@@ -137,6 +137,6 @@ class CatalogFlowIntegrationTests {
         String other = register("01812345678");
         mvc.perform(get("/api/v1/vendor/stores/" + storeId + "/products")
                 .cookie(new Cookie("foodora_platform_session", other)))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isNotFound());
     }
 }
