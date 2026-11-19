@@ -102,3 +102,49 @@
 .fd-mystery-immersive-open { overflow:hidden; }
 @media(max-width:600px) { .fd-mystery-immersive{padding:18px}.fd-mystery-immersive-stage{width:92vw;height:270px}.fd-mystery-immersive-box{transform:scale(.9)}.fd-mystery-immersive h2{max-width:360px} }
 @media(prefers-reduced-motion:reduce) { .fd-mystery-immersive *, .fd-mystery-immersive *::before, .fd-mystery-immersive *::after { animation:none!important; transition:none!important; } .fd-mystery-immersive-kicker,.fd-mystery-immersive h2,.fd-mystery-immersive-caption,.fd-mystery-immersive-skip { opacity:1; transform:none; } .fd-mystery-immersive-ring{opacity:.25;transform:scale(1)} .fd-mystery-immersive-flare{opacity:.3} .fd-mystery-immersive-box{opacity:1;transform:none} }
+
+
+/* CINEMATIC REVEAL POLISH — shockwave + travelling light */
+.fd-mystery-immersive-shockwave {
+  position:absolute; z-index:0; width:34%; aspect-ratio:1; border:2px solid rgba(255,226,177,.72);
+  border-radius:50%; opacity:0; box-shadow:0 0 28px rgba(255,205,130,.22),inset 0 0 24px rgba(255,220,170,.16);
+  transform:scale(.18);
+}
+.fd-mystery-immersive-light-sweep {
+  position:absolute; z-index:1; left:8%; right:8%; top:50%; height:2px; opacity:0;
+  background:linear-gradient(90deg,transparent,rgba(255,231,190,.95),#fff,rgba(255,231,190,.95),transparent);
+  box-shadow:0 0 22px 5px rgba(255,211,143,.34); transform:translateY(-50%) scaleX(.05);
+}
+.fd-mystery-immersive-stage::after {
+  content:""; position:absolute; z-index:0; left:16%; right:16%; bottom:9%;
+  height:24px; border-radius:50%; background:rgba(255,197,117,.28); filter:blur(22px); opacity:0;
+}
+.fd-mystery-immersive.is-active .fd-mystery-immersive-shockwave {
+  animation:fd-fullscreen-shockwave 1.55s cubic-bezier(.12,.72,.2,1) 1.12s both;
+}
+.fd-mystery-immersive.is-active .fd-mystery-immersive-light-sweep {
+  animation:fd-fullscreen-sweep 1.65s ease-in-out 1.08s both;
+}
+.fd-mystery-immersive.is-active .fd-mystery-immersive-stage::after {
+  animation:fd-fullscreen-floor-glow 1.8s ease-out .95s both;
+}
+@keyframes fd-fullscreen-shockwave {
+  0%{opacity:0;transform:scale(.18)}
+  24%{opacity:.95}
+  100%{opacity:0;transform:scale(3.25)}
+}
+@keyframes fd-fullscreen-sweep {
+  0%{opacity:0;transform:translateY(-50%) scaleX(.05)}
+  22%{opacity:1}
+  72%{opacity:.8;transform:translateY(-50%) scaleX(1)}
+  100%{opacity:0;transform:translateY(-50%) scaleX(.35)}
+}
+@keyframes fd-fullscreen-floor-glow {
+  0%{opacity:0;transform:scaleX(.45)}
+  45%{opacity:1;transform:scaleX(1.2)}
+  100%{opacity:.15;transform:scaleX(1)}
+}
+@media(prefers-reduced-motion:reduce) {
+  .fd-mystery-immersive-shockwave,.fd-mystery-immersive-light-sweep { animation:none!important;opacity:.25;transform:none; }
+  .fd-mystery-immersive-stage::after { animation:none!important;opacity:.2; }
+}
