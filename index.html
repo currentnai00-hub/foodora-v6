@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/homepage-experience.css?v=1">
 <link rel="stylesheet" href="/homepage-taste-finder.css?v=1">
 <link rel="stylesheet" href="/homepage-quick-view.css?v=1">
+<link rel="stylesheet" href="/homepage-mystery-box.css?v=1">
 </head>
 <body>
 <header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="#menu">মেনু</a><a href="#offers">অফার</a><a href="/track">অর্ডার ট্র্যাক</a><a href="/account">আমার অ্যাকাউন্ট</a><a href="#about">আমাদের সম্পর্কে</a></nav><button class="cart-button" id="cartOpen">কার্ট <b id="cartCount">0</b></button></header>
@@ -75,6 +76,26 @@
 <div class="trust-item"><span>⚡</span><div><b>দ্রুত ডেলিভারি</b><small>খাবার আপনার দরজায়</small></div></div>
 <div class="trust-item"><span>♡</span><div><b>Made with care</b><small>আপনার জন্য টাটকা</small></div></div>
 <div class="trust-item"><span>৳</span><div><b>ন্যায্য দাম</b><small>সুস্বাদু খাবার, সঠিক দাম</small></div></div>
+</section>
+<section class="fd-mystery" id="fdMysteryBox" aria-labelledby="fdMysteryTitle">
+  <div class="fd-mystery-copy">
+    <p class="fd-mystery-kicker">FOODORA · MYSTERY MENU</p>
+    <h2 id="fdMysteryTitle">আজকের খাবারটা <em>রহস্যের বাক্সে!</em></h2>
+    <p class="fd-mystery-intro">বাক্স খুলুন—Foodora-র বর্তমান মেনু থেকে আপনার জন্য একটি চমক বেছে দেব। কী পাওয়া যাবে, আগে থেকে বলা যাবে না!</p>
+    <button type="button" class="fd-mystery-reveal" data-mystery-reveal>রহস্যের বাক্স খুলুন ✨</button>
+  </div>
+  <div class="fd-mystery-art" aria-hidden="true"><div class="fd-mystery-gift">🎁</div></div>
+  <div class="fd-mystery-result" data-mystery-result hidden>
+    <img data-mystery-image alt="" loading="lazy">
+    <div class="fd-mystery-result-copy">
+      <p data-mystery-category>আজকের রহস্য</p>
+      <h3 data-mystery-name></h3>
+      <span data-mystery-description></span>
+      <div class="fd-mystery-meta"><strong data-mystery-price></strong><a data-mystery-details href="#menu">খাবারটি বিস্তারিত দেখুন ↗</a></div>
+      <button type="button" class="fd-mystery-add" data-mystery-add>নিজে কার্টে যোগ করুন</button>
+    </div>
+  </div>
+  <p class="fd-mystery-status" data-mystery-status role="status" aria-live="polite">কোনো অর্ডার নিজে থেকে হবে না—চমকটি দেখুন, সিদ্ধান্ত আপনার।</p>
 </section>
 <main>
 <section class="fd-taste-finder" id="tasteFinder" aria-labelledby="tasteFinderTitle">
@@ -195,6 +216,7 @@ class="primary-button full" style="display:none;">
 <script src="/homepage-experience.js?v=1" defer></script>
 <script src="/homepage-taste-finder.js?v=1" defer></script>
 <script src="/homepage-quick-view.js?v=1" defer></script>
+<script src="/homepage-mystery-box.js?v=1" defer></script>
 <script src="/customer-support.js?v=2" defer></script>
 <script src="/app-pwa.js?v=1" defer></script>
 </body></html>
