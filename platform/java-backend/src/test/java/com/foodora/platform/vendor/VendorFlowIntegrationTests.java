@@ -29,6 +29,11 @@ class VendorFlowIntegrationTests {
 
     @BeforeEach
     void cleanDatabase() {
+        jdbc.update("DELETE FROM platform_identity.checkout_idempotency");
+        jdbc.update("DELETE FROM platform_identity.order_items");
+        jdbc.update("DELETE FROM platform_identity.orders");
+        jdbc.update("DELETE FROM platform_identity.cart_items");
+        jdbc.update("DELETE FROM platform_identity.carts");
         jdbc.update("DELETE FROM platform_identity.product_status_events");
         jdbc.update("DELETE FROM platform_identity.inventory_movements");
             jdbc.update("DELETE FROM platform_identity.inventory_balances");
