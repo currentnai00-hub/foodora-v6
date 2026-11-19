@@ -1,0 +1,31 @@
+name: Foodora Java Platform
+
+on:
+  pull_request:
+    paths:
+      - "platform/java-backend/**"
+      - ".github/workflows/java-platform.yml"
+  push:
+    branches: [main]
+    paths:
+      - "platform/java-backend/**"
+      - ".github/workflows/java-platform.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  java-platform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Run Java tests
+        working-directory: platform/java-backend
+        run: mvn --batch-mode --no-transfer-progress verify
