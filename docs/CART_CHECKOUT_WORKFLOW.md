@@ -37,3 +37,21 @@ All mutating requests require the existing CSRF cookie/header and a valid custom
 Integration tests run against the isolated H2 test database and clean dependent records in foreign-key order. They cover cart ownership, stock reservation, price snapshots, checkout idempotency, and insufficient-stock rollback. No production database or live customer data is used.
 
 A disposable PostgreSQL migration and concurrency test is still required before any production rollout.
+
+
+## Order cancellation and audit history
+
+Customers may cancel only their own orders while the order is `AWAITING_PAYMENT`:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/v1/orders/{orderId}/cancel` | Cancel a payment-pending order and release its stock reservation |
+
+The cancellation is one database transaction:
+- Lock the owned order and verify it is still `AWAITING_PAYMENT`.
+- Lock/read the order item reservation lines.
+- Decrement each matching store inventory reservation, refusing to proceed if the stored reservation is inconsistent.
+- Change the order to `CANCELLED`.
+- Append an immutable status event with actor, transition, reason, and timestamp.
+
+A repeated cancellation returns a conflict and cannot release inventory twice. Orders in later states cannot be cancelled through this customer endpoint. Payment capture and refund handling are intentionally outside this workflow; no payment status is inferred.
