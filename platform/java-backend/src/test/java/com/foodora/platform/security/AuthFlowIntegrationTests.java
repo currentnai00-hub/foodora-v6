@@ -1,6 +1,8 @@
 package com.foodora.platform.security;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,6 +14,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")
 class AuthFlowIntegrationTests {
  @Autowired MockMvc mvc;
+ @Autowired JdbcTemplate jdbc;
+ @BeforeEach void cleanDatabase(){
+  jdbc.update("DELETE FROM platform_identity.store_memberships");
+  jdbc.update("DELETE FROM platform_identity.stores");
+  jdbc.update("DELETE FROM platform_identity.vendor_applications");
+  jdbc.update("DELETE FROM platform_identity.sessions");
+  jdbc.update("DELETE FROM platform_identity.users");
+ }
  private Cookie csrfCookie()throws Exception{return mvc.perform(get("/api/v1/auth/csrf")).andExpect(status().isNoContent()).andReturn().getResponse().getCookie("XSRF-TOKEN");}
  private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder protectedPost(String uri)throws Exception{Cookie token=csrfCookie();return post(uri).cookie(token).header("X-XSRF-TOKEN",token.getValue());}
  @Test void registerMeLogoutAndLogin()throws Exception{
