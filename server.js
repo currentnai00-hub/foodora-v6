@@ -559,7 +559,10 @@ app.post("/api/customer/orders/:id/cancel",async(req,res)=>{
     const orders=readJson(ORDERS_FILE,[]),order=orders.find(o=>String(o.id).toLowerCase()===orderId.toLowerCase()&&String(o.phone||"").replace(/\D/g,"")===phone);
     if(!order)return res.status(404).json({error:"অর্ডার আইডি অথবা ফোন নম্বর সঠিক নয়।"});
     if(!["Pending","Confirmed"].includes(order.status))return res.status(409).json({error:"রান্না শুরু হয়ে যাওয়ায় এখন অনলাইনে অর্ডার বাতিল করা যাচ্ছে না।"});
-    order.status="Cancelled";writeJson(ORDERS_FILE,orders);
+    order.status="Cancelled";
+    const products=readJson(PRODUCTS_FILE,[]);
+    for(const item of (Array.isArray(order.items)?order.items:[])){const qty=Math.max(0,Math.min(50,Math.floor(Number(item.qty)||0))),product=products.find(p=>p.id===item.id);if(product&&qty)product.stock=Math.max(0,Number(product.stock||0))+qty;}
+    writeJson(PRODUCTS_FILE,products);writeJson(ORDERS_FILE,orders);
     return res.set("Cache-Control","no-store").json({ok:true,status:"Cancelled",message:"অর্ডার বাতিল হয়েছে।"});
   }catch(e){res.status(e.status||500).json({error:e.message||"অর্ডার বাতিল করা যায়নি।"});}
 });
