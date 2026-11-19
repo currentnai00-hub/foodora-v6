@@ -63,4 +63,26 @@ class AuthFlowIntegrationTests {
   org.junit.jupiter.api.Assertions.assertEquals("CUSTOMER",jdbc.queryForObject(
    "SELECT role FROM platform_identity.users WHERE phone = ?",String.class,"01612345678"));
  }
+
+ @Test void inactiveAccountCannotStartANewSession()throws Exception{
+  String phone="01512345678";
+  String body="{\"name\":\"Inactive Customer\",\"phone\":\""+phone+"\",\"password\":\"a-strong-test-password\"}";
+  mvc.perform(protectedPost("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isCreated());
+  jdbc.update("UPDATE platform_identity.users SET active = FALSE WHERE phone = ?",phone);
+  mvc.perform(protectedPost("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(body))
+   .andExpect(status().isUnauthorized());
+  org.junit.jupiter.api.Assertions.assertEquals(1,jdbc.queryForObject(
+   "SELECT COUNT(*) FROM platform_identity.sessions s JOIN platform_identity.users u ON u.id=s.user_id WHERE u.phone = ?",Integer.class,phone));
+ }
+ @Test void expiredSessionCannotAccessProtectedProfile()throws Exception{
+  String phone="01412345678";
+  String body="{\"name\":\"Expired Customer\",\"phone\":\""+phone+"\",\"password\":\"a-strong-test-password\"}";
+  var registered=mvc.perform(protectedPost("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+   .andExpect(status().isCreated()).andReturn();
+  Cookie session=registered.getResponse().getCookie("foodora_platform_session");
+  org.junit.jupiter.api.Assertions.assertNotNull(session);
+  jdbc.update("UPDATE platform_identity.sessions SET expires_at = ? WHERE token_hash = ?",
+   java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).minusMinutes(1),SessionAuthenticationFilter.sha256(session.getValue()));
+  mvc.perform(get("/api/v1/auth/me").cookie(session)).andExpect(status().isUnauthorized());
+ }
 }
