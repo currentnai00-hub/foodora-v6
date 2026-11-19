@@ -9,6 +9,7 @@ const { registerAssistantRoutes } = require("./assistant");
 const { createStockAlertWorker } = require("./stock-alerts");
 const { registerPartnerPortal } = require("./partner-portal");
 const { registerOrderEventStream } = require("./event-stream");
+const { registerCustomerOrderStream } = require("./customer-order-stream");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -981,6 +982,7 @@ registerAssistantRoutes({ app, adminOnly, getProducts, getOrders });
 const stockAlertWorker = usePg ? createStockAlertWorker({ pool }) : null;
 const partnerPortal = usePg ? registerPartnerPortal({ app, pool, adminOnly, requestIsSameOrigin, clean }) : null;
 const orderEventStream = usePg ? registerOrderEventStream({ app, pool, adminOnly }) : null;
+const customerOrderStream = usePg ? registerCustomerOrderStream({ app, pool }) : null;
 
 const walletServices = usePg ? registerWalletRoutes({
   app,pool,signedInCustomer,adminOnly,requestIsSameOrigin,requireCustomerDatabase,clean
