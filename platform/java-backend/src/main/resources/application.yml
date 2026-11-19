@@ -1,11 +1,19 @@
 spring:
   application:
     name: foodora-java-platform
-
+  datasource:
+    url: ${FOODORA_JDBC_URL:jdbc:postgresql://localhost:5432/foodora_platform}
+    username: ${FOODORA_DB_USER:foodora}
+    password: ${FOODORA_DB_PASSWORD:foodora}
+    hikari:
+      maximum-pool-size: ${FOODORA_DB_POOL_SIZE:10}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 server:
   port: ${PORT:8081}
   shutdown: graceful
-
+  forward-headers-strategy: framework
 management:
   endpoints:
     web:
@@ -16,8 +24,12 @@ management:
       probes:
         enabled: true
       show-details: never
-
 info:
   app:
     name: Foodora Java Marketplace Platform
-    stage: foundation
+    stage: identity-access
+foodora:
+  auth:
+    cookie-name: foodora_platform_session
+    session-ttl: PT720H
+    cookie-secure: ${FOODORA_COOKIE_SECURE:false}
