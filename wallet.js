@@ -96,7 +96,7 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
     });
   }
 
-  async function cancelOrderAndRefund(orderId) {
+  async function cancelOrderAndRefund(orderId, {customerInitiated=false} = {}) {
     const client=await pool.connect();
     try {
       await client.query("BEGIN");
@@ -105,6 +105,8 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
         [orderId]);
       if(!r.rowCount) throw Object.assign(new Error("Order not found."),{status:404});
       const o=r.rows[0];
+      if(customerInitiated && !["Pending","Confirmed"].includes(o.status))
+        throw Object.assign(new Error("রান্না শুরু হয়ে যাওয়ায় এখন অনলাইনে অর্ডার বাতিল করা যাচ্ছে না।"),{status:409});
       if(o.status==="Cancelled") {
         await client.query("COMMIT");
         return {id:o.id,status:o.status,refundIssued:false,alreadyCancelled:true};
