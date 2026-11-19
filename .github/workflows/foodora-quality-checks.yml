@@ -18,6 +18,8 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
+      - name: Run Node.js unit test suite
+        run: npm test
       - name: Check backend JavaScript syntax
         run: node --check server.js
       - name: Check wallet service JavaScript syntax

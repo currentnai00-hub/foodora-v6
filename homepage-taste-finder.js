@@ -54,7 +54,11 @@
       }
       const selected = available[Math.floor(Math.random() * available.length)];
       selected.classList.add("fd-taste-highlight");
-      revealMenu("আজকের সারপ্রাইজ বাছাই করা হয়েছে—দেখে নিন, পছন্দ হলে নিজেই কার্টে যোগ করুন।");
+      const selectedName = selected.querySelector(".product-name-link")?.textContent?.trim();
+      revealMenu(selectedName
+        ? `আজকের সারপ্রাইজ: ${selectedName} — দেখে নিন, পছন্দ হলে নিজেই কার্টে যোগ করুন।`
+        : "আজকের সারপ্রাইজ বাছাই করা হয়েছে—দেখে নিন, পছন্দ হলে নিজেই কার্টে যোগ করুন।");
+      selected.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
       window.setTimeout(() => selected.classList.remove("fd-taste-highlight"), 4500);
       return;
     }
