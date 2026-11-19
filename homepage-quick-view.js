@@ -3,7 +3,6 @@
   const grid = document.getElementById("products");
   if (!grid) return;
 
-  let activeCard = null;
   let activeProductId = null;
   let returnFocus = null;
   let previousOverflow = "";
@@ -29,7 +28,6 @@
     </section>`;
   document.body.appendChild(modal);
 
-  const dialog = modal.querySelector('[role="dialog"]');
   const closeButton = modal.querySelector(".fd-quick-view-close");
   const addButton = modal.querySelector(".fd-quick-view-add");
 
@@ -56,7 +54,6 @@
     const originalAdd = card.querySelector(".add");
     if (!name || !originalAdd) return;
 
-    activeCard = card;
     activeProductId = String(originalAdd.dataset.add || "");
     if (!activeProductId) return;
     returnFocus = trigger;
@@ -80,7 +77,6 @@
     if (modal.hidden) return;
     modal.hidden = true;
     document.body.style.overflow = previousOverflow;
-    activeCard = null;
     activeProductId = null;
     if (returnFocus && returnFocus.isConnected) returnFocus.focus();
     else document.getElementById("search")?.focus();
