@@ -51,3 +51,7 @@ New products remain DRAFT and are not exposed through a public catalog endpoint.
 ## Tests
 
 `mvn --batch-mode --no-transfer-progress verify` uses an isolated in-memory H2 database in PostgreSQL compatibility mode. Tests create and delete only test-profile records. Never point the test profile at production.
+
+### Database migration compatibility
+
+Flyway V1 and V2 are immutable. V3 adds catalog and inventory tables in the isolated `platform_identity` schema; it does not alter legacy Node.js tables. Validate migrations against the supported managed PostgreSQL version in a disposable database before any production rollout.
