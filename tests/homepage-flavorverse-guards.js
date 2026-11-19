@@ -15,6 +15,8 @@ assert.match(html, /homepage-flavorverse\.css/, "Flavorverse styling must load")
 assert.match(js, /Object\.prototype\.hasOwnProperty\.call\(answers, group\)/, "Only known answer groups may be updated");
 assert.match(js, /aria-pressed/, "Choices must expose accessible selected state");
 assert.match(js, /availableProducts/, "Suggestions must use available menu products");
+assert.match(js, /suggestion\.matched/, "The UI must distinguish genuine matches from fallback suggestions");
+assert.match(js, /available surprise/, "Fallback recommendations must be described honestly");
 assert.match(js, /window\.addToCart\(selectedProductId\)/, "Cart action must use canonical cart logic");
 assert.match(js, /Math\.random\(\)/, "Tied menu suggestions must be selected without fixed bias");
 assert.match(js, /prefers-reduced-motion: reduce/, "Result scrolling must respect reduced motion");
