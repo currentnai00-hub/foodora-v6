@@ -2,6 +2,7 @@ package com.foodora.platform.vendor;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,6 +27,15 @@ class VendorFlowIntegrationTests {
     @Autowired JdbcTemplate jdbc;
     @Autowired PasswordEncoder encoder;
 
+    @BeforeEach
+    void cleanDatabase() {
+        jdbc.update("DELETE FROM platform_identity.store_memberships");
+        jdbc.update("DELETE FROM platform_identity.stores");
+        jdbc.update("DELETE FROM platform_identity.vendor_applications");
+        jdbc.update("DELETE FROM platform_identity.sessions");
+        jdbc.update("DELETE FROM platform_identity.users");
+    }
+
     private Cookie csrfCookie() throws Exception {
         return mvc.perform(get("/api/v1/auth/csrf")).andExpect(status().isNoContent())
             .andReturn().getResponse().getCookie("XSRF-TOKEN");
@@ -34,6 +44,11 @@ class VendorFlowIntegrationTests {
     private MockHttpServletRequestBuilder protectedPost(String path) throws Exception {
         Cookie csrf = csrfCookie();
         return post(path).cookie(csrf).header("X-XSRF-TOKEN", csrf.getValue());
+    }
+
+    private MockHttpServletRequestBuilder protectedPut(String path) throws Exception {
+        Cookie csrf = csrfCookie();
+        return put(path).cookie(csrf).header("X-XSRF-TOKEN", csrf.getValue());
     }
 
     private Cookie register(String phone, String name) throws Exception {
@@ -107,10 +122,10 @@ class VendorFlowIntegrationTests {
             {"name":"Chattogram Fresh Plus","description":"Fresh local products",
              "phone":"01712345678","address":"GEC, Chattogram"}
             """;
-        mvc.perform(put("/api/v1/vendor/stores/" + storeId).cookie(other)
+        mvc.perform(protectedPut("/api/v1/vendor/stores/" + storeId).cookie(other)
                 .contentType(MediaType.APPLICATION_JSON).content(update))
             .andExpect(status().isNotFound());
-        mvc.perform(put("/api/v1/vendor/stores/" + storeId).cookie(owner)
+        mvc.perform(protectedPut("/api/v1/vendor/stores/" + storeId).cookie(owner)
                 .contentType(MediaType.APPLICATION_JSON).content(update))
             .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Chattogram Fresh Plus"));
     }
