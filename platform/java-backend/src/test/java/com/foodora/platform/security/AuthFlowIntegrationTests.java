@@ -16,6 +16,11 @@ class AuthFlowIntegrationTests {
  @Autowired MockMvc mvc;
  @Autowired JdbcTemplate jdbc;
  @BeforeEach void cleanDatabase(){
+  jdbc.update("DELETE FROM platform_identity.inventory_movements");
+  jdbc.update("DELETE FROM platform_identity.inventory_balances");
+  jdbc.update("DELETE FROM platform_identity.product_variants");
+  jdbc.update("DELETE FROM platform_identity.products");
+  jdbc.update("DELETE FROM platform_identity.store_categories");
   jdbc.update("DELETE FROM platform_identity.store_memberships");
   jdbc.update("DELETE FROM platform_identity.stores");
   jdbc.update("DELETE FROM platform_identity.vendor_applications");
