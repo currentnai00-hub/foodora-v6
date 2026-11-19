@@ -5,6 +5,7 @@
 <meta name="theme-color" content="#102c23"><meta name="description" content="চট্টগ্রামে আপনার পছন্দের খাবার অনলাইনে অর্ডার করুন।"><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icons/foodora-icon.svg" type="image/svg+xml"><title>Foodora — পছন্দের খাবার, পৌঁছে যাবে ঘরে</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/style.css?v=foodora-home-sliders-v1">
 <link rel="stylesheet" href="/customer-support.css?v=2">
+<link rel="stylesheet" href="/homepage-experience.css?v=1">
 </head>
 <body>
 <header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="#menu">মেনু</a><a href="#offers">অফার</a><a href="/track">অর্ডার ট্র্যাক</a><a href="/account">আমার অ্যাকাউন্ট</a><a href="#about">আমাদের সম্পর্কে</a></nav><button class="cart-button" id="cartOpen">কার্ট <b id="cartCount">0</b></button></header>
@@ -94,6 +95,63 @@
 </div>
 </section>
 <section class="track-section" id="track"><div><p class="eyebrow">আপনার অর্ডার কোথায়?</p><h2>অর্ডার ট্র্যাক করুন</h2><p>রান্নাঘর থেকে আপনার দরজা পর্যন্ত অর্ডারের অবস্থা দেখুন।</p></div><a class="primary-button" href="/track" style="text-decoration:none;white-space:nowrap">অর্ডার ট্র্যাক করুন →</a></section>
+
+<section class="fd-discovery section" id="discover">
+  <div class="fd-discovery-heading">
+    <p class="eyebrow">FOODORA DISCOVERY</p>
+    <h2>শুধু অর্ডার নয়—<em>আবিষ্কার করুন নতুন অভিজ্ঞতা।</em></h2>
+    <p>Foodora কীভাবে কাজ করে, অর্ডারের প্রতিটি ধাপে কী হয়—নিজেই ঘুরে দেখুন।</p>
+  </div>
+  <div class="fd-discovery-grid">
+    <article class="fd-discovery-card">
+      <span class="fd-discovery-icon" aria-hidden="true">✦</span>
+      <p class="fd-card-kicker">01 / DISCOVER</p>
+      <h3>আপনার পছন্দ খুঁজুন</h3>
+      <p>ক্যাটাগরি, সার্চ ও ফিল্টার ব্যবহার করে মুহূর্তেই পছন্দের খাবার খুঁজে নিন।</p>
+      <a href="#menu">মেনু ঘুরে দেখুন ↗</a>
+    </article>
+    <article class="fd-discovery-card fd-discovery-card-featured">
+      <span class="fd-discovery-icon" aria-hidden="true">◎</span>
+      <p class="fd-card-kicker">02 / UNDER THE HOOD</p>
+      <h3>অর্ডারের পেছনের গল্প</h3>
+      <p>কার্ট, মূল্য যাচাই, পেমেন্ট রিভিউ এবং অর্ডার আপডেট—প্রতিটি ধাপ বুঝে নিন।</p>
+      <button type="button" class="fd-text-button" data-tour-open>৩০ সেকেন্ডের ট্যুর দেখুন ↗</button>
+    </article>
+    <article class="fd-discovery-card">
+      <span class="fd-discovery-icon" aria-hidden="true">⌁</span>
+      <p class="fd-card-kicker">03 / STAY IN CONTROL</p>
+      <h3>অর্ডার আপনার নিয়ন্ত্রণে</h3>
+      <p>কার্টে আইটেম যোগ করুন, চেকআউটের আগে মোট মূল্য দেখুন, পরে অর্ডার ট্র্যাক করুন।</p>
+      <a href="/track">ট্র্যাকিং কীভাবে কাজ করে ↗</a>
+    </article>
+  </div>
+  <div class="fd-curiosity-bar">
+    <div><span class="fd-live-dot" aria-hidden="true"></span><strong>একটু ঘুরে দেখুন—আপনার পরের পছন্দটি হয়তো এখানেই।</strong></div>
+    <a href="#menu">এখনই এক্সপ্লোর করুন <span aria-hidden="true">→</span></a>
+  </div>
+</section>
+<div class="fd-tour-backdrop" id="fdTour" hidden>
+  <section class="fd-tour-dialog" role="dialog" aria-modal="true" aria-labelledby="fdTourTitle" aria-describedby="fdTourDescription">
+    <button type="button" class="fd-tour-close" data-tour-close aria-label="ট্যুর বন্ধ করুন">×</button>
+    <p class="fd-tour-kicker">FOODORA · QUICK EXPLAINER</p>
+    <h2 id="fdTourTitle">একটি অর্ডারের যাত্রা</h2>
+    <p id="fdTourDescription" class="fd-tour-description">শুরু থেকে শেষ পর্যন্ত কী ঘটে, ছোট্ট অ্যানিমেটেড ট্যুরে দেখে নিন।</p>
+    <div class="fd-tour-stage" aria-live="polite">
+      <div class="fd-tour-orbit" aria-hidden="true"></div>
+      <div class="fd-tour-visual" id="fdTourVisual" aria-hidden="true">🛍️</div>
+      <span class="fd-tour-step-count" id="fdTourCount">01 / 04</span>
+      <div class="fd-tour-progress" aria-hidden="true"><span id="fdTourProgress"></span></div>
+    </div>
+    <h3 id="fdTourStepTitle">পছন্দের খাবার বেছে নিন</h3>
+    <p id="fdTourStepText" class="fd-tour-step-text">মেনু থেকে খাবার খুঁজে কার্টে যোগ করুন।</p>
+    <div class="fd-tour-controls">
+      <button type="button" class="fd-tour-secondary" id="fdTourPrev" disabled>আগের ধাপ</button>
+      <button type="button" class="fd-tour-primary" id="fdTourNext">পরের ধাপ →</button>
+    </div>
+    <p class="fd-tour-note">এটি একটি অ্যানিমেটেড পরিচিতি—কোনো অর্ডার বা পেমেন্ট এখানে সম্পন্ন হয় না।</p>
+  </section>
+</div>
+
 <section class="about" id="about"><p class="eyebrow">আপনার প্রতিটি মুহূর্তের জন্য</p><h2>ভালো খাবার<br>সবাইকে কাছে আনে।</h2><p>প্রতিদিনের পছন্দের খাবার অর্ডার করুন সহজে, নিশ্চিন্তে।</p></section>
 </main>
 <footer><a class="brand" href="/">foodora<span>.</span></a><p>যত্নে তৈরি খাবার, পৌঁছে যাবে আপনার ঘরে।</p><small>© <span id="year"></span> Foodora. সর্বস্বত্ব সংরক্ষিত।</small></footer>
@@ -118,6 +176,7 @@ class="primary-button full" style="display:none;">
 </div>
 <script src="/script.js?v=foodora-payment-v3"></script>
 <script src="/homepage-sliders.js?v=1" defer></script>
+<script src="/homepage-experience.js?v=1" defer></script>
 <script src="/customer-support.js?v=2" defer></script>
 <script src="/app-pwa.js?v=1" defer></script>
 </body></html>
