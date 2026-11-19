@@ -33,7 +33,7 @@
     const q = norm(raw);
     const en = /^[\x00-\x7F]*$/.test(raw) && /[a-z]/i.test(raw);
     if (!q) return en ? "Please type your question." : "আপনার প্রশ্নটি লিখুন।";
-    const urgent = /(refund|ফেরত|রিফান্ড|টাকা ফেরত|payment problem|পেমেন্ট সমস্যা|টাকা কাটা|টাকা কেটে|transaction|ট্রানজেকশন|trx|cancel|বাতিল|অভিযোগ|complaint|ভুল অর্ডার|wrong order|missing item|আইটেম নেই|নষ্ট|spoiled|অ্যালার্জি|allergy|food safety|নিরাপত্তা)/i.test(q);
+    const urgent = /(refund|ফেরত|রিফান্ড|টাকা ফেরত|payment problem|পেমেন্ট সমস্যা|টাকা কাটা|টাকা কেটে|transaction|ট্রানজেকশন|trx|cancel|বাতিল|অভিযোগ|complaint|ভুল অর্ডার|wrong order|missing item|আইটেম নেই|নষ্ট|spoiled|অ্যালার্জি|allergy|food safety|নিরাপত্তা|ডেলিভারি দেরি|late delivery|অর্ডার পরিবর্তন|change order|ঠিকানা পরিবর্তন|change address|account problem|অ্যাকাউন্ট সমস্যা|login problem|লগইন সমস্যা|double charge|দুইবার টাকা|কুপন কাজ করছে না|coupon.*(not work|invalid)|order.*(not received|নেই))/i.test(q);
     if (urgent) return fallback(raw, en);
     if (/(track|tracking|অর্ডার.*(কোথায়|অবস্থা|ট্র্যাক)|ট্র্যাকিং|order status|আমার অর্ডার)/i.test(q)) {
       return (en ? "You can check your order status on our tracking page. For an order-specific issue, please contact WhatsApp Support." : "আপনার অর্ডারের অবস্থা Order Tracking পেজে দেখতে পারবেন। অর্ডার-সংক্রান্ত নির্দিষ্ট সমস্যা হলে WhatsApp Support-এ যোগাযোগ করুন।") +
@@ -45,6 +45,32 @@
       return areas.length
         ? (en ? "Current delivery areas: " : "বর্তমানে ডেলিভারি চালু আছে: ") + areas.map(escapeHtml).join(", ") + (en ? ". Please confirm availability at checkout." : "। চেকআউটে আপনার এলাকা নির্বাচন করে নিশ্চিত করুন।")
         : fallback(raw, en);
+    }
+    if (/(website|ওয়েবসাইট|ওয়েবসাইট|foodora কী|foodora কি|about foodora|আমাদের সম্পর্কে)/i.test(q)) {
+      return en
+        ? "Foodora lets you browse the menu, search and filter dishes, save favorites, sort items, add food to your cart, apply available coupons, checkout with delivery details, and track an order. Use the links on this website to explore each feature."
+        : "Foodora ওয়েবসাইটে খাবার খোঁজা, ক্যাটাগরি/সময়/খাবারের ধরন/ঝাল ও দাম দিয়ে ফিল্টার, পছন্দের খাবার সংরক্ষণ, দাম বা জনপ্রিয়তা অনুযায়ী সাজানো, কার্টে যোগ, কুপন প্রয়োগ, চেকআউট এবং অর্ডার ট্র্যাক করার সুবিধা আছে।";
+    }
+    if (/(favorite|favourite|পছন্দের খাবার|ফেভারিট)/i.test(q)) {
+      return en ? "Tap the heart/favorites control in the menu to save and view favorite dishes on this device." : "মেনুর ‘পছন্দের খাবার’ অপশন ব্যবহার করে পছন্দের খাবার সংরক্ষণ ও আবার দেখতে পারবেন।";
+    }
+    if (/(filter|ফিল্টার|ঝাল|নিরামিষ|vegetarian|sugar.?free|চিনি ছাড়া|breakfast|নাশতা|দুপুর|lunch|dinner|রাতের খাবার)/i.test(q)) {
+      return en ? "Use the menu filters to narrow dishes by meal time, dietary type, spice level and minimum/maximum price. You can also search and sort the menu." : "মেনুতে সময় (নাশতা/দুপুর/রাত), খাবারের ধরন (নিরামিষ/চিনি ছাড়া), ঝালের মাত্রা এবং সর্বনিম্ন/সর্বোচ্চ দাম দিয়ে খাবার ফিল্টার করতে পারবেন। সার্চ ও সাজানোর অপশনও আছে।";
+    }
+    if (/(cart|কার্ট|coupon|কুপন|promo code|প্রোমো কোড)/i.test(q)) {
+      return en ? "Add dishes to your cart, enter an available coupon in the cart and tap Apply. Coupon eligibility and final totals are confirmed at checkout." : "পছন্দের খাবার কার্টে যোগ করুন। কার্টে কুপন কোড লিখে ‘প্রয়োগ করুন’ চাপুন। কুপনের যোগ্যতা ও চূড়ান্ত মূল্য চেকআউটে যাচাই হবে।";
+    }
+    if (/(checkout|চেকআউট|অর্ডার নিশ্চিত|কী তথ্য|কি তথ্য|phone number|মোবাইল নম্বর)/i.test(q)) {
+      return en ? "At checkout, provide your name, 11-digit Bangladesh mobile number, delivery area, detailed address and payment method. Add a transaction ID if you have already paid. The server verifies the final order total." : "চেকআউটে নাম, ১১ সংখ্যার বাংলাদেশি মোবাইল নম্বর, ডেলিভারি এলাকা, বিস্তারিত ঠিকানা ও পেমেন্ট পদ্ধতি দিন। আগে পেমেন্ট করে থাকলে Transaction ID দিন। অর্ডারের চূড়ান্ত মূল্য সার্ভার যাচাই করে।";
+    }
+    if (/(track|tracking|ট্র্যাক|অর্ডার.*(কোথায়|অবস্থা)|order status)/i.test(q)) {
+      return en ? "Open Order Tracking, enter your Order ID and the mobile number used at checkout, then submit. The tracking page refreshes status every 20 seconds and also has a manual refresh button." : "‘অর্ডার ট্র্যাক’ পেজে গিয়ে Order ID এবং চেকআউটে দেওয়া মোবাইল নম্বর লিখুন। পেজটি প্রতি ২০ সেকেন্ডে স্ট্যাটাস আপডেট করে; চাইলে Refresh now চাপতে পারবেন।";
+    }
+    if (/(payment guide|পেমেন্ট গাইড|send money|সেন্ড মানি|transaction id|ট্রানজেকশন আইডি)/i.test(q)) {
+      return en ? "For supported mobile-wallet payments, follow the Payment Guide page. Enter the Transaction ID from the payment confirmation. Never share your PIN or OTP with anyone, including Foodora support." : "সমর্থিত মোবাইল ওয়ালেট পেমেন্টের জন্য Payment Guide পেজের ধাপ অনুসরণ করুন এবং পেমেন্ট কনফার্মেশন থেকে Transaction ID দিন। PIN বা OTP কারও সঙ্গে শেয়ার করবেন না—Foodora Support-এর সঙ্গেও নয়।";
+    }
+    if (/(privacy|ব্যক্তিগত তথ্য|গোপনীয়তা|নিরাপত্তা|pin|otp)/i.test(q)) {
+      return en ? "Order details on the tracking page are shown only when both Order ID and checkout phone number match. Never share your wallet PIN or OTP." : "Tracking পেজে Order ID ও চেকআউটের মোবাইল নম্বর—দুটো মিলে গেলেই অর্ডারের তথ্য দেখা যায়। মোবাইল ওয়ালেটের PIN বা OTP কখনো শেয়ার করবেন না।";
     }
     if (/(delivery charge|delivery fee|ডেলিভারি চার্জ|ডেলিভারি ফি|ফ্রি ডেলিভারি)/i.test(q)) {
       if (!state.config) return fallback(raw, en);
