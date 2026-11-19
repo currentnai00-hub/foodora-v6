@@ -16,7 +16,11 @@
     list.appendChild(item);
     list.scrollTop = list.scrollHeight;
   };
-  const link = (href, label, className = "") => '<a class="' + className + '" href="' + href + '">' + label + '</a>';
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[char]);
+  const link = (href, label, className = "") =>
+    '<a class="' + escapeHtml(className) + '" href="' + escapeHtml(href) + '">' + escapeHtml(label) + '</a>';
   const whatsappLink = (message, label = "WhatsApp Support-এ যোগাযোগ করুন") =>
     link(waUrl(message), label, "foodora-chat-wa-link");
   const fallback = (reason, english = false) => {
@@ -39,7 +43,7 @@
     if (/(delivery area|কোথায় ডেলিভারি|কোন এলাকায়|ডেলিভারি এলাকা|এলাকায় ডেলিভারি)/i.test(q)) {
       const areas = state.config?.areas?.map(x => x.name).filter(Boolean) || [];
       return areas.length
-        ? (en ? "Current delivery areas: " : "বর্তমানে ডেলিভারি চালু আছে: ") + areas.join(", ") + (en ? ". Please confirm availability at checkout." : "। চেকআউটে আপনার এলাকা নির্বাচন করে নিশ্চিত করুন।")
+        ? (en ? "Current delivery areas: " : "বর্তমানে ডেলিভারি চালু আছে: ") + areas.map(escapeHtml).join(", ") + (en ? ". Please confirm availability at checkout." : "। চেকআউটে আপনার এলাকা নির্বাচন করে নিশ্চিত করুন।")
         : fallback(raw, en);
     }
     if (/(delivery charge|delivery fee|ডেলিভারি চার্জ|ডেলিভারি ফি|ফ্রি ডেলিভারি)/i.test(q)) {
@@ -52,17 +56,17 @@
     if (/(payment|পেমেন্ট|কিভাবে টাকা|ক্যাশ অন|bkash|বিকাশ|nagad|নগদ|wallet)/i.test(q)) {
       const methods = state.config?.paymentMethods || [];
       return methods.length
-        ? (en ? "Available payment methods: " : "বর্তমানে পেমেন্ট পদ্ধতি: ") + methods.join(", ") + (en ? ". Choose one at checkout. For payment verification or disputes, contact WhatsApp Support." : "। চেকআউটে পদ্ধতি নির্বাচন করুন। পেমেন্ট যাচাই বা সমস্যা হলে WhatsApp Support-এ যোগাযোগ করুন।") +
+        ? (en ? "Available payment methods: " : "বর্তমানে পেমেন্ট পদ্ধতি: ") + methods.map(escapeHtml).join(", ") + (en ? ". Choose one at checkout. For payment verification or disputes, contact WhatsApp Support." : "। চেকআউটে পদ্ধতি নির্বাচন করুন। পেমেন্ট যাচাই বা সমস্যা হলে WhatsApp Support-এ যোগাযোগ করুন।") +
           "<br>" + whatsappLink("Hello Foodora Support, I need help with payment.")
         : fallback(raw, en);
     }
     if (/(offer|coupon|discount|কুপন|অফার|ছাড়|ডিসকাউন্ট)/i.test(q)) {
       if (!state.offers.length) return en ? "There are no active coupons listed right now. Please check the Offers section." : "এই মুহূর্তে কোনো সক্রিয় কুপন পাওয়া যাচ্ছে না। ওয়েবসাইটের অফার সেকশন দেখুন।";
-      return (en ? "Currently listed offers: " : "বর্তমানে চালু অফার: ") + state.offers.map(o => o.code + " (" + (o.type === "percent" ? o.value + "% off" : money(o.value) + " off") + ", minimum " + money(o.minOrder) + ")").join("; ") + (en ? ". Terms are checked at checkout." : "। কুপনের শর্ত চেকআউটে যাচাই হবে।");
+      return (en ? "Currently listed offers: " : "বর্তমানে চালু অফার: ") + state.offers.map(o => escapeHtml(o.code) + " (" + escapeHtml(o.type === "percent" ? o.value + "% off" : money(o.value) + " off") + ", minimum " + escapeHtml(money(o.minOrder)) + ")").join("; ") + (en ? ". Terms are checked at checkout." : "। কুপনের শর্ত চেকআউটে যাচাই হবে।");
     }
     if (/(menu|food|খাবার|মেনু|price|দাম|কত টাকা)/i.test(q)) {
       const matches = state.products.filter(p => norm(p.name).includes(q) || q.includes(norm(p.name)) || norm(p.category).includes(q));
-      if (matches.length) return matches.slice(0, 5).map(p => p.name + " — " + money(p.price) + (p.stock > 0 ? "" : (en ? " (currently unavailable)" : " (এখন পাওয়া যাচ্ছে না)"))).join("<br>");
+      if (matches.length) return matches.slice(0, 5).map(p => escapeHtml(p.name) + " — " + escapeHtml(money(p.price)) + (p.stock > 0 ? "" : (en ? " (currently unavailable)" : " (এখন পাওয়া যাচ্ছে না)"))).join("<br>");
       return en ? "Please browse our live menu for current items and prices." : "বর্তমান খাবার ও দাম দেখতে ওয়েবসাইটের মেনু দেখুন।";
     }
     if (/(order|অর্ডার).*(how|কিভাবে|করব|করবো)|কিভাবে.*অর্ডার|অর্ডার করতে/i.test(q)) {
