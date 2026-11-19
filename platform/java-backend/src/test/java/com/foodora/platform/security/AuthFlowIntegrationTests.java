@@ -53,4 +53,14 @@ class AuthFlowIntegrationTests {
  @Test void protectedProfileRequiresSession()throws Exception{mvc.perform(get("/api/v1/auth/me")).andExpect(status().isUnauthorized());}
  @Test void csrfCookieEndpointIsAvailable()throws Exception{var result=mvc.perform(get("/api/v1/auth/csrf")).andExpect(status().isNoContent()).andReturn();var cookie=result.getResponse().getCookie("XSRF-TOKEN");org.junit.jupiter.api.Assertions.assertNotNull(cookie);org.junit.jupiter.api.Assertions.assertFalse(cookie.getValue().isBlank());}
  @Test void stateChangingRequestWithoutCsrfIsRejected()throws Exception{String body="{\"name\":\"No CSRF\",\"phone\":\"01912345678\",\"password\":\"a-strong-test-password\"}";mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());}
+
+ @Test void publicRegistrationCannotAssignOrEscalateAccountRole()throws Exception{
+  String body="{\"name\":\"Role Probe\",\"phone\":\"01612345678\",\"password\":\"a-strong-test-password\",\"role\":\"ADMIN\"}";
+  var created=mvc.perform(protectedPost("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+   .andExpect(status().isCreated()).andExpect(jsonPath("$.user.role").value("CUSTOMER")).andReturn();
+  var cookie=created.getResponse().getCookie("foodora_platform_session");
+  mvc.perform(get("/api/v1/auth/me").cookie(cookie)).andExpect(status().isOk()).andExpect(jsonPath("$.user.role").value("CUSTOMER"));
+  org.junit.jupiter.api.Assertions.assertEquals("CUSTOMER",jdbc.queryForObject(
+   "SELECT role FROM platform_identity.users WHERE phone = ?",String.class,"01612345678"));
+ }
 }
