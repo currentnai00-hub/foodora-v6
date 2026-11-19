@@ -17,6 +17,7 @@
   const next = document.getElementById("fdTourNext");
   let current = 0;
   let returnFocus = null;
+  let previousBodyOverflow = "";
 
   function render() {
     const step = steps[current];
@@ -30,6 +31,7 @@
   }
   function open() {
     returnFocus = document.activeElement;
+    previousBodyOverflow = document.body.style.overflow;
     current = 0;
     render();
     backdrop.hidden = false;
@@ -38,14 +40,31 @@
   }
   function close() {
     backdrop.hidden = true;
-    document.body.style.overflow = "";
+    document.body.style.overflow = previousBodyOverflow;
     if (returnFocus && typeof returnFocus.focus === "function") returnFocus.focus();
   }
   document.querySelectorAll("[data-tour-open]").forEach(button => button.addEventListener("click", open));
   backdrop.querySelectorAll("[data-tour-close]").forEach(button => button.addEventListener("click", close));
   backdrop.addEventListener("click", event => { if (event.target === backdrop) close(); });
   document.addEventListener("keydown", event => {
-    if (!backdrop.hidden && event.key === "Escape") close();
+    if (backdrop.hidden) return;
+    if (event.key === "Escape") {
+      close();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(backdrop.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),[tabindex]:not([tabindex="-1"])'))
+      .filter(element => element.getClientRects().length > 0);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   });
   previous.addEventListener("click", () => { if (current > 0) { current -= 1; render(); } });
   next.addEventListener("click", () => {
