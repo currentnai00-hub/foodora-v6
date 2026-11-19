@@ -20,6 +20,8 @@ const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const COUPONS_FILE = path.join(DATA_DIR, "coupons.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "site-settings.json");
+const CUSTOMER_REWARDS_FILE = path.join(DATA_DIR, "customer-rewards.json");
+const DEFAULT_CUSTOMER_REWARD_SETTINGS = { enabled:true, spendThreshold:5000, maxItemValue:500 };
 const DEFAULT_DELIVERY_SETTINGS = { deliveryFee:70, freeDeliveryFrom:999, areas:[{id:"amirabad",name:"আমিরাবাদ ইউনিয়ন",active:true},{id:"padua",name:"পদুয়া ইউনিয়ন",active:true},{id:"chunti",name:"চুনতি",active:true},{id:"adhunagar",name:"আধুনগর",active:true}] };
 const ADMIN_KEY = process.env.ADMIN_KEY || "";
 const LEGACY_PAYMENT_NUMBER = process.env.PAYMENT_NUMBER || "01XXXXXXXXX";
@@ -228,6 +230,16 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS customer_sessions_customer_idx ON customer_sessions(customer_id);
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
+    CREATE TABLE IF NOT EXISTS customer_reward_redemptions (
+      id BIGSERIAL PRIMARY KEY,
+      customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL,
+      product_name TEXT NOT NULL,
+      product_regular_price INTEGER NOT NULL CHECK (product_regular_price >= 0),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS customer_reward_redemptions_customer_idx ON customer_reward_redemptions(customer_id, created_at DESC);
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reviewed_at TIMESTAMPTZ;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_review_note TEXT NOT NULL DEFAULT '';
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS estimated_delivery_at TIMESTAMPTZ;
@@ -255,6 +267,7 @@ async function initDb() {
     CREATE UNIQUE INDEX IF NOT EXISTS reviews_order_product_unique ON reviews(order_id, product_id) WHERE order_id IS NOT NULL;
   `);
   await pool.query("INSERT INTO site_settings(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING",["delivery",JSON.stringify(DEFAULT_DELIVERY_SETTINGS)]);
+  await pool.query("INSERT INTO site_settings(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING",["customer_rewards",JSON.stringify(DEFAULT_CUSTOMER_REWARD_SETTINGS)]);
   const count = await pool.query("SELECT COUNT(*)::int AS n FROM products");
   if (count.rows[0].n === 0) {
     const old = readJson(path.join(ROOT, "products.json"), defaultProducts());
@@ -276,6 +289,7 @@ async function initDb() {
 function initJson() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   ensureFile(SETTINGS_FILE, DEFAULT_DELIVERY_SETTINGS);
+  ensureFile(CUSTOMER_REWARDS_FILE, DEFAULT_CUSTOMER_REWARD_SETTINGS);
   const oldProducts = readJson(path.join(ROOT, "products.json"), defaultProducts());
   const products = readJson(PRODUCTS_FILE, Array.isArray(oldProducts) && oldProducts.length ? oldProducts.map(normalProduct) : defaultProducts());
   writeJson(PRODUCTS_FILE, products.map(normalProduct));
@@ -326,6 +340,30 @@ function couponDiscount(coupon, subtotal) {
   if (!coupon || subtotal < Number(coupon.min_order ?? coupon.minOrder ?? 0)) return 0;
   const value = Number(coupon.value) || 0;
   return Math.min(subtotal, coupon.type === "percent" ? Math.floor(subtotal * value / 100) : value);
+}
+
+async function getCustomerRewardSettings(){
+  let value;
+  if(usePg){const r=await pool.query("SELECT value FROM site_settings WHERE key=$1",["customer_rewards"]);value=r.rows[0]?.value;}
+  else value=readJson(CUSTOMER_REWARDS_FILE,DEFAULT_CUSTOMER_REWARD_SETTINGS);
+  const source=value&&typeof value==="object"?value:DEFAULT_CUSTOMER_REWARD_SETTINGS;
+  return {enabled:source.enabled!==false,spendThreshold:Math.max(1,Math.min(10000000,money(source.spendThreshold??5000))),maxItemValue:Math.max(1,Math.min(1000000,money(source.maxItemValue??500)))};
+}
+async function saveCustomerRewardSettings(value){
+  const spendThreshold=Number(value.spendThreshold),maxItemValue=Number(value.maxItemValue);
+  if(!Number.isSafeInteger(spendThreshold)||spendThreshold<1||spendThreshold>10000000)throw new Error("Purchase threshold must be between ৳1 and ৳1,00,00,000.");
+  if(!Number.isSafeInteger(maxItemValue)||maxItemValue<1||maxItemValue>1000000)throw new Error("Maximum free food value must be between ৳1 and ৳10,00,000.");
+  const settings={enabled:value.enabled!==false,spendThreshold,maxItemValue};
+  if(usePg)await pool.query("INSERT INTO site_settings(key,value,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=NOW()",["customer_rewards",JSON.stringify(settings)]);
+  else writeJson(CUSTOMER_REWARDS_FILE,settings);
+  return settings;
+}
+async function getCustomerRewardProgress(db,customerId,settings){
+  const spendResult=await db.query("SELECT COALESCE(SUM(GREATEST(subtotal-discount,0)),0)::bigint AS spend FROM orders WHERE customer_id=$1 AND status='Delivered' AND (payment_status='Verified' OR LOWER(payment_method) IN ('cash on delivery','cod'))",[customerId]);
+  const redeemedResult=await db.query("SELECT COUNT(*)::int AS redeemed FROM customer_reward_redemptions r JOIN orders o ON o.id=r.order_id WHERE r.customer_id=$1 AND o.status<>'Cancelled'",[customerId]);
+  const spend=Number(spendResult.rows[0]?.spend||0),redeemed=Number(redeemedResult.rows[0]?.redeemed||0),earned=Math.floor(spend/settings.spendThreshold),available=settings.enabled?Math.max(0,earned-redeemed):0;
+  const progressAmount=Math.min(settings.spendThreshold,Math.max(0,spend-redeemed*settings.spendThreshold));
+  return {enabled:settings.enabled,spendThreshold:settings.spendThreshold,maxItemValue:settings.maxItemValue,qualifyingSpend:spend,progressAmount,remainingAmount:Math.max(0,settings.spendThreshold-progressAmount),earnedRewards:earned,redeemedRewards:redeemed,availableRewards:available};
 }
 
 app.get("/api/health", (req,res) => res.json({ ok:true, app:"Foodora V6", database:usePg ? "postgresql" : "local-json", time:new Date().toISOString() }));
