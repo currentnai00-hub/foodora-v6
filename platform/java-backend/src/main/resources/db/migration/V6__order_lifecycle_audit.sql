@@ -12,8 +12,3 @@ CREATE TABLE platform_identity.order_status_events (
 CREATE INDEX order_status_events_order_created_idx
   ON platform_identity.order_status_events(order_id, created_at, id);
 
-INSERT INTO platform_identity.order_status_events
-  (id, order_id, from_status, to_status, actor_user_id, actor_role, reason, created_at)
-SELECT gen_random_uuid(), id, NULL, status, customer_id, 'CUSTOMER',
-       'Order created at checkout', created_at
-FROM platform_identity.orders;
