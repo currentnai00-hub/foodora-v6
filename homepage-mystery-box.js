@@ -109,7 +109,7 @@
     document.body.classList.add("fd-mystery-immersive-open");
     skipReveal?.focus({ preventScroll: true });
 
-    const duration = reducedMotion.matches ? 0 : 2600;
+    const duration = reducedMotion.matches ? 0 : 2950;
     revealTimer = window.setTimeout(finishOpening, duration);
   }
 
