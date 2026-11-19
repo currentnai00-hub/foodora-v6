@@ -53,6 +53,7 @@
  }
  refreshButton?.addEventListener("click",()=>fetchAndRender(false).catch(err=>{$("message").textContent=err.message}));
  function render(o){
+  if(etaTimer){clearInterval(etaTimer);etaTimer=null;}
   const raw=String(o.status||"Pending"),status=normalizeStatus(raw),cancelled=status==="Cancelled",index=steps.findIndex(s=>s.key===status);
   $("statusTitle").textContent=cancelled?"Your order was cancelled":steps[Math.max(0,index)].title;
   $("statusBadge").textContent=cancelled?"Cancelled":raw;
