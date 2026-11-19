@@ -16,10 +16,14 @@
   const status = section.querySelector("[data-mystery-status]");
   const immersive = document.querySelector("[data-mystery-immersive]");
   const skipReveal = immersive?.querySelector("[data-mystery-skip]");
+  const signature = immersive?.querySelector("[data-mystery-signature]");
+  const congratulations = immersive?.querySelector("[data-mystery-congrats]");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let lastProductId = "";
   let isOpening = false;
   let revealTimer = null;
+  let signatureTimer = null;
+  let congratulationsTimer = null;
 
   function availableProducts() {
     return Array.from(grid.querySelectorAll(".product")).filter(card => {
@@ -68,7 +72,11 @@
   function finishOpening() {
     if (!isOpening) return;
     if (revealTimer !== null) window.clearTimeout(revealTimer);
+    if (signatureTimer !== null) window.clearTimeout(signatureTimer);
+    if (congratulationsTimer !== null) window.clearTimeout(congratulationsTimer);
     revealTimer = null;
+    signatureTimer = null;
+    congratulationsTimer = null;
     immersive.hidden = true;
     immersive.classList.remove("is-active");
     immersive.setAttribute("aria-hidden", "true");
@@ -103,14 +111,33 @@
     status.textContent = "রহস্যের বাক্স খুলছে… অপেক্ষা করুন!";
     immersive.hidden = false;
     immersive.setAttribute("aria-hidden", "false");
-    immersive.classList.remove("is-active");
+    immersive.classList.remove("is-active", "is-signature", "is-congrats");
+    signature?.setAttribute("aria-hidden", "true");
+    congratulations?.setAttribute("aria-hidden", "true");
     void immersive.offsetWidth;
     immersive.classList.add("is-active");
     document.body.classList.add("fd-mystery-immersive-open");
     skipReveal?.focus({ preventScroll: true });
 
-    const duration = reducedMotion.matches ? 0 : 2950;
-    revealTimer = window.setTimeout(finishOpening, duration);
+    if (reducedMotion.matches) {
+      finishOpening();
+      return;
+    }
+
+    // Three deliberate beats: grand opening, Foodora signature, then congratulations.
+    signatureTimer = window.setTimeout(() => {
+      if (!isOpening) return;
+      immersive.classList.add("is-signature");
+      signature?.setAttribute("aria-hidden", "false");
+    }, 2950);
+    congratulationsTimer = window.setTimeout(() => {
+      if (!isOpening) return;
+      immersive.classList.remove("is-signature");
+      immersive.classList.add("is-congrats");
+      signature?.setAttribute("aria-hidden", "true");
+      congratulations?.setAttribute("aria-hidden", "false");
+    }, 4950);
+    revealTimer = window.setTimeout(finishOpening, 6750);
   }
 
   revealButton.addEventListener("click", openMysteryBox);
@@ -156,6 +183,8 @@
   revealButton.disabled = availableProducts().length === 0;
   window.addEventListener("pagehide", () => {
     if (revealTimer !== null) window.clearTimeout(revealTimer);
+    if (signatureTimer !== null) window.clearTimeout(signatureTimer);
+    if (congratulationsTimer !== null) window.clearTimeout(congratulationsTimer);
     immersive.hidden = true;
     document.body.classList.remove("fd-mystery-immersive-open");
   }, { once: true });
