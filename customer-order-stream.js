@@ -27,7 +27,7 @@ function registerCustomerOrderStream({ app, pool }) {
   app.post("/api/customer/events/ticket", async (req, res) => {
     if (!sameOrigin(req)) return res.status(403).json({ error: "Request origin not allowed." });
     const orderId = String(req.body.orderId || "").trim().slice(0, 60);
-    const phone = String(req.body.phone || "").replace(/\\D/g, "");
+    const phone = String(req.body.phone || "").replace(/\D/g, "");
     if (!orderId || !/^01[0-9]{9}$/.test(phone)) {
       return res.status(400).json({ error: "Enter your Order ID and checkout phone number." });
     }
