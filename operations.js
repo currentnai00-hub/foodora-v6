@@ -2,7 +2,7 @@
 (()=>{
 const $=s=>document.querySelector(s),KEY="foodora_ops_admin_key";
 const statuses=["Pending","Confirmed","Preparing","Shipped","Out for delivery","Delivered","Cancelled"];
-const lanes=[["Pending","New orders"],["Confirmed","Confirmed"],["Preparing","Kitchen / preparation"],["Shipped","Ready for dispatch"],["Out for delivery","On the road"]];
+const lanes=[{statuses:["Pending"],label:"New orders"},{statuses:["Confirmed"],label:"Confirmed"},{statuses:["Preparing"],label:"Kitchen / preparation"},{statuses:["Shipped"],label:"Ready for dispatch"},{statuses:["Out for delivery"],label:"On the road"},{statuses:["Delivered","Cancelled"],label:"Completed / cancelled"}];
 let key=sessionStorage.getItem(KEY)||"",orders=[],busy=false,timer=null;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const isDone=o=>["Delivered","Cancelled"].includes(o.status);
@@ -13,8 +13,8 @@ function fmtDate(value){if(!value)return "ETA not set";const d=new Date(value);r
 function visibleOrders(){const q=$("#search").value.trim().toLowerCase(),f=$("#filter").value;return orders.filter(o=>(!q||String(o.id).toLowerCase().includes(q))&&(!f||o.status===f))}
 function render(){
 const active=orders.filter(o=>!isDone(o));$("#activeCount").textContent=active.length;$("#preparingCount").textContent=orders.filter(o=>o.status==="Preparing").length;$("#deliveryCount").textContent=orders.filter(o=>o.status==="Out for delivery").length;$("#overdueCount").textContent=active.filter(isOverdue).length;
-const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Dhaka"}).format(new Date());$("#deliveredCount").textContent=orders.filter(o=>o.status==="Delivered"&&o.createdAt&&new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Dhaka"}).format(new Date(o.createdAt))===today).length;
-const list=visibleOrders();$("#board").innerHTML=lanes.map(([status,label])=>{const items=list.filter(o=>o.status===status);return '<section class="lane"><div class="lanehead"><h2>'+label+'</h2><span class="count">'+items.length+'</span></div>'+ (items.length?items.map(card).join(""):'<div class="empty">No orders in this queue</div>')+'</section>'}).join("");
+const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Dhaka"}).format(new Date());$("#deliveredCount").textContent=orders.filter(o=>o.status==="Delivered").length;
+const list=visibleOrders();$("#board").innerHTML=lanes.map(({statuses,label})=>{const items=list.filter(o=>statuses.includes(o.status));return '<section class="lane"><div class="lanehead"><h2>'+label+'</h2><span class="count">'+items.length+'</span></div>'+ (items.length?items.map(card).join(""):'<div class="empty">No orders in this queue</div>')+'</section>'}).join("");
 $("#board").querySelectorAll("[data-save]").forEach(b=>b.addEventListener("click",()=>updateOrder(b.dataset.save,b)));
 }
 function card(o){const overdue=isOverdue(o),eta=etaDate(o),remaining=eta?Math.ceil((eta-Date.now())/60000):null;const mins=Number.isInteger(o.prepMinutes)?o.prepMinutes:"";
