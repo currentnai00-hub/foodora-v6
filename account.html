@@ -48,6 +48,19 @@
 <h4 class="wallet-history-title">Wallet লেনদেন</h4><div id="walletTransactions" class="wallet-transactions"><p class="account-empty">লোড হচ্ছে…</p></div>
 <h4 class="wallet-history-title">টাকা জমার অনুরোধের অবস্থা</h4><div id="walletTopups" class="wallet-transactions"><p class="account-empty">লোড হচ্ছে…</p></div>
 </section>
+<section class="wallet-panel customer-reward-panel" aria-labelledby="customerRewardTitle">
+<div class="wallet-heading"><div><p class="eyebrow">FOODORA CUSTOMER REWARDS</p><h3 id="customerRewardTitle">আপনার কেনাকাটার রিওয়ার্ড</h3></div><button type="button" class="account-logout" id="rewardRefresh">রিফ্রেশ</button></div>
+<div id="rewardSummary" class="account-note" aria-live="polite">রিওয়ার্ডের তথ্য লোড হচ্ছে…</div>
+<form class="account-form" id="rewardRedeemForm" hidden>
+<h4>আপনার ফ্রি খাবার বেছে নিন</h4>
+<label>ফ্রি ফুড আইটেম<select name="productId" id="rewardProduct" required></select></label>
+<label>ডেলিভারি এলাকা<select name="deliveryArea" id="rewardDeliveryArea" required></select></label>
+<label>সম্পূর্ণ ঠিকানা<textarea name="address" rows="2" maxlength="400" required placeholder="বাড়ি/রোড/এলাকার বিস্তারিত ঠিকানা"></textarea></label>
+<p class="account-note">খাবারের মূল্য ৳০ এবং ডেলিভারি চার্জ ৳০। একটি রিওয়ার্ড ব্যবহার করে একটি খাবার অর্ডার হবে।</p>
+<button type="submit" id="rewardRedeemButton">ফ্রি খাবারটি অর্ডার করুন</button>
+<p class="account-message" id="rewardMessage" aria-live="polite"></p>
+</form>
+</section>
 <h3 class="account-orders-title">আপনার অর্ডার হিস্টোরি</h3><div class="account-order-list" id="accountOrders"><p class="account-empty">অর্ডার লোড হচ্ছে…</p></div>
 <p class="account-note">এই অ্যাকাউন্টে লগইন থাকা অবস্থায় করা অর্ডারগুলো এখানে দেখা যাবে। আগের Guest Checkout অর্ডারগুলো অপরিবর্তিত থাকবে।</p>
 </section>
