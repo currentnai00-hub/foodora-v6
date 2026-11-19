@@ -30,6 +30,7 @@ assert.match(js, /typeof window\.addToCart !== "function"/, "Cart action must fa
 assert.match(html, /data-mystery-immersive/, "Opening must provide a dedicated full-screen reveal layer");
 assert.match(html, /aria-modal="true"/, "Full-screen reveal must be announced as a modal dialog");
 assert.match(html, /data-mystery-skip/, "Users must be able to skip the animation");
+assert.match(html, /fd-mystery-immersive-flare/, "The full-screen reveal must include a central light burst");
 assert.match(js, /finishOpening/, "Reveal completion and skip must share a safe completion path");
 assert.match(js, /event\.key === "Escape"/, "Escape must dismiss the full-screen reveal");
 assert.match(js, /fd-mystery-immersive-open/, "Full-screen reveal must lock background scrolling");
