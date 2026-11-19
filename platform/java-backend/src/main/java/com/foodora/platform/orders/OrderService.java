@@ -188,6 +188,12 @@ public class OrderService {
             total, request.recipientName().trim(), request.recipientPhone(),
             request.deliveryAddress().trim(), request.customerNote() == null ? "" : request.customerNote().trim());
 
+        jdbc.update("""
+            INSERT INTO platform_identity.order_status_events
+              (id, order_id, from_status, to_status, actor_user_id, actor_role, reason)
+            VALUES (?, ?, NULL, 'AWAITING_PAYMENT', ?, 'CUSTOMER', 'Order created at checkout')
+            """, UUID.randomUUID(), orderId, customerId);
+
         for (CheckoutLine line : lines) {
             int reserved = jdbc.update("""
                 UPDATE platform_identity.inventory_balances
@@ -218,6 +224,52 @@ public class OrderService {
 
     public OrderDtos.OrderResponse getOrder(UUID orderId, Authentication auth) {
         return order(orderId, customer(auth));
+    }
+
+    @Transactional
+    public OrderDtos.OrderResponse cancelOrder(UUID orderId, Authentication auth, String reason) {
+        UUID customerId = customer(auth);
+        List<LockedOrder> rows = jdbc.query("""
+            SELECT id, store_id, status FROM platform_identity.orders
+            WHERE id = ? AND customer_id = ? FOR UPDATE
+            """, (rs, n) -> new LockedOrder(rs.getObject("id", UUID.class),
+                rs.getObject("store_id", UUID.class), rs.getString("status")), orderId, customerId);
+        if (rows.isEmpty())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order পাওয়া যায়নি।");
+        LockedOrder order = rows.getFirst();
+        if (!"AWAITING_PAYMENT".equals(order.status()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "শুধু payment pending order বাতিল করা যাবে।");
+
+        List<ReservationLine> reservations = jdbc.query("""
+            SELECT variant_id, quantity FROM platform_identity.order_items
+            WHERE order_id = ? ORDER BY variant_id FOR UPDATE
+            """, (rs, n) -> new ReservationLine(rs.getObject("variant_id", UUID.class),
+                rs.getInt("quantity")), orderId);
+        for (ReservationLine line : reservations) {
+            int released = jdbc.update("""
+                UPDATE platform_identity.inventory_balances
+                SET reserved = reserved - ?, updated_at = CURRENT_TIMESTAMP
+                WHERE variant_id = ? AND store_id = ? AND reserved >= ?
+                """, line.quantity(), line.variantId(), order.storeId(), line.quantity());
+            if (released != 1)
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Inventory reservation state mismatch; cancellation rolled back.");
+        }
+        int changed = jdbc.update("""
+            UPDATE platform_identity.orders
+            SET status = 'CANCELLED', updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND customer_id = ? AND status = 'AWAITING_PAYMENT'
+            """, orderId, customerId);
+        if (changed != 1)
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Order status changed; refresh and retry.");
+        String safeReason = reason == null ? "" : reason.trim();
+        jdbc.update("""
+            INSERT INTO platform_identity.order_status_events
+              (id, order_id, from_status, to_status, actor_user_id, actor_role, reason)
+            VALUES (?, ?, 'AWAITING_PAYMENT', 'CANCELLED', ?, 'CUSTOMER', ?)
+            """, UUID.randomUUID(), orderId, customerId, safeReason);
+        return order(orderId, customerId);
     }
 
     private OrderDtos.CartResponse cart(UUID cartId, UUID customerId) {
@@ -306,6 +358,8 @@ public class OrderService {
     private record VariantStock(UUID variantId, long onHand, long reserved) {}
     private record CheckoutLine(UUID variantId, int quantity, String productName,
         String variantLabel, String sku, long priceMinor, long onHand, long reserved) {}
+    private record LockedOrder(UUID id, UUID storeId, String status) {}
+    private record ReservationLine(UUID variantId, int quantity) {}
     private record OrderHeader(UUID id, String orderNumber, String status, UUID storeId,
         long subtotal, long deliveryFee, long total, String currency, String recipientName,
         String recipientPhone, String address, OffsetDateTime createdAt) {}
