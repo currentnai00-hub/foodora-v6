@@ -55,4 +55,9 @@ assert.match(js, /is-congrats/, "The congratulations screen must have its own ti
 assert.match(css, /fd-mystery-signature-mark/, "Foodora signature must have a branded visual mark");
 assert.match(css, /fd-mystery-congrats h3/, "Congratulations must have dedicated premium typography");
 
-console.log("Homepage Mystery Food Box guards passed.");
+
+assert.match(css, /fd-mystery-signature-mark-zoom/, "Foodora signature mark must zoom in with a controlled cinematic motion");
+assert.match(css, /fd-mystery-signature-word-zoom/, "Foodora wordmark must zoom in after the signature mark");
+assert.match(css, /fd-mystery-signature-orbit-zoom/, "Signature orbit must expand during the brand reveal");
+assert.match(css, /prefers-reduced-motion:reduce/, "Signature zoom must respect reduced-motion preferences");
+\nconsole.log("Homepage Mystery Food Box guards passed.");
