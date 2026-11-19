@@ -60,4 +60,4 @@ assert.match(css, /fd-mystery-signature-mark-zoom/, "Foodora signature mark must
 assert.match(css, /fd-mystery-signature-word-zoom/, "Foodora wordmark must zoom in after the signature mark");
 assert.match(css, /fd-mystery-signature-orbit-zoom/, "Signature orbit must expand during the brand reveal");
 assert.match(css, /prefers-reduced-motion:reduce/, "Signature zoom must respect reduced-motion preferences");
-\nconsole.log("Homepage Mystery Food Box guards passed.");
+console.log("Homepage Mystery Food Box guards passed.");
