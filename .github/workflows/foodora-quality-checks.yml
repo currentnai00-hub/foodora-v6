@@ -36,6 +36,10 @@ jobs:
           node tests/homepage-slider-guards.js
           node --check homepage-experience.js
           node tests/homepage-experience-guards.js
+      - name: Check customer taste finder
+        run: |
+          node --check homepage-taste-finder.js
+          node tests/homepage-taste-finder-guards.js
       - name: Check Admin dashboard JavaScript syntax
         run: node --check admin.js
       - name: Check payment guide JavaScript syntax
