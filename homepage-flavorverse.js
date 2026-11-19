@@ -75,7 +75,7 @@
     const ranked = candidates.map(card => ({ card, score: scoreProduct(card) }));
     const bestScore = Math.max(...ranked.map(item => item.score));
     const pool = bestScore > 0 ? ranked.filter(item => item.score === bestScore) : ranked;
-    return pool[Math.floor(Math.random() * pool.length)].card;
+    return { card: pool[Math.floor(Math.random() * pool.length)].card, matched: bestScore > 0 };
   }
 
   function finish() {
@@ -92,7 +92,8 @@
       any: "আজ surprise-ই তোমার plan।"
     };
     root.querySelector("[data-flavor-copy]").textContent = persona.copy + " " + (moodCopy[answers.mood] || "") + " " + (appetiteCopy[answers.appetite] || "");
-    const card = chooseProduct();
+    const suggestion = chooseProduct();
+    const card = suggestion?.card || null;
     const match = root.querySelector("[data-flavor-match]");
     const status = root.querySelector("[data-flavor-status]");
     selectedProductId = "";
@@ -110,7 +111,9 @@
       root.querySelector("[data-flavor-link]").href = title.href;
       root.querySelector("[data-flavor-add]").disabled = typeof window.addToCart !== "function";
       match.hidden = false;
-      status.textContent = "এটি তোমার উত্তরের ভিত্তিতে মেনু থেকে বাছাই করা একটি suggestion—চূড়ান্ত পছন্দ তোমার।";
+      status.textContent = suggestion.matched
+        ? "তোমার স্বাদ ও appetite-এর সঙ্গে মেলে এমন একটি menu suggestion—চূড়ান্ত পছন্দ তোমার।"
+        : "তোমার পছন্দ অনুযায়ী সরাসরি match পাওয়া যায়নি, তাই বর্তমান মেনু থেকে একটি available surprise দেখানো হচ্ছে।";
     } else {
       match.hidden = true;
       status.textContent = "তোমার Flavor Identity তৈরি হয়েছে। মেনু লোড হলে আবার খাবারের suggestion দেখতে পারবে।";
