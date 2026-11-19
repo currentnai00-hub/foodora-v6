@@ -577,7 +577,7 @@ app.post("/api/customer/rewards/redeem",async(req,res)=>{
     await client.query("COMMIT");
     const order={id:orderId,name:customer.full_name,phone:customer.phone,address:fullAddress,paymentMethod:"Customer Reward",paymentStatus:"Verified",status:"Pending",items,subtotal:0,discount:0,deliveryFee:0,total:0};
     sendTelegramOrderNotification(order).catch(error=>console.error("Reward order notification failed:",error.message));
-    const updated=await getCustomerRewardProgress(pool,customer.id,settings);
+    const updated={...progress,redeemedRewards:progress.redeemedRewards+1,availableRewards:Math.max(0,progress.availableRewards-1)};
     return res.status(201).set("Cache-Control","no-store").json({ok:true,order:{id:orderId,total:0,status:"Pending",deliveryFee:0},progress:updated});
   }catch(error){
     if(client)await client.query("ROLLBACK").catch(()=>{});
