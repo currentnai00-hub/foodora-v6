@@ -30,6 +30,8 @@ jobs:
         run: node --check wallet.js
       - name: Check customer account JavaScript syntax
         run: node --check account.js
+      - name: Check cumulative customer reward safety guards
+        run: node tests/customer-rewards-guards.js
       - name: Check customer tracking JavaScript syntax
         run: |
           node --check track.js
@@ -174,6 +176,8 @@ jobs:
           echo $! > /tmp/foodora-server.pid
       - name: Run PostgreSQL payment end-to-end tests
         run: node tests/postgres-payment-e2e.js
+      - name: Run cumulative customer rewards PostgreSQL E2E tests
+        run: node tests/customer-rewards-e2e.js
       - name: Run PostgreSQL realtime event outbox E2E tests
         run: node tests/realtime-event-stream-e2e.js
       - name: Run PostgreSQL customer order event E2E tests

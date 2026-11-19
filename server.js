@@ -20,6 +20,8 @@ const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const COUPONS_FILE = path.join(DATA_DIR, "coupons.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "site-settings.json");
+const CUSTOMER_REWARDS_FILE = path.join(DATA_DIR, "customer-rewards.json");
+const DEFAULT_CUSTOMER_REWARD_SETTINGS = { enabled:true, spendThreshold:5000, maxItemValue:500 };
 const DEFAULT_DELIVERY_SETTINGS = { deliveryFee:70, freeDeliveryFrom:999, areas:[{id:"amirabad",name:"আমিরাবাদ ইউনিয়ন",active:true},{id:"padua",name:"পদুয়া ইউনিয়ন",active:true},{id:"chunti",name:"চুনতি",active:true},{id:"adhunagar",name:"আধুনগর",active:true}] };
 const ADMIN_KEY = process.env.ADMIN_KEY || "";
 const LEGACY_PAYMENT_NUMBER = process.env.PAYMENT_NUMBER || "01XXXXXXXXX";
@@ -228,6 +230,16 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS customer_sessions_customer_idx ON customer_sessions(customer_id);
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
+    CREATE TABLE IF NOT EXISTS customer_reward_redemptions (
+      id BIGSERIAL PRIMARY KEY,
+      customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL,
+      product_name TEXT NOT NULL,
+      product_regular_price INTEGER NOT NULL CHECK (product_regular_price >= 0),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS customer_reward_redemptions_customer_idx ON customer_reward_redemptions(customer_id, created_at DESC);
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reviewed_at TIMESTAMPTZ;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_review_note TEXT NOT NULL DEFAULT '';
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS estimated_delivery_at TIMESTAMPTZ;
@@ -255,6 +267,7 @@ async function initDb() {
     CREATE UNIQUE INDEX IF NOT EXISTS reviews_order_product_unique ON reviews(order_id, product_id) WHERE order_id IS NOT NULL;
   `);
   await pool.query("INSERT INTO site_settings(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING",["delivery",JSON.stringify(DEFAULT_DELIVERY_SETTINGS)]);
+  await pool.query("INSERT INTO site_settings(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING",["customer_rewards",JSON.stringify(DEFAULT_CUSTOMER_REWARD_SETTINGS)]);
   const count = await pool.query("SELECT COUNT(*)::int AS n FROM products");
   if (count.rows[0].n === 0) {
     const old = readJson(path.join(ROOT, "products.json"), defaultProducts());
@@ -276,6 +289,7 @@ async function initDb() {
 function initJson() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   ensureFile(SETTINGS_FILE, DEFAULT_DELIVERY_SETTINGS);
+  ensureFile(CUSTOMER_REWARDS_FILE, DEFAULT_CUSTOMER_REWARD_SETTINGS);
   const oldProducts = readJson(path.join(ROOT, "products.json"), defaultProducts());
   const products = readJson(PRODUCTS_FILE, Array.isArray(oldProducts) && oldProducts.length ? oldProducts.map(normalProduct) : defaultProducts());
   writeJson(PRODUCTS_FILE, products.map(normalProduct));
@@ -326,6 +340,30 @@ function couponDiscount(coupon, subtotal) {
   if (!coupon || subtotal < Number(coupon.min_order ?? coupon.minOrder ?? 0)) return 0;
   const value = Number(coupon.value) || 0;
   return Math.min(subtotal, coupon.type === "percent" ? Math.floor(subtotal * value / 100) : value);
+}
+
+async function getCustomerRewardSettings(){
+  let value;
+  if(usePg){const r=await pool.query("SELECT value FROM site_settings WHERE key=$1",["customer_rewards"]);value=r.rows[0]?.value;}
+  else value=readJson(CUSTOMER_REWARDS_FILE,DEFAULT_CUSTOMER_REWARD_SETTINGS);
+  const source=value&&typeof value==="object"?value:DEFAULT_CUSTOMER_REWARD_SETTINGS;
+  return {enabled:source.enabled!==false,spendThreshold:Math.max(1,Math.min(10000000,money(source.spendThreshold??5000))),maxItemValue:Math.max(1,Math.min(1000000,money(source.maxItemValue??500)))};
+}
+async function saveCustomerRewardSettings(value){
+  const spendThreshold=Number(value.spendThreshold),maxItemValue=Number(value.maxItemValue);
+  if(!Number.isSafeInteger(spendThreshold)||spendThreshold<1||spendThreshold>10000000)throw new Error("Purchase threshold must be between ৳1 and ৳1,00,00,000.");
+  if(!Number.isSafeInteger(maxItemValue)||maxItemValue<1||maxItemValue>1000000)throw new Error("Maximum free food value must be between ৳1 and ৳10,00,000.");
+  const settings={enabled:value.enabled!==false,spendThreshold,maxItemValue};
+  if(usePg)await pool.query("INSERT INTO site_settings(key,value,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=NOW()",["customer_rewards",JSON.stringify(settings)]);
+  else writeJson(CUSTOMER_REWARDS_FILE,settings);
+  return settings;
+}
+async function getCustomerRewardProgress(db,customerId,settings){
+  const spendResult=await db.query("SELECT COALESCE(SUM(GREATEST(subtotal-discount,0)),0)::bigint AS spend FROM orders WHERE customer_id=$1 AND status='Delivered' AND (payment_status='Verified' OR LOWER(payment_method) IN ('cash on delivery','cod'))",[customerId]);
+  const redeemedResult=await db.query("SELECT COUNT(*)::int AS redeemed FROM customer_reward_redemptions r JOIN orders o ON o.id=r.order_id WHERE r.customer_id=$1 AND o.status<>'Cancelled'",[customerId]);
+  const spend=Number(spendResult.rows[0]?.spend||0),redeemed=Number(redeemedResult.rows[0]?.redeemed||0),earned=Math.floor(spend/settings.spendThreshold),available=settings.enabled?Math.max(0,earned-redeemed):0;
+  const progressAmount=spend%settings.spendThreshold;
+  return {enabled:settings.enabled,spendThreshold:settings.spendThreshold,maxItemValue:settings.maxItemValue,qualifyingSpend:spend,progressAmount,remainingAmount:Math.max(0,settings.spendThreshold-progressAmount),earnedRewards:earned,redeemedRewards:redeemed,availableRewards:available};
 }
 
 app.get("/api/health", (req,res) => res.json({ ok:true, app:"Foodora V6", database:usePg ? "postgresql" : "local-json", time:new Date().toISOString() }));
@@ -496,6 +534,59 @@ app.post("/api/customer/logout",async(req,res)=>{
   res.clearCookie(CUSTOMER_COOKIE,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/"});
   res.json({ok:true});
 });
+app.get("/api/customer/rewards",async(req,res)=>{
+  if(!requireCustomerDatabase(res))return;
+  try{
+    const customer=await signedInCustomer(req);
+    if(!customer)return res.status(401).json({error:"লগইন করুন।"});
+    const settings=await getCustomerRewardSettings();
+    const progress=await getCustomerRewardProgress(pool,customer.id,settings);
+    const [products,delivery]=await Promise.all([getProducts(true),getDeliverySettings()]);
+    const eligibleProducts=products.filter(p=>Number(p.price)<=settings.maxItemValue&&Number(p.stock)>0).map(p=>({id:p.id,name:p.name,price:p.price,image:p.image||"",emoji:p.emoji||"🍽️",stock:p.stock}));
+    res.set("Cache-Control","no-store").json({...progress,products:eligibleProducts,deliveryAreas:delivery.areas});
+  }catch(e){console.error("Customer reward status failed:",e.message);res.status(500).json({error:"রিওয়ার্ডের তথ্য পাওয়া যায়নি।"});}
+});
+app.post("/api/customer/rewards/redeem",async(req,res)=>{
+  if(!requestIsSameOrigin(req))return res.status(403).json({error:"Request origin not allowed."});
+  if(!requireCustomerDatabase(res))return;
+  const productId=clean(req.body.productId,60),deliveryAreaId=clean(req.body.deliveryArea,40),address=clean(req.body.address,400);
+  if(!productId||!deliveryAreaId||!address)return res.status(400).json({error:"খাবার, ডেলিভারি এলাকা ও পূর্ণ ঠিকানা দিন।"});
+  let client;
+  try{
+    const customer=await signedInCustomer(req);
+    if(!customer)return res.status(401).json({error:"লগইন করুন।"});
+    const settings=await getCustomerRewardSettings();
+    if(!settings.enabled)return res.status(403).json({error:"Customer reward বর্তমানে বন্ধ আছে।"});
+    const delivery=await getDeliverySettings(),area=delivery.areas.find(item=>item.id===deliveryAreaId);
+    if(!area)return res.status(400).json({error:"এই এলাকায় ডেলিভারি চালু নেই।"});
+    client=await pool.connect();
+    await client.query("BEGIN");
+    const locked=await client.query("SELECT id FROM customers WHERE id=$1 FOR UPDATE",[customer.id]);
+    if(!locked.rowCount)throw Object.assign(new Error("Customer account not found."),{status:404});
+    const progress=await getCustomerRewardProgress(client,customer.id,settings);
+    if(progress.availableRewards<1)throw Object.assign(new Error("এখনো ফ্রি খাবারের রিওয়ার্ড পাওয়া যায়নি।"),{status:409});
+    const productResult=await client.query("SELECT id,name,price,stock FROM products WHERE id=$1 AND active=true AND price<=$2 AND stock>0 FOR UPDATE",[productId,settings.maxItemValue]);
+    const product=productResult.rows[0];
+    if(!product)throw Object.assign(new Error("এই খাবারটি এখন রিওয়ার্ডের জন্য উপলব্ধ নয়। অন্য খাবার বেছে নিন।"),{status:409});
+    const stock=await client.query("UPDATE products SET stock=stock-1 WHERE id=$1 AND stock>0",[product.id]);
+    if(!stock.rowCount)throw Object.assign(new Error("খাবারটির স্টক শেষ। অন্য খাবার বেছে নিন।"),{status:409});
+    const orderId=id("FD"),fullAddress=area.name+" — "+address;
+    const items=[{id:product.id,name:product.name,price:0,qty:1,reward:true,regularPrice:Number(product.price)}];
+    await client.query("INSERT INTO orders(id,customer_name,phone,address,payment_method,transaction_id,payment_status,status,items,subtotal,discount,delivery_fee,total,coupon_code,customer_id) VALUES($1,$2,$3,$4,'Customer Reward','','Verified','Pending',$5::jsonb,0,0,0,0,'CUSTOMER_REWARD',$6)",[orderId,customer.full_name,customer.phone,fullAddress,JSON.stringify(items),customer.id]);
+    await client.query("INSERT INTO customer_reward_redemptions(customer_id,order_id,product_id,product_name,product_regular_price) VALUES($1,$2,$3,$4,$5)",[customer.id,orderId,product.id,product.name,Number(product.price)]);
+    await client.query("COMMIT");
+    const order={id:orderId,name:customer.full_name,phone:customer.phone,address:fullAddress,paymentMethod:"Customer Reward",paymentStatus:"Verified",status:"Pending",items,subtotal:0,discount:0,deliveryFee:0,total:0};
+    sendTelegramOrderNotification(order).catch(error=>console.error("Reward order notification failed:",error.message));
+    const updated={...progress,redeemedRewards:progress.redeemedRewards+1,availableRewards:Math.max(0,progress.availableRewards-1)};
+    return res.status(201).set("Cache-Control","no-store").json({ok:true,order:{id:orderId,total:0,status:"Pending",deliveryFee:0},progress:updated});
+  }catch(error){
+    if(client)await client.query("ROLLBACK").catch(()=>{});
+    if(error.status)return res.status(error.status).json({error:error.message});
+    console.error("Customer reward redemption failed:",error.message);
+    return res.status(500).json({error:"ফ্রি খাবারের অর্ডার তৈরি করা যায়নি। আবার চেষ্টা করুন।"});
+  }finally{client?.release();}
+});
+
 app.get("/api/customer/me",async(req,res)=>{
   if(!requireCustomerDatabase(res))return;
   try{const customer=await signedInCustomer(req);res.set("Cache-Control","no-store");if(!customer)return res.status(401).json({error:"লগইন করুন।"});res.json({customer:{id:customer.id,name:customer.full_name,phone:customer.phone}});}
@@ -783,6 +874,8 @@ app.get("/api/orders/:id", async (req,res) => {
 });
 
 // Admin APIs
+app.get("/api/admin/customer-reward-settings",adminOnly,async(req,res)=>{try{res.set("Cache-Control","no-store");res.json(await getCustomerRewardSettings());}catch{res.status(500).json({error:"Customer reward settings unavailable"});}});
+app.put("/api/admin/customer-reward-settings",adminOnly,async(req,res)=>{try{const settings=await saveCustomerRewardSettings(req.body||{});res.set("Cache-Control","no-store").json({ok:true,...settings});}catch(e){res.status(400).json({error:e.message||"Customer reward settings could not be saved"});}});
 app.get("/api/admin/delivery-settings",adminOnly,async(req,res)=>{try{res.set("Cache-Control","no-store");res.json(await getDeliverySettings());}catch{res.status(500).json({error:"Delivery settings unavailable"});}});
 app.put("/api/admin/delivery-settings",adminOnly,async(req,res)=>{try{const settings=await saveDeliverySettings(req.body||{});res.json({ok:true,...settings});}catch(e){res.status(400).json({error:e.message||"Delivery settings could not be saved"});}});
 app.get("/api/admin/summary",adminOnly,async(req,res)=>{
