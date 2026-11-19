@@ -29,6 +29,7 @@ class CatalogFlowIntegrationTests {
 
     @BeforeEach
     void cleanDatabase() {
+        jdbc.update("DELETE FROM platform_identity.product_status_events");
         jdbc.update("DELETE FROM platform_identity.inventory_movements");
         jdbc.update("DELETE FROM platform_identity.inventory_balances");
         jdbc.update("DELETE FROM platform_identity.product_variants");
