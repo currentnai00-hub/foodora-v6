@@ -15,6 +15,26 @@ function showAuth(mode){
 function money(value){return "৳"+Number(value||0).toLocaleString("en-BD");}
 function safe(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
+let currentCustomer=null;
+async function loadCustomerRewards(){
+  const summary=byId("rewardSummary"),form=byId("rewardRedeemForm");
+  if(!summary||!form)return;
+  form.hidden=true;
+  try{
+    const data=await accountApi("/api/customer/rewards");
+    if(!data.enabled){summary.textContent="বর্তমানে Customer Rewards বন্ধ আছে।";return;}
+    const threshold=Number(data.spendThreshold||5000),spent=Number(data.qualifyingSpend||0),progress=Number(data.progressAmount||0);
+    const percent=threshold>0?Math.min(100,Math.round(progress/threshold*100)):0;
+    summary.innerHTML="<strong>"+safe(money(spent))+"</strong> সফল কেনাকাটার মূল্য গণনায় যুক্ত হয়েছে। <strong>"+Number(data.availableRewards||0)+"টি</strong> ফ্রি খাবারের রিওয়ার্ড প্রস্তুত।<div style=\"height:9px;background:#e8eee9;border-radius:20px;overflow:hidden;margin:12px 0 7px\"><span style=\"display:block;height:100%;width:"+percent+"%;background:#23824d;border-radius:20px\"></span></div><span>"+safe(money(progress))+" / "+safe(money(threshold))+" · পরের রিওয়ার্ডের জন্য আরও "+safe(money(data.remainingAmount||0))+"</span><p class=\"account-note\">শুধু Delivered এবং পেমেন্ট যাচাইকৃত অর্ডার গণনা হয়; Cash on Delivery অর্ডার Delivered হলে গণনায় আসে।</p>";
+    const products=Array.isArray(data.products)?data.products:[],areas=Array.isArray(data.deliveryAreas)?data.deliveryAreas:[];
+    if(Number(data.availableRewards||0)<1){summary.innerHTML+="<p class=\"account-note\">প্রতি "+safe(money(threshold))+" সফল কেনাকাটায় সর্বোচ্চ "+safe(money(data.maxItemValue))+" মূল্যের একটি ফ্রি খাবার ও ফ্রি ডেলিভারি পাবেন।</p>";return;}
+    if(!products.length||!areas.length){summary.innerHTML+="<p class=\"account-note\">এই মুহূর্তে রিওয়ার্ডের উপযুক্ত খাবার বা ডেলিভারি এলাকা পাওয়া যাচ্ছে না। পরে আবার চেষ্টা করুন।</p>";return;}
+    byId("rewardProduct").innerHTML=products.map(p=>"<option value=\""+safe(p.id)+"\">"+safe(p.name)+" · "+safe(money(p.price))+"</option>").join("");
+    byId("rewardDeliveryArea").innerHTML=areas.map(a=>"<option value=\""+safe(a.id)+"\">"+safe(a.name)+"</option>").join("");
+    form.hidden=false;
+  }catch(error){summary.textContent=error.message;}
+}
+
 function startWalletPaymentGuide(){
   const form=byId("walletTopupForm");
   if(!form)return;
@@ -64,10 +84,12 @@ async function loadWallet(){
   }catch(error){transactions.innerHTML='<p class="account-empty">'+safe(error.message)+'</p>';}
 }
 async function loadDashboard(customer){
+  currentCustomer=customer;
   byId("accountAuth").hidden=true;byId("accountDashboard").hidden=false;
   byId("customerGreeting").textContent="স্বাগতম, "+customer.name;
   byId("customerPhone").textContent=customer.phone;
   await loadWallet();
+  await loadCustomerRewards();
   restoreWalletTopupFromGuide();
   const box=byId("accountOrders");box.innerHTML='<p class="account-empty">অর্ডার লোড হচ্ছে…</p>';
   try{
@@ -101,6 +123,20 @@ function bindForm(formId,messageId,url,successText){
 }
 
 byId("walletRefresh")?.addEventListener("click",loadWallet);
+byId("rewardRefresh")?.addEventListener("click",loadCustomerRewards);
+byId("rewardRedeemForm")?.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const form=event.currentTarget,button=byId("rewardRedeemButton"),message=byId("rewardMessage");
+  if(!form.reportValidity())return;
+  const payload=Object.fromEntries(new FormData(form).entries());
+  button.disabled=true;message.textContent="ফ্রি খাবারের অর্ডার তৈরি হচ্ছে…";
+  try{
+    const result=await accountApi("/api/customer/rewards/redeem",{method:"POST",body:JSON.stringify(payload)});
+    message.className="account-message success";message.textContent="অভিনন্দন! আপনার ফ্রি খাবারের অর্ডার #"+result.order.id+" তৈরি হয়েছে। খাবার ও ডেলিভারি—দুটোর মূল্যই ৳০।";
+    form.reset();await loadDashboard(currentCustomer);
+  }catch(error){message.className="account-message";message.textContent=error.message;await loadCustomerRewards();}
+  finally{button.disabled=false;}
+});
 byId("walletPaymentMethod")?.addEventListener("change",startWalletPaymentGuide);
 byId("walletTopupForm")?.addEventListener("submit",async event=>{
   event.preventDefault();
