@@ -204,5 +204,54 @@ class CartCheckoutIntegrationTests {
             "SELECT COUNT(*) FROM platform_identity.orders", Long.class));
     }
 
+    @Test
+    void customerCancellationReleasesReservedStockExactlyOnceAndAuditsTransition() throws Exception {
+        String session = register("01712345678");
+        Fixture f = fixture(session);
+        var cart = mvc.perform(postCsrf("/api/v1/stores/" + f.storeId() + "/carts")
+                .cookie(new Cookie("foodora_platform_session", session)))
+            .andExpect(status().isCreated()).andReturn();
+        String cartId = com.jayway.jsonpath.JsonPath.read(cart.getResponse().getContentAsString(), "$.cartId");
+        mvc.perform(postCsrf("/api/v1/carts/" + cartId + "/items")
+                .cookie(new Cookie("foodora_platform_session", session))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"variantId\":\"" + f.variantId() + "\",\"quantity\":2}"))
+            .andExpect(status().isCreated());
+        String checkout = """
+            {"recipientName":"Checkout Customer","recipientPhone":"01812345678",
+             "deliveryAddress":"Agrabad, Chattogram"}
+            """;
+        var placed = mvc.perform(postCsrf("/api/v1/carts/" + cartId + "/checkout")
+                .cookie(new Cookie("foodora_platform_session", session))
+                .header("Idempotency-Key", UUID.randomUUID().toString())
+                .contentType(MediaType.APPLICATION_JSON).content(checkout))
+            .andExpect(status().isCreated()).andReturn();
+        String orderId = com.jayway.jsonpath.JsonPath.read(
+            placed.getResponse().getContentAsString(), "$.orderId");
+        org.junit.jupiter.api.Assertions.assertEquals(2L, jdbc.queryForObject(
+            "SELECT reserved FROM platform_identity.inventory_balances WHERE variant_id = ?",
+            Long.class, f.variantId()));
+
+        mvc.perform(postCsrf("/api/v1/orders/" + orderId + "/cancel")
+                .cookie(new Cookie("foodora_platform_session", session))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"Customer changed delivery plan\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        org.junit.jupiter.api.Assertions.assertEquals(0L, jdbc.queryForObject(
+            "SELECT reserved FROM platform_identity.inventory_balances WHERE variant_id = ?",
+            Long.class, f.variantId()));
+        org.junit.jupiter.api.Assertions.assertEquals(2L, jdbc.queryForObject(
+            "SELECT COUNT(*) FROM platform_identity.order_status_events WHERE order_id = ?",
+            Long.class, UUID.fromString(orderId)));
+        mvc.perform(postCsrf("/api/v1/orders/" + orderId + "/cancel")
+                .cookie(new Cookie("foodora_platform_session", session)))
+            .andExpect(status().isConflict());
+        org.junit.jupiter.api.Assertions.assertEquals(0L, jdbc.queryForObject(
+            "SELECT reserved FROM platform_identity.inventory_balances WHERE variant_id = ?",
+            Long.class, f.variantId()));
+    }
+
     private record Fixture(UUID storeId, UUID variantId) {}
 }
