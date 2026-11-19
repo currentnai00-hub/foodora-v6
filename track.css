@@ -5,3 +5,5 @@
 @media(max-width:420px){.tracking-livebar{align-items:flex-start;flex-direction:column}.tracking-livebar button{width:100%;min-height:40px}}
 
 .review-invites{margin-top:22px;padding:20px;border:1px solid #d9e8df;border-radius:16px;background:#f4faf6}.review-invites h3{margin:0 0 6px;color:#17613d}.review-invites p{margin:0 0 12px;color:#52635b}.review-invites>div,.account-order-reviews>div{display:flex;flex-wrap:wrap;gap:10px}.review-invites a,.account-order-reviews a{display:inline-flex;padding:9px 13px;border-radius:999px;background:#17613d;color:#fff;text-decoration:none;font-weight:700;font-size:.9rem}
+
+.eta-card{margin:18px 0;padding:18px;border-radius:16px;background:#fff4f7;border:1px solid #ffd3e0;display:grid;gap:6px}.eta-card span{font-size:12px;font-weight:800;color:#a52b58;text-transform:uppercase}.eta-card strong{font-size:25px;color:#172033}.eta-card small{color:#697386;line-height:1.5}.cancel-order-button{margin-top:16px;padding:12px 18px;border:1px solid #d92d50;border-radius:10px;background:#fff;color:#b4233e;font-weight:700}.cancel-order-button:disabled{opacity:.55}

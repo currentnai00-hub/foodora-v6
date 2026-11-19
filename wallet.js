@@ -96,20 +96,26 @@ function registerWalletRoutes({app,pool,signedInCustomer,adminOnly,requestIsSame
     });
   }
 
-  async function cancelOrderAndRefund(orderId) {
+  async function cancelOrderAndRefund(orderId, {customerInitiated=false} = {}) {
     const client=await pool.connect();
     try {
       await client.query("BEGIN");
       const r=await client.query(
-        "SELECT id,customer_id,phone,payment_method,payment_status,total,status FROM orders WHERE id=$1 FOR UPDATE",
+        "SELECT id,customer_id,phone,payment_method,payment_status,total,status,items FROM orders WHERE id=$1 FOR UPDATE",
         [orderId]);
       if(!r.rowCount) throw Object.assign(new Error("Order not found."),{status:404});
       const o=r.rows[0];
+      if(customerInitiated && !["Pending","Confirmed"].includes(o.status))
+        throw Object.assign(new Error("রান্না শুরু হয়ে যাওয়ায় এখন অনলাইনে অর্ডার বাতিল করা যাচ্ছে না।"),{status:409});
       if(o.status==="Cancelled") {
         await client.query("COMMIT");
         return {id:o.id,status:o.status,refundIssued:false,alreadyCancelled:true};
       }
       await client.query("UPDATE orders SET status='Cancelled' WHERE id=$1",[o.id]);
+      for(const item of (Array.isArray(o.items)?o.items:[])){
+        const quantity=Math.max(0,Math.min(50,Math.floor(Number(item.qty)||0)));
+        if(quantity&&item.id)await client.query("UPDATE products SET stock=stock+$1 WHERE id=$2",[quantity,String(item.id)]);
+      }
       let refundIssued=false;
       const method=String(o.payment_method||"");
       const eligible=["bKash","Nagad","Wallet"].includes(method) && o.payment_status==="Verified" && Number(o.total)>0;
