@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/homepage-taste-finder.css?v=1">
 <link rel="stylesheet" href="/homepage-quick-view.css?v=1">
 <link rel="stylesheet" href="/homepage-mystery-box.css?v=1">
+<link rel="stylesheet" href="/homepage-flavorverse.css?v=1">
 </head>
 <body>
 <header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="#menu">মেনু</a><a href="#offers">অফার</a><a href="/track">অর্ডার ট্র্যাক</a><a href="/account">আমার অ্যাকাউন্ট</a><a href="#about">আমাদের সম্পর্কে</a></nav><button class="cart-button" id="cartOpen">কার্ট <b id="cartCount">0</b></button></header>
@@ -97,7 +98,66 @@
       <button type="button" class="fd-mystery-add" data-mystery-add>নিজে কার্টে যোগ করুন</button>
     </div>
   </div>
-  <p class="fd-mystery-status" data-mystery-status role="status" aria-live="polite">কোনো অর্ডার নিজে থেকে হবে না—চমকটি দেখুন, সিদ্ধান্ত আপনার।</p>
+  <p class="fd-mystery-status" data-mystery-status role="status" aria-live="polite">কোনো অর্ডার ন<section class="fd-flavorverse" id="flavorverse" aria-labelledby="fdFlavorTitle">
+  <div class="fd-flavor-orbit fd-flavor-orbit-one" aria-hidden="true"></div>
+  <div class="fd-flavor-orbit fd-flavor-orbit-two" aria-hidden="true"></div>
+  <div class="fd-flavor-topline"><span>FOODORA EXPERIENCE / 02</span><span class="fd-flavor-live"><i></i> YOUR TASTE, YOUR STORY</span></div>
+  <div class="fd-flavor-intro">
+    <p class="fd-flavor-kicker">THE FLAVORVERSE</p>
+    <h2 id="fdFlavorTitle">তোমার স্বাদের<br><em>নিজস্ব একটা Universe আছে।</em></h2>
+    <p>তিনটি ছোট পছন্দ। তারপর আবিষ্কার করো তোমার Flavor Identity—আর মেনুতে খুঁজে নাও পরের প্রিয় খাবারটি।</p>
+  </div>
+  <div class="fd-flavor-explorer">
+    <div class="fd-flavor-progress" aria-label="Flavor journey progress">
+      <span class="is-active" data-flavor-progress="0"></span><span data-flavor-progress="1"></span><span data-flavor-progress="2"></span>
+    </div>
+    <div class="fd-flavor-step" data-flavor-step="0">
+      <p class="fd-flavor-step-count">01 / 03 · THE MOOD</p>
+      <h3>এখন তোমার Food Mood কোনটা?</h3>
+      <div class="fd-flavor-options">
+        <button type="button" class="fd-flavor-option" data-flavor-group="mood" data-flavor-value="comfort" aria-pressed="false"><span>☁️</span><strong>Comfort Mode</strong><small>চেনা স্বাদের আরাম</small></button>
+        <button type="button" class="fd-flavor-option" data-flavor-group="mood" data-flavor-value="explore" aria-pressed="false"><span>🪐</span><strong>Explore Mode</strong><small>নতুন কিছু ট্রাই করতে চাই</small></button>
+        <button type="button" class="fd-flavor-option" data-flavor-group="mood" data-flavor-value="celebrate" aria-pressed="false"><span>✨</span><strong>Celebration Mode</strong><small>আজকের দিনটা স্পেশাল</small></button>
+      </div>
+    </div>
+    <div class="fd-flavor-step" data-flavor-step="1" hidden>
+      <p class="fd-flavor-step-count">02 / 03 · THE FLAVOR</p>
+      <h3>কোন স্বাদের দিকে মন যাচ্ছে?</h3>
+      <div class="fd-flavor-options">
+        <button type="button" class="fd-flavor-option" data-flavor-group="flavor" data-flavor-value="spicy" aria-pressed="false"><span>🌶️</span><strong>ঝাল & Bold</strong><small>স্বাদে একটু আগুন</small></button>
+        <button type="button" class="fd-flavor-option" data-flavor-group="flavor" data-flavor-value="savory" aria-pressed="false"><span>🍔</span><strong>Savory & Rich</strong><small>মজাদার, ভরপুর স্বাদ</small></button>
+        <button type="button" class="fd-flavor-option" data-flavor-group="flavor" data-flavor-value="sweet" aria-pressed="false"><span>🍰</span><strong>Sweet & Delight</strong><small>মিষ্টি কিছু হলে মন্দ হয় না</small></button>
+      </div>
+    </div>
+    <div class="fd-flavor-step" data-flavor-step="2" hidden>
+      <p class="fd-flavor-step-count">03 / 03 · THE APPETITE</p>
+      <h3>আজ কতটা ক্ষুধার্ত?</h3>
+      <div class="fd-flavor-options">
+        <button type="button" class="fd-flavor-option" data-flavor-group="appetite" data-flavor-value="light" aria-pressed="false"><span>🌿</span><strong>Light Explorer</strong><small>হালকা কিছু হলেই চলে</small></button>
+        <button type="button" class="fd-flavor-option" data-flavor-group="appetite" data-flavor-value="hearty" aria-pressed="false"><span>🔥</span><strong>Full Power</strong><small>পেট ভরে খেতে চাই</small></button>
+        <button type="button" class="fd-flavor-option" data-flavor-group="appetite" data-flavor-value="any" aria-pressed="false"><span>🎲</span><strong>Surprise Me</strong><small>আজ সিদ্ধান্ত ভাগ্যের</small></button>
+      </div>
+    </div>
+    <div class="fd-flavor-actions">
+      <button type="button" class="fd-flavor-back" data-flavor-back hidden>← আগের ধাপ</button>
+      <button type="button" class="fd-flavor-next" data-flavor-next disabled>পরের ধাপ <span>→</span></button>
+    </div>
+    <div class="fd-flavor-result" data-flavor-result hidden aria-live="polite">
+      <div class="fd-flavor-result-orb" aria-hidden="true"><span>✦</span><i></i></div>
+      <p class="fd-flavor-result-kicker">YOUR FLAVOR IDENTITY</p>
+      <h3 data-flavor-persona></h3>
+      <p class="fd-flavor-result-copy" data-flavor-copy></p>
+      <div class="fd-flavor-match" data-flavor-match hidden>
+        <img data-flavor-image alt="" loading="lazy">
+        <div><small>তোমার জন্য মেনু থেকে একটি পছন্দ</small><strong data-flavor-product></strong><span data-flavor-price></span><a data-flavor-link href="#menu">মেনুতে দেখুন ↗</a><button type="button" data-flavor-add>কার্টে যোগ করুন</button></div>
+      </div>
+      <p class="fd-flavor-status" data-flavor-status role="status"></p>
+      <div class="fd-flavor-result-actions"><button type="button" data-flavor-restart>আবার নিজের Flavor খুঁজুন ↻</button><a href="#menu">পুরো মেনু ঘুরে দেখুন ↗</a></div>
+    </div>
+  </div>
+  <p class="fd-flavor-footnote">তোমার উত্তর শুধু এই অভিজ্ঞতার জন্য ব্যবহার হয়—কোনো অ্যাকাউন্ট বা ব্যক্তিগত তথ্যের প্রয়োজন নেই।</p>
+</section>
+িজে থেকে হবে না—চমকটি দেখুন, সিদ্ধান্ত আপনার।</p>
 </section>
 <section class="fd-taste-finder" id="tasteFinder" aria-labelledby="tasteFinderTitle">
   <div class="fd-taste-head">
@@ -218,6 +278,7 @@ class="primary-button full" style="display:none;">
 <script src="/homepage-taste-finder.js?v=1" defer></script>
 <script src="/homepage-quick-view.js?v=1" defer></script>
 <script src="/homepage-mystery-box.js?v=1" defer></script>
+<script src="/homepage-flavorverse.js?v=1" defer></script>
 <script src="/customer-support.js?v=2" defer></script>
 <script src="/app-pwa.js?v=1" defer></script>
 </body></html>
