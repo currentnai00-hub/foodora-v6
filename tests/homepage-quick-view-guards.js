@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const html = fs.readFileSync("index.html","utf8");
 const css = fs.readFileSync("homepage-quick-view.css","utf8");
 const js = fs.readFileSync("homepage-quick-view.js","utf8");
+const app = fs.readFileSync("script.js","utf8");
 assert.match(html,/homepage-quick-view\.js/, "Homepage must load the quick-view controller");
 assert.match(html,/homepage-quick-view\.css/, "Homepage must load quick-view styling");
 assert.match(js,/data-quick-view/, "Product cards must expose a quick-view action");
