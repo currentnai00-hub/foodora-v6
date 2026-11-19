@@ -121,7 +121,7 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Idempotency-Key UUID header প্রয়োজন।");
 
         // Serialize this customer's checkout requests so the same key cannot create two orders.
-        Integer locked = jdbc.queryForObject("""
+        List<UUID> locked = jdbc.query("""
             SELECT id FROM platform_identity.users WHERE id = ? FOR UPDATE
             """, (rs, n) -> rs.getObject("id", UUID.class), customerId);
         if (locked.isEmpty())
