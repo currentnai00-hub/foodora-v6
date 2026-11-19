@@ -97,4 +97,13 @@ class AuthFlowIntegrationTests {
   mvc.perform(get("/api/v1/auth/me").cookie(session)).andExpect(status().isUnauthorized());
  }
 
+ @Test void malformedSessionCookieCannotAccessProtectedProfile()throws Exception{
+  mvc.perform(get("/api/v1/auth/me").cookie(new Cookie("foodora_platform_session","not-a-session-token")))
+   .andExpect(status().isUnauthorized());
+ }
+ @Test void unknownWellFormedSessionTokenCannotAccessProtectedProfile()throws Exception{
+  mvc.perform(get("/api/v1/auth/me").cookie(new Cookie("foodora_platform_session","a".repeat(64))))
+   .andExpect(status().isUnauthorized());
+ }
+
 }
