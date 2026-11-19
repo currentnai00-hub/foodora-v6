@@ -159,7 +159,7 @@ function registerCustomerOrderStream({ app, pool }) {
       // LISTEN is active before replay begins. The ticket cursor was captured
       // during verification, so updates during connection setup are not skipped.
       await drain();
-      res.write("event: ready\\ndata: {}\\n\\n");
+      res.write("event: ready\ndata: {}\n\n");
     } catch (err) {
       console.error("Customer order stream connection failed:", err.message);
       if (!closed) res.end();
