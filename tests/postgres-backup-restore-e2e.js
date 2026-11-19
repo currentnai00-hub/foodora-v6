@@ -108,6 +108,33 @@ async function jsonResponse(response) {
     await pool.query("DROP FUNCTION ci_reject_foodora_restore()");
     triggerInstalled = false;
 
+    // Verify a trigger that silently suppresses restored rows cannot commit.
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION ci_skip_foodora_restore_row() RETURNS trigger
+      LANGUAGE plpgsql AS $
+      BEGIN RETURN NULL; END;
+      $;
+      CREATE TRIGGER ci_skip_foodora_restore_row
+      BEFORE INSERT ON products FOR EACH ROW
+      EXECUTE FUNCTION ci_skip_foodora_restore_row();
+    `);
+    const skippedRowRestoreResponse = await api("/api/admin/backups/restore", {
+      method: "POST",
+      headers: { "content-type": "application/zip" },
+      body: archive
+    });
+    const skippedRowRestore = await jsonResponse(skippedRowRestoreResponse);
+    assert.equal(skippedRowRestoreResponse.status, 400,
+      "Restore must refuse to commit when a trigger silently skips rows");
+    assert.match(skippedRowRestore.error || "", /row-count verification failed/i);
+    const afterSkippedRestore = await pool.query("SELECT stock FROM products WHERE id = $1", [before.id]);
+    assert.equal(Number(afterSkippedRestore.rows[0].stock), Number(before.stock) + 7,
+      "Row-count mismatch must roll back and preserve pre-restore data");
+    assert.deepEqual(await tableCounts(), countsBefore,
+      "Row-count mismatch rollback must preserve every application table count");
+    await pool.query("DROP TRIGGER ci_skip_foodora_restore_row ON products");
+    await pool.query("DROP FUNCTION ci_skip_foodora_restore_row()");
+
     const restoreResponse = await api("/api/admin/backups/restore", {
       method: "POST",
       headers: { "content-type": "application/zip" },
@@ -173,6 +200,8 @@ async function jsonResponse(response) {
       await pool.query("DROP TRIGGER IF EXISTS ci_reject_foodora_restore ON products").catch(() => {});
       await pool.query("DROP FUNCTION IF EXISTS ci_reject_foodora_restore()").catch(() => {});
     }
+    await pool.query("DROP TRIGGER IF EXISTS ci_skip_foodora_restore_row ON products").catch(() => {});
+    await pool.query("DROP FUNCTION IF EXISTS ci_skip_foodora_restore_row()").catch(() => {});
     await pool.end();
   }
 })();
