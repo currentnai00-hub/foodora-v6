@@ -85,4 +85,16 @@ class AuthFlowIntegrationTests {
    java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).minusMinutes(1),SessionAuthenticationFilter.sha256(session.getValue()));
   mvc.perform(get("/api/v1/auth/me").cookie(session)).andExpect(status().isUnauthorized());
  }
+ @Test void deactivatedAccountCannotReuseAnExistingSession()throws Exception{
+  String phone="01312345678";
+  String body="{\"name\":\"Deactivated Customer\",\"phone\":\""+phone+"\",\"password\":\"a-strong-test-password\"}";
+  var registered=mvc.perform(protectedPost("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+   .andExpect(status().isCreated()).andReturn();
+  Cookie session=registered.getResponse().getCookie("foodora_platform_session");
+  org.junit.jupiter.api.Assertions.assertNotNull(session);
+  mvc.perform(get("/api/v1/auth/me").cookie(session)).andExpect(status().isOk());
+  jdbc.update("UPDATE platform_identity.users SET active = FALSE WHERE phone = ?",phone);
+  mvc.perform(get("/api/v1/auth/me").cookie(session)).andExpect(status().isUnauthorized());
+ }
+
 }
