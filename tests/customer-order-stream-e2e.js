@@ -21,6 +21,15 @@ const origin = base;
     });
     assert.equal(badOrigin.status, 403, "ticket endpoint must reject cross-origin requests");
 
+    const parsedOrigin = new URL(origin);
+    const wrongSchemeOrigin = (parsedOrigin.protocol === "https:" ? "http:" : "https:") + "//" + parsedOrigin.host;
+    const wrongScheme = await fetch(base + "/api/customer/events/ticket", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: wrongSchemeOrigin },
+      body: JSON.stringify({ orderId: id, phone })
+    });
+    assert.equal(wrongScheme.status, 403, "ticket endpoint must reject a same-host origin with a different scheme");
+
     await pool.query(
       "INSERT INTO orders(id,customer_name,phone,address,payment_method,items,subtotal,total,status,payment_status) VALUES($1,'CI Customer',$2,'PRIVATE CI ADDRESS','COD','[]'::jsonb,100,100,'Pending','Awaiting payment')",
       [id, phone]
@@ -69,7 +78,7 @@ const origin = base;
     assert.equal(received.includes("PRIVATE CI ADDRESS"), false, "customer stream must not expose delivery address");
     assert.equal(received.includes("CI Customer"), false, "customer stream must not expose customer name");
 
-    console.log("Customer order SSE E2E passed: same-origin ticket issuance, invalid-ticket rejection, verified order stream, status updates, and PII minimization.");
+    console.log("Customer order SSE E2E passed: same-origin ticket issuance, wrong-origin rejection, invalid-ticket rejection, verified order stream, status updates, and PII minimization.");
   } finally {
     controller.abort();
     if (reader) await reader.cancel().catch(() => {});

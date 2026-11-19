@@ -2,6 +2,7 @@
 
 const crypto = require("crypto");
 const MAX_CUSTOMER_STREAMS = 100;
+const MAX_TICKET_ATTEMPT_IPS = 10000;
 const TICKET_TTL_MS = 10 * 60 * 1000;
 const HEARTBEAT_MS = 20000;
 
@@ -17,17 +18,33 @@ function registerCustomerOrderStream({ app, pool }) {
     }
   }
 
+  function pruneTicketAttempts(now = Date.now()) {
+    for (const [ip, attempt] of ticketAttempts) {
+      if (now - attempt.startedAt >= 60 * 1000) ticketAttempts.delete(ip);
+    }
+    // Keep the in-memory limiter bounded even when requests arrive from many IPs.
+    while (ticketAttempts.size > MAX_TICKET_ATTEMPT_IPS) {
+      ticketAttempts.delete(ticketAttempts.keys().next().value);
+    }
+  }
+
   function sameOrigin(req) {
     const origin = req.get("origin");
     if (!origin) return false;
-    try { return new URL(origin).host === req.get("host"); }
-    catch { return false; }
+    try {
+      const parsed = new URL(origin);
+      const expected = new URL(req.protocol + "://" + req.get("host"));
+      return parsed.origin === expected.origin;
+    } catch {
+      return false;
+    }
   }
 
   app.post("/api/customer/events/ticket", async (req, res) => {
     if (!sameOrigin(req)) return res.status(403).json({ error: "Request origin not allowed." });
     const ip = String(req.ip || req.socket?.remoteAddress || "unknown");
     const now = Date.now();
+    pruneTicketAttempts(now);
     const attempt = ticketAttempts.get(ip);
     if (attempt && now - attempt.startedAt < 60 * 1000 && attempt.count >= 20) {
       return res.status(429).json({ error: "Too many tracking attempts. Please wait a minute." });
