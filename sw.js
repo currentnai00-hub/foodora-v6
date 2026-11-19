@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_VERSION = "foodora-shell-v1";
+const CACHE_VERSION = "foodora-shell-v2";
 const SHELL_CACHE = CACHE_VERSION + "-shell";
 const ASSET_CACHE = CACHE_VERSION + "-assets";
 const SHELL_URLS = ["/", "/offline.html"];
@@ -10,7 +10,7 @@ const STATIC_ASSETS = [
   "/customer-support.js?v=2",
   "/icons/foodora-icon.svg"
 ];
-const PRIVATE_PREFIXES = ["/api/", "/admin", "/account", "/checkout", "/wallet", "/backup"];
+const PRIVATE_PREFIXES = ["/api/", "/admin", "/account", "/checkout", "/wallet", "/backup", "/partner", "/dispatch"];
 const NEVER_CACHE = /\.(?:json|dump|sql|zip|backup)$/i;
 
 self.addEventListener("install", event => {
