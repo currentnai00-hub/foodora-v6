@@ -1,0 +1,21 @@
+#foodoraSupportWidget{font-family:inherit;position:relative;z-index:9998}
+.foodora-chat-launcher{position:fixed;right:22px;bottom:22px;z-index:9998;border:0;border-radius:999px;background:#12372b;color:#fff;padding:14px 20px;box-shadow:0 8px 28px #102a2140;display:flex;align-items:center;gap:9px;font:700 14px inherit;cursor:pointer}
+.foodora-chat-launcher span:first-child{font-size:18px;color:#f0a66b}
+.foodora-chat-panel{position:fixed;right:22px;bottom:86px;z-index:9999;width:min(370px,calc(100vw - 28px));height:min(540px,calc(100dvh - 115px));background:#fff;border:1px solid #e4e8e1;border-radius:16px;box-shadow:0 18px 55px #102a2130;display:flex;flex-direction:column;overflow:hidden}
+.foodora-chat-panel[hidden],.foodora-chat-launcher[hidden]{display:none}
+.foodora-chat-header{background:#12372b;color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center}
+.foodora-chat-header strong,.foodora-chat-header small{display:block}
+.foodora-chat-header strong{font-size:16px}.foodora-chat-header small{font-size:11px;color:#d4e0d6;margin-top:4px}
+.foodora-chat-header button{border:0;background:transparent;color:white;font-size:26px;cursor:pointer}
+.foodora-chat-messages{padding:15px;overflow:auto;flex:1;background:#f7f8f5;display:flex;flex-direction:column;gap:10px}
+.foodora-chat-message{max-width:90%;padding:11px 13px;border-radius:12px;font-size:13px;line-height:1.65;overflow-wrap:anywhere}
+.foodora-chat-message.is-bot{background:white;color:#26362c;border:1px solid #e8ece6;align-self:flex-start;border-bottom-left-radius:4px}
+.foodora-chat-message.is-user{background:#e3eee4;color:#193a2a;align-self:flex-end;border-bottom-right-radius:4px}
+.foodora-chat-inline-link,.foodora-chat-wa-link{display:inline-block;margin-top:7px;color:#17613c;font-weight:700;text-decoration:underline}
+.foodora-chat-quick{display:flex;gap:7px;flex-wrap:wrap;padding:10px 12px 4px;background:white}
+.foodora-chat-quick button{border:1px solid #dce6dc;border-radius:20px;background:#f7faf6;color:#28503a;padding:7px 10px;font-size:11px;cursor:pointer}
+.foodora-chat-form{display:flex;gap:8px;padding:10px 12px;background:white;border-top:1px solid #edf0eb}
+.foodora-chat-form input{min-width:0;flex:1;border:1px solid #dfe5dc;border-radius:8px;padding:11px;font:13px inherit;outline-color:#39734e}
+.foodora-chat-form button{border:0;border-radius:8px;padding:0 14px;background:#12372b;color:#fff;font-weight:700;cursor:pointer}
+.foodora-chat-whatsapp{display:block;text-align:center;padding:10px;background:#e9f4e9;color:#17613c;font-weight:700;font-size:12px;text-decoration:none}
+@media(max-width:520px){.foodora-chat-launcher{right:14px;bottom:14px}.foodora-chat-panel{right:10px;bottom:76px;width:calc(100vw - 20px);height:min(560px,calc(100dvh - 92px))}}
