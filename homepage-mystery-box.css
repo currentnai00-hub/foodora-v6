@@ -1,0 +1,34 @@
+/* FOODORA MYSTERY FOOD BOX */
+.fd-mystery { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0,1fr) minmax(220px,.72fr); align-items: center; gap: clamp(22px,5vw,56px); margin: 30px auto 12px; padding: clamp(24px,5vw,48px); overflow: hidden; border: 1px solid rgba(235,218,185,.75); border-radius: 28px; background: radial-gradient(circle at 85% 12%,rgba(240,174,100,.22),transparent 30%),linear-gradient(125deg,#102d23,#1b4935 62%,#31563a); color: #fff; box-shadow: 0 22px 55px rgba(16,45,35,.14); }
+.fd-mystery::before,.fd-mystery::after { position:absolute; z-index:-1; content:""; border:1px solid rgba(255,255,255,.1); border-radius:50%; }
+.fd-mystery::before { width:300px;height:300px;right:-110px;top:-170px; }
+.fd-mystery::after { width:210px;height:210px;right:-65px;bottom:-150px; }
+.fd-mystery-copy { max-width:600px; }
+.fd-mystery-kicker { margin:0 0 10px; color:#f4c48d; font:800 10px/1.5 'DM Sans',sans-serif; letter-spacing:2px; }
+.fd-mystery h2 { margin:0 0 12px; color:#fff; font-size:clamp(27px,4.4vw,43px); line-height:1.2; }
+.fd-mystery h2 em { color:#f3bd80; font-style:normal; }
+.fd-mystery-intro { max-width:510px; margin:0 0 22px; color:rgba(255,255,255,.78); font-size:14px; line-height:1.9; }
+.fd-mystery-reveal { min-height:48px; padding:0 23px; border:1px solid #f7d7ad; border-radius:999px; background:linear-gradient(135deg,#f7d5a8,#e9a66b); color:#183526; font:800 14px 'Hind Siliguri',sans-serif; cursor:pointer; box-shadow:0 8px 24px rgba(0,0,0,.16); transition:transform .2s ease,filter .2s ease; }
+.fd-mystery-reveal:hover { transform:translateY(-2px);filter:brightness(1.04); }
+.fd-mystery-reveal:disabled { opacity:.55;cursor:wait;transform:none; }
+.fd-mystery-art { display:grid;place-items:center;min-height:210px; }
+.fd-mystery-gift { position:relative;display:grid;place-items:center;width:160px;height:150px;border:1px solid rgba(255,255,255,.35);border-radius:28px;background:linear-gradient(145deg,#f4c58d,#d9894e);color:#60391e;font-size:76px;box-shadow:0 22px 45px rgba(0,0,0,.2);transform:rotate(-5deg);animation:fd-mystery-float 3.2s ease-in-out infinite; }
+.fd-mystery-gift::before { position:absolute;top:-12px;left:50%;width:40px;height:24px;border:7px solid #f8dfb8;border-radius:50% 50% 4px 4px;content:"";transform:translateX(-50%); }
+.fd-mystery-result { display:grid;grid-template-columns:120px minmax(0,1fr);align-items:center;gap:17px;margin-top:24px;padding:14px;border:1px solid rgba(255,255,255,.2);border-radius:18px;background:rgba(255,255,255,.09);animation:fd-mystery-reveal .35s ease both; }
+.fd-mystery-result[hidden] { display:none; }
+.fd-mystery-result img { width:120px;height:120px;object-fit:cover;border-radius:13px;background:rgba(255,255,255,.12); }
+.fd-mystery-result-copy { min-width:0; }
+.fd-mystery-result-copy > p { margin:0 0 5px;color:#f3c58e;font-size:11px;font-weight:700; }
+.fd-mystery-result h3 { margin:0 0 5px;color:#fff;font-size:20px; }
+.fd-mystery-result-copy > span { display:block;color:rgba(255,255,255,.75);font-size:12px;line-height:1.65; }
+.fd-mystery-meta { display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:9px; }
+.fd-mystery-meta strong { color:#ffe0b8;font-size:16px; }
+.fd-mystery-meta a { color:#fff;text-decoration:underline;text-underline-offset:3px;font-size:12px; }
+.fd-mystery-add { margin-top:10px;min-height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.55);border-radius:10px;background:#fff;color:#1b4935;font:700 12px 'Hind Siliguri',sans-serif;cursor:pointer; }
+.fd-mystery-add:disabled { opacity:.55;cursor:not-allowed; }
+.fd-mystery-status { grid-column:1/-1;min-height:20px;margin:0;color:#f6d9b4;font-size:12px;line-height:1.7; }
+.fd-mystery button:focus-visible,.fd-mystery a:focus-visible { outline:3px solid #fff;outline-offset:4px; }
+@keyframes fd-mystery-float { 0%,100% { transform:translateY(0) rotate(-5deg); } 50% { transform:translateY(-9px) rotate(3deg); } }
+@keyframes fd-mystery-reveal { from { opacity:0;transform:translateY(8px); } to { opacity:1;transform:translateY(0); } }
+@media(max-width:680px) { .fd-mystery { grid-template-columns:1fr;gap:4px;margin:20px 14px 10px;padding:25px 20px;border-radius:22px; } .fd-mystery-art { min-height:145px;grid-row:1; } .fd-mystery-gift { width:112px;height:106px;border-radius:22px;font-size:56px; } .fd-mystery-gift::before { width:30px;height:18px; } .fd-mystery-result { grid-template-columns:88px minmax(0,1fr);gap:12px; } .fd-mystery-result img { width:88px;height:88px; } .fd-mystery-result h3 { font-size:17px; } }
+@media(prefers-reduced-motion:reduce) { .fd-mystery-gift,.fd-mystery-result { animation:none!important; } .fd-mystery-reveal { transition:none; } .fd-mystery-reveal:hover { transform:none; } }
