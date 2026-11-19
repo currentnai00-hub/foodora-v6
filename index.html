@@ -6,6 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/style.css?v=foodora-home-sliders-v1">
 <link rel="stylesheet" href="/customer-support.css?v=2">
 <link rel="stylesheet" href="/homepage-experience.css?v=1">
+<link rel="stylesheet" href="/homepage-taste-finder.css?v=1">
 </head>
 <body>
 <header class="topbar"><a class="brand" href="/">foodora<span>.</span></a><nav><a href="#menu">মেনু</a><a href="#offers">অফার</a><a href="/track">অর্ডার ট্র্যাক</a><a href="/account">আমার অ্যাকাউন্ট</a><a href="#about">আমাদের সম্পর্কে</a></nav><button class="cart-button" id="cartOpen">কার্ট <b id="cartCount">0</b></button></header>
@@ -75,6 +76,20 @@
 <div class="trust-item"><span>৳</span><div><b>ন্যায্য দাম</b><small>সুস্বাদু খাবার, সঠিক দাম</small></div></div>
 </section>
 <main>
+<section class="fd-taste-finder" id="tasteFinder" aria-labelledby="tasteFinderTitle">
+  <div class="fd-taste-head">
+    <div><p class="fd-taste-kicker">FOODORA TASTE FINDER</p><h2 id="tasteFinderTitle">আজ কী খেতে ইচ্ছে করছে?<br><em>পছন্দটা খুঁজে নিন এক ট্যাপে।</em></h2></div>
+    <p>মুড বেছে নিন—মেনু আপনার পছন্দ অনুযায়ী সাজিয়ে দেবে। কোনো অর্ডার নিজে থেকে যোগ হবে না।</p>
+  </div>
+  <div class="fd-taste-grid">
+    <button type="button" class="fd-taste-choice" data-taste-preset="popular"><span class="fd-taste-emoji" aria-hidden="true">⭐</span><span><strong>জনপ্রিয় পছন্দ</strong><small>কাস্টমারদের পছন্দের আইটেম আগে দেখুন</small></span><span class="fd-taste-arrow" aria-hidden="true">↗</span></button>
+    <button type="button" class="fd-taste-choice" data-taste-preset="hot"><span class="fd-taste-emoji" aria-hidden="true">🌶️</span><span><strong>ঝাল ঝাল কিছু</strong><small>বেশি ঝালের খাবার খুঁজুন</small></span><span class="fd-taste-arrow" aria-hidden="true">↗</span></button>
+    <button type="button" class="fd-taste-choice" data-taste-preset="mild"><span class="fd-taste-emoji" aria-hidden="true">🥗</span><span><strong>কম ঝাল, হালকা</strong><small>কম ঝালের অপশনগুলো দেখুন</small></span><span class="fd-taste-arrow" aria-hidden="true">↗</span></button>
+    <button type="button" class="fd-taste-choice" data-taste-preset="breakfast"><span class="fd-taste-emoji" aria-hidden="true">☀️</span><span><strong>সকালের ক্ষুধা</strong><small>নাশতার জন্য তালিকা সাজান</small></span><span class="fd-taste-arrow" aria-hidden="true">↗</span></button>
+  </div>
+  <p class="fd-taste-status" role="status" aria-live="polite"><span data-taste-status>অথবা ভাগ্যের ওপর ছেড়ে দিন—</span> <button type="button" class="fd-taste-reset" data-taste-preset="surprise">আমার জন্য একটি খাবার বেছে দিন ✨</button></p>
+  <button type="button" class="fd-taste-reset" data-taste-reset>সব ফিল্টার মুছে পুরো মেনু দেখুন</button>
+</section>
 <section class="section" id="menu"><div class="section-head"><div><p class="eyebrow">আমাদের রান্নাঘর · টাটকা পরিবেশন</p><h2>খুঁজে নিন আপনার পছন্দের খাবার।</h2><p class="menu-subtitle">যত্নে তৈরি সুস্বাদু খাবার পৌঁছে যাবে আপনার ঠিকানায়।</p></div><input id="search" class="search" placeholder="খাবার খুঁজুন..." aria-label="খাবার খুঁজুন"></div><div class="menu-tools"><button type="button" id="favoritesToggle" class="menu-filter" aria-pressed="false">♡ পছন্দের খাবার <span id="favoriteCount">0</span></button><label class="sort-label">সাজান <select id="sortMenu" aria-label="খাবার সাজান"><option value="recommended">ডিফল্ট</option><option value="popular">জনপ্রিয় আগে</option><option value="price-low">কম দাম আগে</option><option value="price-high">বেশি দাম আগে</option><option value="name">নাম অনুযায়ী</option></select></label></div>
 <div class="smart-filters" aria-label="খাবার ফিল্টার">
 <label>সময় <select id="mealFilter"><option value="all">সব সময়</option><option value="breakfast">সকালের নাশতা</option><option value="lunch">দুপুরের খাবার</option><option value="dinner">রাতের খাবার</option></select></label>
@@ -177,6 +192,7 @@ class="primary-button full" style="display:none;">
 <script src="/script.js?v=foodora-payment-v3"></script>
 <script src="/homepage-sliders.js?v=1" defer></script>
 <script src="/homepage-experience.js?v=1" defer></script>
+<script src="/homepage-taste-finder.js?v=1" defer></script>
 <script src="/customer-support.js?v=2" defer></script>
 <script src="/app-pwa.js?v=1" defer></script>
 </body></html>
