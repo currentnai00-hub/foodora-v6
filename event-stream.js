@@ -21,31 +21,30 @@ function registerOrderEventStream({ app, pool, adminOnly }) {
       CREATE INDEX IF NOT EXISTS order_event_outbox_order_idx
         ON order_event_outbox(order_id,id DESC);
       CREATE OR REPLACE FUNCTION foodora_capture_order_event() RETURNS trigger AS $$
-      DECLARE event_name TEXT;
-      DECLARE event_payload JSONB;
+      DECLARE event_id BIGINT;
       BEGIN
         IF TG_OP = 'INSERT' THEN
-          event_name := 'order.created';
-          event_payload := jsonb_build_object(
-            'orderId', NEW.id, 'status', NEW.status,
-            'paymentStatus', NEW.payment_status
-          );
-        ELSE
-          IF NEW.status IS DISTINCT FROM OLD.status THEN
-            event_name := 'order.status_changed';
-          ELSIF NEW.payment_status IS DISTINCT FROM OLD.payment_status THEN
-            event_name := 'payment.status_changed';
-          ELSE
-            RETURN NEW;
-          END IF;
-          event_payload := jsonb_build_object(
-            'orderId', NEW.id, 'status', NEW.status,
-            'paymentStatus', NEW.payment_status
-          );
+          INSERT INTO order_event_outbox(order_id,event_type,payload)
+            VALUES(NEW.id,'order.created',jsonb_build_object(
+              'orderId',NEW.id,'status',NEW.status,'paymentStatus',NEW.payment_status
+            )) RETURNING id INTO event_id;
+          PERFORM pg_notify('foodora_order_events',event_id::text);
+          RETURN NEW;
         END IF;
-        INSERT INTO order_event_outbox(order_id,event_type,payload)
-          VALUES(NEW.id,event_name,event_payload);
-        PERFORM pg_notify('foodora_order_events', currval('order_event_outbox_id_seq')::text);
+        IF NEW.status IS DISTINCT FROM OLD.status THEN
+          INSERT INTO order_event_outbox(order_id,event_type,payload)
+            VALUES(NEW.id,'order.status_changed',jsonb_build_object(
+              'orderId',NEW.id,'status',NEW.status,'paymentStatus',NEW.payment_status
+            )) RETURNING id INTO event_id;
+          PERFORM pg_notify('foodora_order_events',event_id::text);
+        END IF;
+        IF NEW.payment_status IS DISTINCT FROM OLD.payment_status THEN
+          INSERT INTO order_event_outbox(order_id,event_type,payload)
+            VALUES(NEW.id,'payment.status_changed',jsonb_build_object(
+              'orderId',NEW.id,'status',NEW.status,'paymentStatus',NEW.payment_status
+            )) RETURNING id INTO event_id;
+          PERFORM pg_notify('foodora_order_events',event_id::text);
+        END IF;
         RETURN NEW;
       END;
       $$ LANGUAGE plpgsql;
