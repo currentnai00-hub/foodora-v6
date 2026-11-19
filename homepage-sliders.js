@@ -10,7 +10,6 @@
   const next = document.getElementById("heroNext");
   const pauseButton = document.getElementById("heroPause");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const mobileView = window.matchMedia("(max-width: 760px)");
   const intervalMs = 7000;
 
   let current = 0;
@@ -43,7 +42,7 @@
   }
 
   function canAutoPlay() {
-    return !userPaused && !reducedMotion.matches && !mobileView.matches &&
+    return !userPaused && !reducedMotion.matches &&
       !document.hidden && !root.matches(":hover") &&
       !root.contains(document.activeElement);
   }
@@ -79,7 +78,6 @@
   });
   document.addEventListener("visibilitychange", startTimer);
   reducedMotion.addEventListener?.("change", startTimer);
-  mobileView.addEventListener?.("change", startTimer);
 
   root.addEventListener("keydown", event => {
     if (event.key === "ArrowLeft") { event.preventDefault(); goTo(current - 1); }

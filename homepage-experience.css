@@ -1,0 +1,47 @@
+/* FOODORA HOMEPAGE DISCOVERY + VIDEO-STYLE TOUR */
+.fd-discovery { padding-top: clamp(56px,8vw,100px); padding-bottom: clamp(56px,8vw,100px); }
+.fd-discovery-heading { max-width: 760px; margin: 0 auto 34px; text-align: center; }
+.fd-discovery-heading h2 { margin: 8px 0 12px; color: var(--green,#173b2d); font-size: clamp(28px,4.6vw,48px); line-height: 1.2; }
+.fd-discovery-heading h2 em { color: var(--orange,#d98243); font-style: normal; }
+.fd-discovery-heading > p:last-child { color: #69766d; line-height: 1.8; }
+.fd-discovery-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
+.fd-discovery-card { position: relative; display: flex; flex-direction: column; min-height: 290px; padding: 25px; overflow: hidden; border: 1px solid #e5e9e1; border-radius: 22px; background: #fff; box-shadow: 0 14px 38px rgba(19,49,34,.055); transition: transform .25s ease,box-shadow .25s ease,border-color .25s ease; }
+.fd-discovery-card:hover { transform: translateY(-5px); border-color: #c8d8c8; box-shadow: 0 20px 45px rgba(19,49,34,.1); }
+.fd-discovery-card-featured { background: radial-gradient(circle at 100% 0%,rgba(217,130,67,.16),transparent 44%),#f4f7f1; }
+.fd-discovery-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 15px; background: #edf3eb; color: var(--green,#173b2d); font-size: 27px; }
+.fd-card-kicker { margin: 24px 0 7px; color: #a36d3f; font: 700 10px/1.4 'DM Sans',sans-serif; letter-spacing: 1.4px; }
+.fd-discovery-card h3 { margin: 0 0 9px; color: #1e3b2c; font-size: 21px; }
+.fd-discovery-card > p:not(.fd-card-kicker) { margin: 0 0 22px; color: #6d796f; font-size: 14px; line-height: 1.85; }
+.fd-discovery-card a,.fd-text-button { width: fit-content; margin-top: auto; padding: 0; border: 0; background: transparent; color: #245a3b; font: 700 13px 'Hind Siliguri',sans-serif; text-decoration: none; cursor: pointer; }
+.fd-discovery-card a:hover,.fd-text-button:hover { color: #c16e35; }
+.fd-curiosity-bar { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-top: 22px; padding: 19px 22px; border: 1px solid #e8e8dd; border-radius: 16px; background: #f7f7f0; }
+.fd-curiosity-bar > div { display: flex; align-items: center; gap: 11px; color: #385343; font-size: 14px; }
+.fd-curiosity-bar a { color: #a75f2f; font-size: 13px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.fd-live-dot { width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%; background: #4c9a63; box-shadow: 0 0 0 5px rgba(76,154,99,.12); }
+.fd-tour-backdrop { position: fixed; z-index: 10000; inset: 0; display: grid; place-items: center; padding: 18px; overflow-y: auto; background: rgba(8,24,17,.78); backdrop-filter: blur(9px); }
+.fd-tour-backdrop[hidden] { display: none; }
+.fd-tour-dialog { position: relative; width: min(520px,100%); max-height: min(850px,calc(100dvh - 36px)); overflow-y: auto; padding: clamp(22px,5vw,34px); border: 1px solid rgba(255,255,255,.6); border-radius: 26px; background: #fbfcf8; box-shadow: 0 30px 100px rgba(0,0,0,.3); animation: fd-tour-enter .28s ease both; }
+.fd-tour-close { position: absolute; top: 16px; right: 16px; display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid #e3e8df; border-radius: 50%; background: #fff; color: #31513d; font-size: 25px; cursor: pointer; }
+.fd-tour-kicker { margin: 0 45px 7px 0; color: #ad6d3d; font: 800 10px 'DM Sans',sans-serif; letter-spacing: 1.5px; }
+.fd-tour-dialog h2 { margin: 0 45px 7px 0; color: #1a3c2b; font-size: clamp(24px,5vw,31px); }
+.fd-tour-description,.fd-tour-step-text { color: #6c796e; font-size: 13px; line-height: 1.8; }
+.fd-tour-stage { position: relative; display: grid; place-items: center; min-height: 210px; margin: 20px 0 18px; overflow: hidden; border-radius: 19px; background: radial-gradient(circle at 50% 45%,#f8e6d3 0,#e8f0e5 45%,#dce8db 100%); }
+.fd-tour-orbit { position: absolute; width: 160px; height: 160px; border: 1px dashed rgba(35,83,54,.35); border-radius: 50%; animation: fd-tour-spin 14s linear infinite; }
+.fd-tour-visual { position: relative; display: grid; place-items: center; width: 112px; height: 112px; border: 1px solid rgba(255,255,255,.8); border-radius: 32px; background: rgba(255,255,255,.75); box-shadow: 0 15px 35px rgba(28,67,42,.13); font-size: 54px; animation: fd-tour-float 2.8s ease-in-out infinite; }
+.fd-tour-step-count { position: absolute; top: 15px; left: 17px; color: #45634d; font: 800 11px 'DM Sans',sans-serif; letter-spacing: 1px; }
+.fd-tour-progress { position: absolute; right: 17px; bottom: 16px; left: 17px; height: 4px; overflow: hidden; border-radius: 10px; background: rgba(35,83,54,.13); }
+.fd-tour-progress span { display: block; width: 25%; height: 100%; border-radius: inherit; background: #d98243; transition: width .25s ease; }
+.fd-tour-dialog h3 { margin: 0 0 3px; color: #1d432e; font-size: 20px; }
+.fd-tour-step-text { min-height: 48px; margin: 0; }
+.fd-tour-controls { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; }
+.fd-tour-controls button { min-height: 46px; padding: 0 18px; border-radius: 12px; font: 700 13px 'Hind Siliguri',sans-serif; cursor: pointer; }
+.fd-tour-secondary { border: 1px solid #dce4da; background: #fff; color: #365440; }
+.fd-tour-secondary:disabled { opacity: .42; cursor: not-allowed; }
+.fd-tour-primary { border: 1px solid #173b2d; background: #173b2d; color: #fff; }
+.fd-tour-note { margin: 15px 0 0; color: #879188; font-size: 11px; line-height: 1.7; text-align: center; }
+.fd-tour-close:focus-visible,.fd-tour-controls button:focus-visible,.fd-text-button:focus-visible { outline: 3px solid rgba(217,130,67,.7); outline-offset: 3px; }
+@keyframes fd-tour-enter { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes fd-tour-spin { to { transform: rotate(360deg); } }
+@keyframes fd-tour-float { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-8px) rotate(3deg); } }
+@media(max-width:760px) { .fd-discovery-grid { grid-template-columns: 1fr; gap: 13px; } .fd-discovery-card { min-height: 250px; } .fd-curiosity-bar { align-items: flex-start; flex-direction: column; } .fd-tour-stage { min-height: 185px; } }
+@media(prefers-reduced-motion:reduce) { .fd-discovery-card,.fd-tour-dialog,.fd-tour-orbit,.fd-tour-visual,.fd-tour-progress span { animation: none !important; transition: none !important; } .fd-discovery-card:hover { transform: none; } }
