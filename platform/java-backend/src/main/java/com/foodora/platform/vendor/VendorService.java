@@ -41,19 +41,19 @@ public class VendorService {
 
     public VendorDtos.ApplicationResponse myApplication(Authentication authentication) {
         UUID userId = principal(authentication).id();
-        return jdbc.query("""
-            SELECT id FROM platform_identity.vendor_applications WHERE applicant_user_id = ?
-            """, rs -> rs.next() ? application(rs.getObject(1, UUID.class)) : null, userId) == null
-            ? null : jdbc.queryForObject("""
-                SELECT id, business_name, contact_name, contact_phone, business_address,
-                       status, review_note, created_at
-                FROM platform_identity.vendor_applications WHERE applicant_user_id = ?
-                """, (rs, n) -> new VendorDtos.ApplicationResponse(
-                    rs.getObject("id", UUID.class), rs.getString("business_name"),
-                    rs.getString("contact_name"), rs.getString("contact_phone"),
-                    rs.getString("business_address"), rs.getString("status"),
-                    rs.getString("review_note"), rs.getObject("created_at", OffsetDateTime.class)),
-                userId);
+        var rows = jdbc.query("""
+            SELECT id, business_name, contact_name, contact_phone, business_address,
+                   status, review_note, created_at
+            FROM platform_identity.vendor_applications WHERE applicant_user_id = ?
+            """, (rs, n) -> new VendorDtos.ApplicationResponse(
+                rs.getObject("id", UUID.class), rs.getString("business_name"),
+                rs.getString("contact_name"), rs.getString("contact_phone"),
+                rs.getString("business_address"), rs.getString("status"),
+                rs.getString("review_note"), rs.getObject("created_at", OffsetDateTime.class)),
+            userId);
+        if (rows.isEmpty())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "কোনো vendor application পাওয়া যায়নি।");
+        return rows.getFirst();
     }
 
     public List<VendorDtos.ApplicationResponse> pendingApplications() {
