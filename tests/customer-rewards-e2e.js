@@ -72,6 +72,19 @@ async function waitForServer() {
     });
     assert.equal(product.status, 201, JSON.stringify(product.body));
 
+    const noRewardYet = await request("/api/customer/rewards/redeem", {
+      method: "POST", headers: { cookie },
+      body: JSON.stringify({ productId, deliveryArea: config.body.areas[0].id, address: "CI-only address" })
+    });
+    assert.equal(noRewardYet.status, 409, "A customer must not redeem before reaching the purchase threshold");
+
+    const expensiveProductId = "ci_reward_over_cap_" + crypto.randomBytes(5).toString("hex");
+    const expensiveProduct = await admin("/api/admin/products", "POST", {
+      id: expensiveProductId, name: "CI Reward Over Cap", category: "CI Test", price: 600,
+      stock: 5, emoji: "🍽️", description: "CI-only ineligible reward item", active: true
+    });
+    assert.equal(expensiveProduct.status, 201, JSON.stringify(expensiveProduct.body));
+
     for (const amount of [2500, 2500]) {
       const orderId = "CI_REWARD_" + crypto.randomBytes(6).toString("hex");
       await pool.query(
@@ -86,6 +99,13 @@ async function waitForServer() {
     assert.equal(progress.body.qualifyingSpend, 5000, "Separate successful orders must accumulate to the configured threshold");
     assert.equal(progress.body.availableRewards, 1, "Exactly one reward should be earned at ৳5,000");
     assert(progress.body.products.some(item => item.id === productId), "Eligible food under the maximum price should be selectable");
+    assert(!progress.body.products.some(item => item.id === expensiveProductId), "Food above the configured cap must not be offered");
+
+    const overCap = await request("/api/customer/rewards/redeem", {
+      method: "POST", headers: { cookie },
+      body: JSON.stringify({ productId: expensiveProductId, deliveryArea: config.body.areas[0].id, address: "CI-only address" })
+    });
+    assert.equal(overCap.status, 409, "Server must reject a reward item above the configured value cap");
 
     const redemption = await request("/api/customer/rewards/redeem", {
       method: "POST",
