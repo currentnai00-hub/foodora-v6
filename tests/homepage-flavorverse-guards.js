@@ -5,6 +5,8 @@ const html = fs.readFileSync("index.html", "utf8");
 const js = fs.readFileSync("homepage-flavorverse.js", "utf8");
 const css = fs.readFileSync("homepage-flavorverse.css", "utf8");
 assert.match(html, /id="flavorverse"/, "Homepage must include Flavorverse");
+assert.match(html, /কোনো অর্ডার নিজে থেকে হবে না—চমকটি দেখুন, সিদ্ধান্ত আপনার।/, "Mystery Box copy must remain intact");
+assert.ok(html.indexOf('id="fdMysteryBox"') < html.indexOf('id="flavorverse"') && html.indexOf('id="flavorverse"') < html.indexOf('id="tasteFinder"'), "Flavorverse must sit between Mystery Box and Taste Finder");
 assert.match(html, /data-flavor-step="0"/, "Flavor journey must start with step one");
 assert.match(html, /data-flavor-step="1" hidden/, "Later steps must start hidden");
 assert.match(html, /data-flavor-step="2" hidden/, "Final question must start hidden");
