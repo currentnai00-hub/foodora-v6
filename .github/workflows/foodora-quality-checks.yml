@@ -30,10 +30,12 @@ jobs:
           node tests/customer-order-stream-guards.js
       - name: Check customer menu JavaScript syntax
         run: node --check script.js
-      - name: Check homepage slider syntax and accessibility guards
+      - name: Check homepage slider and discovery experience
         run: |
           node --check homepage-sliders.js
           node tests/homepage-slider-guards.js
+          node --check homepage-experience.js
+          node tests/homepage-experience-guards.js
       - name: Check Admin dashboard JavaScript syntax
         run: node --check admin.js
       - name: Check payment guide JavaScript syntax
