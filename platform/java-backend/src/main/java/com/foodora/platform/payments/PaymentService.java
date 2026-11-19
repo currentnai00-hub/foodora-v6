@@ -39,10 +39,12 @@ public class PaymentService {
         try {
             jdbc.update("""
                 INSERT INTO platform_identity.order_payments
-                  (id, order_id, customer_id, payment_method, transaction_id)
-                VALUES (?, ?, ?, ?, ?)
+                  (id, order_id, customer_id, payment_method, transaction_id,
+                   payment_method_key, transaction_id_key)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, paymentId, orderId, actor.id(), request.paymentMethod(),
-                request.transactionId().trim());
+                request.transactionId().trim(), request.paymentMethod().toLowerCase(java.util.Locale.ROOT),
+                request.transactionId().trim().toLowerCase(java.util.Locale.ROOT));
         } catch (DuplicateKeyException ex) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                 "এই payment method-এর Transaction ID আগে জমা হয়েছে।");
