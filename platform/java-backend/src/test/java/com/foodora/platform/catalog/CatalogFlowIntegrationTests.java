@@ -90,6 +90,15 @@ class CatalogFlowIntegrationTests {
             String.class, java.util.UUID.fromString(applicationId));
     }
 
+    private static String sha256(String value) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                .digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
     @Test
     void catalogAndInventoryAreStoreScopedAndStockCannotGoNegative() throws Exception {
         String owner = register("01712345678");
