@@ -78,7 +78,7 @@
     modal.hidden = true;
     document.body.style.overflow = previousOverflow;
     activeCard = null;
-    if (returnFocus?.isConnected) returnFocus.focus();
+    if (returnFocus && returnFocus.isConnected) returnFocus.focus();
     returnFocus = null;
   }
 
