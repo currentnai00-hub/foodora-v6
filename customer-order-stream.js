@@ -26,6 +26,14 @@ function registerCustomerOrderStream({ app, pool }) {
 
   app.post("/api/customer/events/ticket", async (req, res) => {
     if (!sameOrigin(req)) return res.status(403).json({ error: "Request origin not allowed." });
+    const ip = String(req.ip || req.socket?.remoteAddress || "unknown");
+    const now = Date.now();
+    const attempt = ticketAttempts.get(ip);
+    if (attempt && now - attempt.startedAt < 60 * 1000 && attempt.count >= 20) {
+      return res.status(429).json({ error: "Too many tracking attempts. Please wait a minute." });
+    }
+    if (!attempt || now - attempt.startedAt >= 60 * 1000) ticketAttempts.set(ip, { startedAt: now, count: 1 });
+    else attempt.count += 1;
     const orderId = String(req.body.orderId || "").trim().slice(0, 60);
     const phone = String(req.body.phone || "").replace(/\D/g, "");
     if (!orderId || !/^01[0-9]{9}$/.test(phone)) {
