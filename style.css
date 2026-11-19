@@ -2181,3 +2181,10 @@ html[lang="bn"] #products .v8-empty p{margin:0;color:#7b847d;font-size:14px}
 @media (prefers-reduced-motion: reduce) {
   .hero-slide,.hero-arrow,.hero-pause,.hero-dot,.category-track { transition: none !important; scroll-behavior: auto; }
 }
+
+
+/* Customer reward account form controls */
+.account-form select,.account-form textarea{width:100%;min-height:47px;padding:12px 14px;border:1px solid #dfe4dc;border-radius:10px;background:#fff;color:#24372d;font:14px 'Hind Siliguri',sans-serif}
+.account-form textarea{resize:vertical;min-height:82px}
+.account-form select:focus,.account-form textarea:focus{outline:2px solid #b7cbb9;border-color:#739579}
+.customer-reward-panel{border-color:#d7e7dc;background:linear-gradient(145deg,#f8fbf9,#f1f7f2)}
