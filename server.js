@@ -362,7 +362,7 @@ async function getCustomerRewardProgress(db,customerId,settings){
   const spendResult=await db.query("SELECT COALESCE(SUM(GREATEST(subtotal-discount,0)),0)::bigint AS spend FROM orders WHERE customer_id=$1 AND status='Delivered' AND (payment_status='Verified' OR LOWER(payment_method) IN ('cash on delivery','cod'))",[customerId]);
   const redeemedResult=await db.query("SELECT COUNT(*)::int AS redeemed FROM customer_reward_redemptions r JOIN orders o ON o.id=r.order_id WHERE r.customer_id=$1 AND o.status<>'Cancelled'",[customerId]);
   const spend=Number(spendResult.rows[0]?.spend||0),redeemed=Number(redeemedResult.rows[0]?.redeemed||0),earned=Math.floor(spend/settings.spendThreshold),available=settings.enabled?Math.max(0,earned-redeemed):0;
-  const progressAmount=Math.min(settings.spendThreshold,Math.max(0,spend-redeemed*settings.spendThreshold));
+  const progressAmount=spend%settings.spendThreshold;
   return {enabled:settings.enabled,spendThreshold:settings.spendThreshold,maxItemValue:settings.maxItemValue,qualifyingSpend:spend,progressAmount,remainingAmount:Math.max(0,settings.spendThreshold-progressAmount),earnedRewards:earned,redeemedRewards:redeemed,availableRewards:available};
 }
 
