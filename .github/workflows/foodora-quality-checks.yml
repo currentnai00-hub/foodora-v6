@@ -82,6 +82,8 @@ jobs:
         run: node tests/static-private-data-guards.js
       - name: Check response security headers
         run: node tests/security-response-headers-guards.js
+      - name: Check encrypted off-site backup workflow safeguards
+        run: node tests/offsite-backup-workflow-guards.js
       - name: Check Operations Control Tower JavaScript and safety guards
         run: |
           node --check operations.js
