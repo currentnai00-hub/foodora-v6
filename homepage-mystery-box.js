@@ -14,7 +14,10 @@
   const details = section.querySelector("[data-mystery-details]");
   const addButton = section.querySelector("[data-mystery-add]");
   const status = section.querySelector("[data-mystery-status]");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let lastProductId = "";
+  let isOpening = false;
+  let revealTimer = null;
 
   function availableProducts() {
     return Array.from(grid.querySelectorAll(".product")).filter(card => {
@@ -28,7 +31,7 @@
     const candidates = availableProducts();
     if (!candidates.length) {
       status.textContent = "মেনু এখনো প্রস্তুত হচ্ছে, অথবা সব খাবার সাময়িকভাবে অনুপলব্ধ। একটু পরে আবার চেষ্টা করুন।";
-      return;
+      return false;
     }
 
     const freshCandidates = candidates.filter(card =>
@@ -56,10 +59,44 @@
     addButton.disabled = typeof window.addToCart !== "function";
     result.hidden = false;
     status.textContent = "রহস্য উন্মোচিত! চাইলে বিস্তারিত দেখুন অথবা নিজে কার্টে যোগ করুন।";
-    result.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+    result.scrollIntoView({ behavior: reducedMotion.matches ? "auto" : "smooth", block: "nearest" });
+    return true;
   }
 
-  revealButton.addEventListener("click", reveal);
+  function openMysteryBox() {
+    if (isOpening) return;
+    if (!availableProducts().length) {
+      status.textContent = "মেনু এখনো প্রস্তুত হচ্ছে, অথবা সব খাবার সাময়িকভাবে অনুপলব্ধ। একটু পরে আবার চেষ্টা করুন।";
+      revealButton.disabled = true;
+      return;
+    }
+
+    isOpening = true;
+    revealButton.disabled = true;
+    revealButton.setAttribute("aria-busy", "true");
+    revealButton.textContent = "চমক আসছে…";
+    section.classList.remove("is-opening", "is-revealed");
+    section.classList.add("is-opening");
+    section.setAttribute("aria-busy", "true");
+    status.textContent = "রহস্যের বাক্স খুলছে… অপেক্ষা করুন!";
+
+    const duration = reducedMotion.matches ? 0 : 1900;
+    revealTimer = window.setTimeout(() => {
+      section.classList.remove("is-opening");
+      const didReveal = reveal();
+      if (didReveal) {
+        section.classList.add("is-revealed");
+      }
+      section.removeAttribute("aria-busy");
+      revealButton.removeAttribute("aria-busy");
+      revealButton.disabled = availableProducts().length === 0;
+      revealButton.textContent = "আরেকটি রহস্য খুলুন ✨";
+      isOpening = false;
+      revealTimer = null;
+    }, duration);
+  }
+
+  revealButton.addEventListener("click", openMysteryBox);
   addButton.addEventListener("click", () => {
     const id = addButton.dataset.productId;
     if (!id || typeof window.addToCart !== "function") {
@@ -87,8 +124,11 @@
   });
 
   const observer = new MutationObserver(() => {
-    if (result.hidden) revealButton.disabled = availableProducts().length === 0;
+    if (!isOpening && result.hidden) revealButton.disabled = availableProducts().length === 0;
   });
   observer.observe(grid, { childList: true, subtree: true });
   revealButton.disabled = availableProducts().length === 0;
+  window.addEventListener("pagehide", () => {
+    if (revealTimer !== null) window.clearTimeout(revealTimer);
+  }, { once: true });
 })();
