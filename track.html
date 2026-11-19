@@ -1,38 +1,64 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1425">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827">
+<meta name="description" content="Securely track your Foodora order and delivery progress.">
 <title>Track your order | Foodora</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/track.css?v=foodora-live-tracking-v1">
+<link rel="stylesheet" href="/track.css?v=foodora-tracking-pro-v2">
 <link rel="stylesheet" href="/customer-support.css?v=2">
 </head>
 <body>
-<header class="track-top"><a class="brand" href="/">foodora<span>.</span></a><a class="back" href="/">← Back to store</a></header>
+<header class="track-top">
+  <a class="brand" href="/" aria-label="Foodora home">foodora<span>.</span></a>
+  <a class="back" href="/">← <span>Back to store</span></a>
+</header>
 <main class="wrap">
-  <div class="intro"><p class="eyebrow">FOODORA · ORDER TRACKING</p><h1>Track your order</h1><p>Stay updated on your food delivery, every step of the way.</p></div>
-  <section class="panel search-panel">
-    <h2>Find your order</h2><p class="hint">Enter the Order ID and mobile number used at checkout.</p>
+  <section class="intro">
+    <p class="eyebrow"><span class="eyebrow-mark"></span> FOODORA ORDER CARE</p>
+    <h1>Your order, <span>in the loop.</span></h1>
+    <p>Follow every update from confirmation to your doorstep.</p>
+  </section>
+
+  <section class="panel search-panel" aria-labelledby="lookupTitle">
+    <div class="panel-heading">
+      <div><span class="step-kicker">ORDER LOOKUP</span><h2 id="lookupTitle">Find your order</h2></div>
+      <span class="secure-mark" aria-label="Secure lookup">✓ Secure</span>
+    </div>
+    <p class="hint">Use the Order ID and mobile number entered at checkout.</p>
     <form id="trackingForm" novalidate>
-      <label for="orderId">Order ID</label><input id="orderId" name="orderId" autocomplete="off" placeholder="e.g. FD_a1b2c3d4e5" required maxlength="60">
-      <label for="phone">Checkout phone number</label><input id="phone" name="phone" inputmode="numeric" autocomplete="tel" placeholder="01XXXXXXXXX" required maxlength="14">
-      <button id="trackButton" type="submit">TRACK MY ORDER <span>→</span></button>
+      <div class="field"><label for="orderId">Order ID</label><input id="orderId" name="orderId" autocomplete="off" placeholder="e.g. FD_a1b2c3d4e5" required maxlength="60" aria-describedby="message"></div>
+      <div class="field"><label for="phone">Checkout phone number</label><input id="phone" name="phone" inputmode="numeric" autocomplete="tel" placeholder="01XXXXXXXXX" required maxlength="14" aria-describedby="message"></div>
+      <button id="trackButton" type="submit">Track my order <span aria-hidden="true">→</span></button>
       <p id="message" class="message" role="status" aria-live="polite"></p>
     </form>
+    <p class="privacy-hint"><span>⌑</span> Your order details stay private and are shown only after verification.</p>
   </section>
+
   <section id="result" class="panel result-panel" hidden aria-live="polite">
-    <div class="status-head"><div><span class="section-label">ORDER STATUS</span><h2 id="statusTitle">Order received</h2></div><span id="statusBadge" class="status-badge">Pending</span></div>
-    <div class="tracking-livebar"><span id="lastUpdated">Live updates every 20 seconds</span><button id="refreshTracking" type="button">↻ Refresh now</button></div>
-    <div class="progress-title">Delivery progress</div><div id="timeline" class="timeline"></div>
-    <div class="details-title">Order details</div><div id="details" class="details"></div>
-    <div class="details-title products-title">Products in your order</div><div id="items" class="items"></div>
+    <div class="result-top">
+      <div><span class="step-kicker">LIVE ORDER OVERVIEW</span><h2 id="statusTitle">Order received</h2><p class="result-subtitle">Here’s the latest from your Foodora order.</p></div>
+      <span id="statusBadge" class="status-badge">Pending</span>
+    </div>
+    <div class="tracking-livebar">
+      <span class="live-indicator" id="lastUpdated">Live updates every 20 seconds</span>
+      <button id="refreshTracking" type="button">↻ Refresh now</button>
+    </div>
+    <div class="eta-slot" id="etaSlot"></div>
+    <div class="progress-heading"><div><span class="step-kicker">THE JOURNEY</span><h3>Delivery progress</h3></div><span class="progress-caption">Status updates automatically</span></div>
+    <div id="timeline" class="timeline"></div>
+    <div class="details-title">Order summary</div><div id="details" class="details"></div>
+    <div class="details-title products-title">In your order</div><div id="items" class="items"></div>
     <section id="reviewInvites" class="review-invites" hidden aria-live="polite"></section>
-    <p class="privacy-note">For your privacy, order information is shown only after both your Order ID and checkout phone number match.</p>
+    <p class="privacy-note">Need help? Use Foodora Support. Never share your account password, PIN or OTP.</p>
   </section>
-  <footer>FOODORA · FRESH FOOD, DELIVERED WITH CARE</footer>
+  <footer><span>FOODORA</span> · FRESH FOOD, DELIVERED WITH CARE</footer>
 </main>
-<script src="/track.js?v=foodora-live-tracking-v1" defer></script>
+<script src="/track.js?v=foodora-tracking-pro-v2" defer></script>
 <script src="/customer-support.js?v=2" defer></script>
-</body></html>
+</body>
+</html>
