@@ -103,8 +103,8 @@ public class V2__VendorStoreManagement extends BaseJavaMigration {
                   ON cc.CONSTRAINT_CATALOG = tc.CONSTRAINT_CATALOG
                  AND cc.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
                  AND cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
-                WHERE tc.CONSTRAINT_SCHEMA = 'PLATFORM_IDENTITY'
-                  AND tc.TABLE_NAME = 'USERS'
+                WHERE LOWER(tc.CONSTRAINT_SCHEMA) = 'platform_identity'
+                  AND LOWER(tc.TABLE_NAME) = 'users'
                   AND tc.CONSTRAINT_TYPE = 'CHECK'
                   AND UPPER(cc.CHECK_CLAUSE) LIKE '%ROLE%'
                   AND UPPER(cc.CHECK_CLAUSE) LIKE '%CUSTOMER%'
