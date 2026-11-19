@@ -51,6 +51,13 @@ public class OrderController {
         return service.checkout(cartId, idempotencyKey, auth, request);
     }
 
+    @PostMapping("/orders/{orderId}/cancel")
+    public OrderDtos.OrderResponse cancelOrder(@PathVariable UUID orderId,
+            @RequestBody(required = false) OrderDtos.CancelOrderRequest request,
+            Authentication auth) {
+        return service.cancelOrder(orderId, auth, request == null ? "" : request.reason());
+    }
+
     @GetMapping("/orders/{orderId}")
     public OrderDtos.OrderResponse getOrder(@PathVariable UUID orderId, Authentication auth) {
         return service.getOrder(orderId, auth);
