@@ -27,6 +27,8 @@ assert.ok(installer.includes("beforeinstallprompt"), "Supported browsers should 
 assert.ok(installer.includes('register("/sw.js"'), "PWA service worker must be registered");
 assert.ok(home.includes('rel="manifest" href="/manifest.webmanifest"'), "Homepage must link the manifest");
 assert.ok(home.includes('src="/app-pwa.js?v=1"'), "Homepage must load PWA bootstrap");
+assert.ok(worker.includes('"/homepage-sliders.js?v=1"'), "Service worker must precache the homepage slider controller");
+assert.ok(worker.includes("foodora-shell-v3"), "Homepage slider release must refresh the PWA shell cache");
 assert.ok(offline.includes("অর্ডার, পেমেন্ট ও অ্যাকাউন্টের তথ্য অফলাইনে সংরক্ষণ করা হয় না"), "Offline page must explain sensitive flows remain online-only");
 
 for (const iconPath of ["icons/foodora-icon.svg", "icons/foodora-maskable.svg"]) {
