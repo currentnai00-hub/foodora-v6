@@ -87,7 +87,7 @@ class AuthFlowIntegrationTests {
  }
  @Test void deactivatedAccountCannotReuseAnExistingSession()throws Exception{
   String phone="01312345678";
-  String body="{\\"name\\":\\"Deactivated Customer\\",\\"phone\\":\\""+phone+"\\",\\"password\\":\\"a-strong-test-password\\"}";
+  String body="{\"name\":\"Deactivated Customer\",\"phone\":\""+phone+"\",\"password\":\"a-strong-test-password\"}";
   var registered=mvc.perform(protectedPost("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
    .andExpect(status().isCreated()).andReturn();
   Cookie session=registered.getResponse().getCookie("foodora_platform_session");
