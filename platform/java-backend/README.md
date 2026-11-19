@@ -23,43 +23,31 @@ Health: `GET /actuator/health`
 - `GET /api/v1/auth/me` — returns the authenticated customer.
 - `POST /api/v1/auth/logout` — revokes the current session.
 
-Bangladesh mobile numbers must use `01XXXXXXXXX`; passwords are 12–128 characters. Public registration can only create CUSTOMER accounts.
-
-Sessions use 256-bit random tokens. Only SHA-256 token hashes are stored. Passwords use BCrypt. Cookies are HttpOnly, SameSite=Lax and Secure when `FOODORA_COOKIE_SECURE=true`. Enable Secure behind production HTTPS.
-
-## Data ownership
-
-Flyway creates a separate `platform_identity` schema. No legacy customer records are copied or modified and no dual writes occur. Existing Node sessions are not accepted by Java. Account linking, password migration/reset, order ownership reconciliation and a canary cutover must be reviewed before customer traffic is switched.
-
-## Tests
-
-`mvn --batch-mode verify` uses an isolated in-memory H2 database; it does not connect to production.
-
 ## Vendor onboarding & store management API v1
 
 - `POST /api/v1/vendor/applications` — authenticated customer submits one vendor application.
 - `GET /api/v1/vendor/applications/me` — reads the caller's application status.
 - `GET /api/v1/admin/vendor/applications` — ADMIN-only pending application queue.
-- `POST /api/v1/admin/vendor/applications/{id}/approve` — ADMIN-only approval; atomically creates an ACTIVE store and OWNER membership.
-- `POST /api/v1/admin/vendor/applications/{id}/reject` — ADMIN-only rejection with an optional review note.
+- `POST /api/v1/admin/vendor/applications/{id}/approve` — ADMIN-only approval; atomically creates the store and OWNER membership.
+- `POST /api/v1/admin/vendor/applications/{id}/reject` — ADMIN-only rejection.
 - `GET /api/v1/vendor/stores/me` — lists only stores where the caller has an active membership.
-- `PUT /api/v1/vendor/stores/{storeId}` — OWNER/MANAGER-only store profile update; inaccessible store IDs return 404.
+- `PUT /api/v1/vendor/stores/{storeId}` — OWNER/MANAGER-only store profile update.
 
-### Authorization boundaries
+## Product Catalog & Inventory API v1
 
-Vendor permissions are scoped to `store_memberships`, not inferred from a client-supplied role or a global VENDOR flag. Public registration still creates CUSTOMER only. ADMIN is a privileged platform role and must be provisioned through a separately controlled operator process; there is no public admin-registration endpoint. A user with no active store membership cannot read or update another vendor's store.
+All vendor endpoints require an authenticated active OWNER or MANAGER membership for the exact store. Product and category identifiers are scoped by store at both query and database-constraint levels.
 
-Each account may submit one application in this foundation. Approval is transactional: the application status, store, and OWNER membership are committed together. A unique application-to-store relationship and membership primary key prevent duplicate store creation.
+- `POST /api/v1/vendor/stores/{storeId}/categories` — create a store-owned category.
+- `POST /api/v1/vendor/stores/{storeId}/products` — create a DRAFT product and its initial variant.
+- `GET /api/v1/vendor/stores/{storeId}/products` — list products and variants belonging only to that store.
+- `POST /api/v1/vendor/stores/{storeId}/variants/{variantId}/stock-adjustments` — append an inventory movement and update stock atomically. Requires a UUID `Idempotency-Key` header.
 
-### Browser CSRF flow
+### Money and inventory invariants
 
-First call `GET /api/v1/auth/csrf`, then send the returned `XSRF-TOKEN` cookie value in `X-XSRF-TOKEN` for state-changing requests. Keep the session cookie HttpOnly; do not expose it to JavaScript.
+Prices are positive integer minor units in BDT (100 poisha = ৳1); floating-point money is not accepted. New variants start with zero stock. Stock changes are recorded in an append-only movement ledger, protected by a per-store idempotency key and a row lock. On-hand stock cannot fall below reserved stock; stock cannot become negative. Reservation/checkout flows are intentionally not implemented in this phase.
 
-## Vendor integration tests
+New products remain DRAFT and are not exposed through a public catalog endpoint. Product moderation and customer browsing will be added after the admin review workflow is implemented.
 
-The vendor integration suite uses only the test profile's isolated H2 database. It covers pending application workflow, ADMIN-only review, store creation, owner access, duplicate applications, and cross-account store isolation. No production database or legacy Node tables are used.
+## Tests
 
-
-### Migration compatibility note
-
-The V1 identity migration is immutable. V2 is a Flyway Java migration because V1's inline role CHECK constraint has a database-generated name that differs between PostgreSQL and H2. V2 resolves the existing constraint from database metadata, replaces it with the CUSTOMER/ADMIN policy, and then creates the vendor/store tables. This keeps test and PostgreSQL migration behavior aligned without editing an already-versioned SQL migration.
+`mvn --batch-mode --no-transfer-progress verify` uses an isolated in-memory H2 database in PostgreSQL compatibility mode. Tests create and delete only test-profile records. Never point the test profile at production.
