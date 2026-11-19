@@ -8,6 +8,7 @@ const { registerBackupRoutes } = require("./backup");
 const { registerAssistantRoutes } = require("./assistant");
 const { createStockAlertWorker } = require("./stock-alerts");
 const { registerPartnerPortal } = require("./partner-portal");
+const { registerOrderEventStream } = require("./event-stream");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -979,13 +980,14 @@ const backupServices = usePg ? registerBackupRoutes({ app, pool, adminOnly }) : 
 registerAssistantRoutes({ app, adminOnly, getProducts, getOrders });
 const stockAlertWorker = usePg ? createStockAlertWorker({ pool }) : null;
 const partnerPortal = usePg ? registerPartnerPortal({ app, pool, adminOnly, requestIsSameOrigin, clean }) : null;
+const orderEventStream = usePg ? registerOrderEventStream({ app, pool, adminOnly }) : null;
 
 const walletServices = usePg ? registerWalletRoutes({
   app,pool,signedInCustomer,adminOnly,requestIsSameOrigin,requireCustomerDatabase,clean
 }) : null;
 
 async function start(){
-  if(usePg) { await initDb(); await walletServices.ensureWalletSchema(); await backupServices.ensureSchema(); await stockAlertWorker.ensureSchema(); await partnerPortal.ensureSchema(); stockAlertWorker.start(); } else initJson();
+  if(usePg) { await initDb(); await walletServices.ensureWalletSchema(); await backupServices.ensureSchema(); await stockAlertWorker.ensureSchema(); await partnerPortal.ensureSchema(); await orderEventStream.ensureSchema(); stockAlertWorker.start(); } else initJson();
   app.listen(PORT,"0.0.0.0",()=>console.log(`Foodora V6 running on port ${PORT} | DB: ${usePg?"PostgreSQL":"local JSON"}`));
 }
 start().catch(err=>{console.error("Startup failed:",err);process.exit(1);});
