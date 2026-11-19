@@ -47,6 +47,7 @@ public class SecurityConfiguration {
    .exceptionHandling(e->e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
    .authorizeHttpRequests(a->a
      .requestMatchers("/actuator/health/**","/actuator/info",
+       "/api/v1/stores/*/products",
        "/api/v1/auth/register","/api/v1/auth/login",
        "/api/v1/auth/logout","/api/v1/auth/csrf").permitAll()
      .anyRequest().authenticated())
