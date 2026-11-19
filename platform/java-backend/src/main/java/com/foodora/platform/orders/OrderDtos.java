@@ -14,6 +14,8 @@ public final class OrderDtos {
 
     public record UpdateItemRequest(@Min(1) @Max(99) int quantity) {}
 
+    public record CancelOrderRequest(@Size(max=300) String reason) {}
+
     public record CheckoutRequest(@NotBlank @Size(max=80) String recipientName,
                                   @NotBlank @Pattern(regexp="01[0-9]{9}") String recipientPhone,
                                   @NotBlank @Size(max=500) String deliveryAddress,
