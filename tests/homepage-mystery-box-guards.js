@@ -28,3 +28,13 @@ assert.match(css, /prefers-reduced-motion:reduce/, "Animations must respect redu
 assert.match(css, /:focus-visible/, "Controls must expose keyboard focus");
 assert.match(js, /typeof window\.addToCart !== "function"/, "Cart action must fail safely when unavailable");
 console.log("Homepage Mystery Food Box guards passed.");
+
+assert.match(html, /data-mystery-immersive/, "Opening must provide a dedicated full-screen reveal layer");
+assert.match(html, /aria-modal="true"/, "Full-screen reveal must be announced as a modal dialog");
+assert.match(html, /data-mystery-skip/, "Users must be able to skip the animation");
+assert.match(js, /finishOpening/, "Reveal completion and skip must share a safe completion path");
+assert.match(js, /event\.key === "Escape"/, "Escape must dismiss the full-screen reveal");
+assert.match(js, /fd-mystery-immersive-open/, "Full-screen reveal must lock background scrolling");
+assert.match(css, /position:fixed; z-index:99999; inset:0/, "Reveal layer must cover the viewport");
+assert.match(css, /fd-fullscreen-lid/, "Full-screen gift lid must animate open");
+assert.match(css, /prefers-reduced-motion:reduce/, "Full-screen animation must respect reduced motion");
