@@ -47,6 +47,11 @@ const origin = base;
     const denied = await fetch(base + "/api/customer/events/stream?ticket=" + "0".repeat(64));
     assert.equal(denied.status, 401, "stream must reject an invalid ticket");
 
+    // Deliberately change the order after ticket issuance but before opening
+    // the SSE connection. The stream must replay this event from the ticket cursor
+    // instead of taking a fresh MAX(id) and silently skipping it during startup.
+    await pool.query("UPDATE orders SET status='Confirmed',payment_status='Verified' WHERE id=$1", [id]);
+
     const response = await fetch(base + "/api/customer/events/stream?ticket=" + encodeURIComponent(ticketData.ticket), {
       headers: { Accept: "text/event-stream" },
       signal: controller.signal
@@ -54,8 +59,6 @@ const origin = base;
     assert.equal(response.status, 200);
     assert.match(response.headers.get("content-type") || "", /text\/event-stream/);
     reader = response.body.getReader();
-
-    await pool.query("UPDATE orders SET status='Confirmed',payment_status='Verified' WHERE id=$1", [id]);
     let received = "";
     const deadline = Date.now() + 5000;
     while (!received.includes("event: order.update") && Date.now() < deadline) {
