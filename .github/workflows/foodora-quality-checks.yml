@@ -76,6 +76,12 @@ jobs:
         run: |
           node --check operations.js
           node tests/operations-control-tower-guards.js
+      - name: Check delivery partner portal syntax and security guards
+        run: |
+          node --check partner-portal.js
+          node --check partner.js
+          node --check dispatch.js
+          node tests/delivery-partner-portal-guards.js
       - name: Check PWA JavaScript syntax
         run: |
           node --check sw.js
