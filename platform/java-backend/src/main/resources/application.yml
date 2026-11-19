@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: foodora-java-platform
+
+server:
+  port: ${PORT:8081}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+info:
+  app:
+    name: Foodora Java Marketplace Platform
+    stage: foundation
