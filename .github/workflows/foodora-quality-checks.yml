@@ -82,6 +82,10 @@ jobs:
           node --check partner.js
           node --check dispatch.js
           node tests/delivery-partner-portal-guards.js
+      - name: Check realtime event stream syntax and safety
+        run: |
+          node --check event-stream.js
+          node tests/realtime-event-stream-guards.js
       - name: Check PWA JavaScript syntax
         run: |
           node --check sw.js
@@ -139,6 +143,8 @@ jobs:
           echo $! > /tmp/foodora-server.pid
       - name: Run PostgreSQL payment end-to-end tests
         run: node tests/postgres-payment-e2e.js
+      - name: Run PostgreSQL realtime event outbox E2E tests
+        run: node tests/realtime-event-stream-e2e.js
       - name: Run isolated PostgreSQL ZIP backup and restore end-to-end tests
         run: node tests/postgres-backup-restore-e2e.js
       - name: Show server log on failure
