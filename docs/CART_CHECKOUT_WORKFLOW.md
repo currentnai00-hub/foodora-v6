@@ -55,3 +55,20 @@ The cancellation is one database transaction:
 - Append an immutable status event with actor, transition, reason, and timestamp.
 
 A repeated cancellation returns a conflict and cannot release inventory twice. Orders in later states cannot be cancelled through this customer endpoint. Payment capture and refund handling are intentionally outside this workflow; no payment status is inferred.
+
+
+## Manual bKash/Nagad payment review (Java API)
+
+This is a manual review workflow, not a payment gateway. The customer submits a transaction reference; that submission is **not proof of payment**.
+
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| POST | `/api/v1/orders/{orderId}/payments` | Customer | Submit bKash/Nagad method and transaction ID |
+| GET | `/api/v1/admin/payments/pending` | Admin | List pending submissions |
+| POST | `/api/v1/admin/payments/{paymentId}/review` | Admin | Approve or reject after checking the provider's official transaction record |
+
+The server derives the amount from the stored order total. The client cannot set or override the amount or payment status. Transaction IDs are unique case-insensitively per payment method. Submission moves the order from `AWAITING_PAYMENT` to `PAYMENT_REVIEW`; approval moves it to `CONFIRMED`, while rejection returns it to `AWAITING_PAYMENT` so a fresh transaction reference can be submitted.
+
+Only a session whose database role is `ADMIN` can access the review queue or review action. Public registration always creates `CUSTOMER`; it cannot create an administrator. An authorized database operator must provision the initial administrator through a controlled, private database procedure. Do not expose an admin-creation endpoint or reuse the legacy Node `x-admin-key` mechanism.
+
+No provider API, automatic verification, capture, or refund is implemented. Admins must verify the exact incoming amount and transaction reference directly in the provider's official app or statement before approving. Never approve based only on a customer screenshot or submitted transaction ID.
