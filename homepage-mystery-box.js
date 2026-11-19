@@ -72,6 +72,7 @@
     }
 
     isOpening = true;
+    result.hidden = true;
     revealButton.disabled = true;
     revealButton.setAttribute("aria-busy", "true");
     revealButton.textContent = "চমক আসছে…";
