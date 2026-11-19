@@ -227,6 +227,9 @@ async function initDb() {
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reviewed_at TIMESTAMPTZ;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_review_note TEXT NOT NULL DEFAULT '';
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS estimated_delivery_at TIMESTAMPTZ;
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS prep_minutes INTEGER;
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_minutes INTEGER;
     CREATE TABLE IF NOT EXISTS payment_review_events (
       id BIGSERIAL PRIMARY KEY,
       order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -287,7 +290,7 @@ async function getProducts(activeOnly = false) {
 async function getOrders() {
   if (usePg) {
     const r = await pool.query("SELECT * FROM orders ORDER BY created_at DESC");
-    return r.rows.map(o => ({ id:o.id,name:o.customer_name,phone:o.phone,address:o.address,paymentMethod:o.payment_method,transactionId:o.transaction_id,paymentStatus:o.payment_status,paymentReviewedAt:o.payment_reviewed_at,paymentReviewNote:o.payment_review_note||"",status:o.status,items:o.items,subtotal:o.subtotal,discount:o.discount,deliveryFee:o.delivery_fee,total:o.total,couponCode:o.coupon_code,createdAt:o.created_at }));
+    return r.rows.map(o => ({ id:o.id,name:o.customer_name,phone:o.phone,address:o.address,paymentMethod:o.payment_method,transactionId:o.transaction_id,paymentStatus:o.payment_status,paymentReviewedAt:o.payment_reviewed_at,paymentReviewNote:o.payment_review_note||"",status:o.status,estimatedDeliveryAt:o.estimated_delivery_at||null,prepMinutes:o.prep_minutes??null,deliveryMinutes:o.delivery_minutes??null,items:o.items,subtotal:o.subtotal,discount:o.discount,deliveryFee:o.delivery_fee,total:o.total,couponCode:o.coupon_code,createdAt:o.created_at }));
   }
   return readJson(ORDERS_FILE, []);
 }
@@ -520,7 +523,7 @@ app.get("/api/customer/orders/:id",async(req,res)=>{
     if(!customer)return res.status(401).json({error:"লগইন করুন।"});
     const orderId=clean(req.params.id,60);
     const result=await pool.query(
-      `SELECT id,status,payment_status,payment_method,transaction_id,payment_reviewed_at,payment_review_note,items,subtotal,discount,delivery_fee,total,address,created_at
+      `SELECT id,status,payment_status,payment_method,transaction_id,payment_reviewed_at,payment_review_note,estimated_delivery_at,prep_minutes,delivery_minutes,items,subtotal,discount,delivery_fee,total,address,created_at
        FROM orders WHERE id=$1 AND customer_id=$2 LIMIT 1`,[orderId,customer.id]);
     const order=result.rows[0];
     res.set("Cache-Control","no-store");
@@ -529,6 +532,8 @@ app.get("/api/customer/orders/:id",async(req,res)=>{
       id:order.id,status:order.status,paymentStatus:order.payment_status,
       paymentMethod:order.payment_method,paymentTransactionId:order.transaction_id||"",
       paymentReviewedAt:order.payment_reviewed_at,paymentReviewNote:order.payment_review_note||"",
+      estimatedDeliveryAt:order.estimated_delivery_at,prepMinutes:order.prep_minutes,deliveryMinutes:order.delivery_minutes,
+      canCancel:["Pending","Confirmed"].includes(order.status),
       canResubmit:order.payment_status==="Rejected",items:Array.isArray(order.items)?order.items:[],
       subtotal:order.subtotal,discount:order.discount,deliveryFee:order.delivery_fee,
       total:order.total,address:order.address,createdAt:order.created_at,
@@ -537,6 +542,22 @@ app.get("/api/customer/orders/:id",async(req,res)=>{
          FROM payment_review_events WHERE order_id=$1 ORDER BY created_at ASC,id ASC`,[orderId])).rows
     }});
   }catch{res.status(500).json({error:"অর্ডারের বিস্তারিত পাওয়া যায়নি।"});}
+});
+
+app.post("/api/customer/orders/:id/cancel",async(req,res)=>{
+  if(!requestIsSameOrigin(req))return res.status(403).json({error:"অনুগ্রহ করে Foodora ওয়েবসাইট থেকেই অনুরোধ করুন।"});
+  if(!requireCustomerDatabase(res))return;
+  try{
+    const customer=await signedInCustomer(req);
+    if(!customer)return res.status(401).json({error:"অর্ডার বাতিল করতে লগইন করুন।"});
+    const orderId=clean(req.params.id,60);
+    const found=await pool.query("SELECT id,status FROM orders WHERE id=$1 AND customer_id=$2",[orderId,customer.id]);
+    if(!found.rowCount)return res.status(404).json({error:"আপনার অ্যাকাউন্টে এই অর্ডারটি পাওয়া যায়নি।"});
+    if(!["Pending","Confirmed"].includes(found.rows[0].status))
+      return res.status(409).json({error:"রান্না শুরু হয়ে যাওয়ায় এখন অনলাইনে অর্ডার বাতিল করা যাচ্ছে না। Foodora Support-এ যোগাযোগ করুন।"});
+    const result=await walletServices.cancelOrderAndRefund(orderId,{customerInitiated:true});
+    res.set("Cache-Control","no-store").json({ok:true,...result,message:result.refundIssued?"অর্ডার বাতিল হয়েছে এবং Wallet-এ রিফান্ড যোগ হয়েছে।":"অর্ডার বাতিলের অনুরোধ সম্পন্ন হয়েছে। প্রযোজ্য পেমেন্ট রিফান্ড যাচাই করে দেওয়া হবে।"});
+  }catch(e){res.status(e.status||500).json({error:e.message||"অর্ডার বাতিল করা যায়নি।"});}
 });
 
 app.post("/api/customer/orders/:id/payment-resubmit",async(req,res)=>{
@@ -721,6 +742,8 @@ app.post("/api/orders/track", async (req,res) => {
       id:o.id, status:o.status, paymentStatus:o.paymentStatus,paymentReviewNote:o.paymentReviewNote||"",
       paymentReviewedAt:o.paymentReviewedAt||null,paymentHistory,
       paymentMethod:o.paymentMethod || o.payment || "", createdAt:o.createdAt || o.created_at,
+      estimatedDeliveryAt:o.estimatedDeliveryAt||null,prepMinutes:o.prepMinutes??null,deliveryMinutes:o.deliveryMinutes??null,
+      canCancel:["Pending","Confirmed"].includes(o.status),
       items:Array.isArray(o.items)?o.items:[], subtotal:Number(o.subtotal||0),
       discount:Number(o.discount||0), deliveryFee:Number(o.deliveryFee ?? o.delivery ?? 0),
       total:Number(o.total||0)
@@ -898,7 +921,9 @@ app.patch("/api/admin/orders/:id",adminOnly,async(req,res)=>{
         if(paymentStatus) await pool.query("UPDATE orders SET payment_status=$1 WHERE id=$2",[paymentStatus,req.params.id]);
         return res.json({ok:true,...cancelled});
       }
-      const r=await pool.query("UPDATE orders SET status=COALESCE(NULLIF($1,''),status),payment_status=COALESCE(NULLIF($2,''),payment_status) WHERE id=$3 RETURNING id,status,payment_status",[status,paymentStatus,req.params.id]);
+      const etaMinutes=Number(req.body.etaMinutes);
+      if(req.body.etaMinutes!==undefined&&(!Number.isInteger(etaMinutes)||etaMinutes<5||etaMinutes>240))return res.status(400).json({error:"ETA অবশ্যই ৫ থেকে ২৪০ মিনিটের মধ্যে হতে হবে।"});
+      const r=await pool.query("UPDATE orders SET status=COALESCE(NULLIF($1,''),status),payment_status=COALESCE(NULLIF($2,''),payment_status),prep_minutes=CASE WHEN $4::int IS NULL THEN prep_minutes ELSE $4::int END,estimated_delivery_at=CASE WHEN $4::int IS NULL THEN estimated_delivery_at ELSE NOW()+($4::text||' minutes')::interval END WHERE id=$3 RETURNING id,status,payment_status,estimated_delivery_at,prep_minutes",[status,paymentStatus,req.params.id,req.body.etaMinutes===undefined?null:etaMinutes]);
       if(!r.rowCount)return res.status(404).json({error:"Order not found"});
       if(status==="Cancelled") {
         const o=(await pool.query("SELECT items FROM orders WHERE id=$1",[req.params.id])).rows[0];
@@ -906,7 +931,9 @@ app.patch("/api/admin/orders/:id",adminOnly,async(req,res)=>{
       return res.json({ok:true,...r.rows[0]});
     }
     const a=readJson(ORDERS_FILE,[]),o=a.find(x=>x.id===req.params.id);if(!o)return res.status(404).json({error:"Order not found"});
-    if(status)o.status=status;if(paymentStatus)o.paymentStatus=paymentStatus;writeJson(ORDERS_FILE,a);res.json({ok:true,order:o});
+    if(status)o.status=status;if(paymentStatus)o.paymentStatus=paymentStatus;
+    if(req.body.etaMinutes!==undefined){const minutes=Number(req.body.etaMinutes);if(!Number.isInteger(minutes)||minutes<5||minutes>240)return res.status(400).json({error:"ETA অবশ্যই ৫ থেকে ২৪০ মিনিটের মধ্যে হতে হবে।"});o.prepMinutes=minutes;o.estimatedDeliveryAt=new Date(Date.now()+minutes*60000).toISOString();}
+    writeJson(ORDERS_FILE,a);res.json({ok:true,order:o});
   }catch{res.status(500).json({error:"Order update failed"});}
 });
 app.get("/api/admin/coupons",adminOnly,async(req,res)=>{
