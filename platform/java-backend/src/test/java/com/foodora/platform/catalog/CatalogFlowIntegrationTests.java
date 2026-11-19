@@ -12,6 +12,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -77,7 +82,7 @@ class CatalogFlowIntegrationTests {
         jdbc.update("""
             INSERT INTO platform_identity.sessions(token_hash, user_id, expires_at)
             VALUES (?, ?, CURRENT_TIMESTAMP + INTERVAL '1' DAY)
-            """, com.foodora.platform.security.SessionAuthenticationFilter.sha256(raw), adminId);
+            """, sha256(raw), adminId);
         mvc.perform(postWithCsrf("/api/v1/admin/vendor/applications/" + applicationId + "/approve")
                 .cookie(new Cookie("foodora_platform_session", raw)))
             .andExpect(status().isOk());
