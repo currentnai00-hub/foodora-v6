@@ -58,3 +58,8 @@ First call `GET /api/v1/auth/csrf`, then send the returned `XSRF-TOKEN` cookie v
 ## Vendor integration tests
 
 The vendor integration suite uses only the test profile's isolated H2 database. It covers pending application workflow, ADMIN-only review, store creation, owner access, duplicate applications, and cross-account store isolation. No production database or legacy Node tables are used.
+
+
+### Migration compatibility note
+
+The V1 identity migration is immutable. V2 is a Flyway Java migration because V1's inline role CHECK constraint has a database-generated name that differs between PostgreSQL and H2. V2 resolves the existing constraint from database metadata, replaces it with the CUSTOMER/ADMIN policy, and then creates the vendor/store tables. This keeps test and PostgreSQL migration behavior aligned without editing an already-versioned SQL migration.
