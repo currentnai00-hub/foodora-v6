@@ -71,7 +71,6 @@ function registerOpenJarvisRoutes({
       ok: true,
       configured: settings.configured,
       provider: settings.configured ? "OpenJarvis" : null,
-      voiceInput: typeof globalThis !== "undefined",
       mode: "admin-only-read-only"
     });
   });
