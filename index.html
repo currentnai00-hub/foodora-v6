@@ -319,7 +319,10 @@
 <div id="fdVoiceWelcome" class="fd-voice-welcome" role="region" aria-label="Foodora voice welcome">
   <span class="fd-voice-mark" aria-hidden="true">♪</span>
   <span data-voice-status role="status" aria-live="polite">Foodora-তে স্বাগতম</span>
-  <button type="button" data-voice-play aria-label="স্বাগতম বার্তা আবার শুনুন">শুনুন</button>
+  <audio data-voice-audio preload="none">
+    <source src="/audio/foodora-welcome-bn.mp3" type="audio/mpeg">
+  </audio>
+  <button type="button" data-voice-play aria-label="স্বাগতম বার্তা শুনুন">শুনুন</button>
   <button type="button" data-voice-mute aria-label="ভয়েস বন্ধ করুন" aria-pressed="false">শব্দ বন্ধ</button>
 </div>
 \n<footer><a class="brand" href="/">foodora<span>.</span></a><p>যত্নে তৈরি খাবার, পৌঁছে যাবে আপনার ঘরে।</p><small>© <span id="year"></span> Foodora. সর্বস্বত্ব সংরক্ষিত।</small></footer>
