@@ -2,7 +2,11 @@
 (() => {
   const KEY = "foodora_voice_welcome_seen_v1";
   const root = document.getElementById("fdVoiceWelcome");
-  if (!root || !("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) return;
+  if (!root) return;
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    root.hidden = true;
+    return;
+  }
 
   const playButton = root.querySelector("[data-voice-play]");
   const muteButton = root.querySelector("[data-voice-mute]");
@@ -85,7 +89,8 @@
     muted = !muted;
     if (muted) stopSpeech();
     muteButton.setAttribute("aria-pressed", String(muted));
-    muteButton.textContent = muted ? "শব্দ বন্ধ" : "শব্দ চালু";
+    muteButton.setAttribute("aria-label", muted ? "ভয়েস চালু করুন" : "ভয়েস বন্ধ করুন");
+    muteButton.textContent = muted ? "শব্দ চালু" : "শব্দ বন্ধ";
     setStatus(muted ? "ভয়েস বন্ধ আছে" : "ভয়েস চালু আছে");
   });
 
