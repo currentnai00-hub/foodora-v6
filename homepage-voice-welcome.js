@@ -22,9 +22,7 @@
   function chooseVoice() {
     const voices = window.speechSynthesis.getVoices();
     return voices.find(voice => /^bn(-|_)?BD$/i.test(voice.lang)) ||
-      voices.find(voice => /^bn/i.test(voice.lang)) ||
-      voices.find(voice => /^en(-|_)?IN$/i.test(voice.lang)) ||
-      voices.find(voice => /^en/i.test(voice.lang)) || null;
+      voices.find(voice => /^bn/i.test(voice.lang)) || null;
   }
 
   function speakWelcome() {
