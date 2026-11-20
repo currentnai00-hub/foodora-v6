@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const KEY = "foodora_voice_welcome_seen_v1";
+  const KEY = "foodora_voice_welcome_seen_v2";
   const root = document.getElementById("fdVoiceWelcome");
   if (!root) return;
   if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
@@ -15,75 +15,96 @@
   let greeted = false;
   let activeUtterance = null;
   let fallbackTimer = null;
+  let sequenceToken = 0;
 
-  const greeting = "আসসালামু আলাইকুম। ফুডোরায় আপনাকে আন্তরিক স্বাগতম। আজকের সতেজ ও সুস্বাদু খাবারের মেনু ঘুরে দেখুন। আপনার পছন্দের খাবারটি বেছে নিন, আমরা যত্নের সঙ্গে পৌঁছে দেব আপনার ঠিকানায়।";
+  // Arabic is spoken by an Arabic voice; the welcome and ordering guidance
+  // are spoken separately by a Bengali voice for clearer pronunciation.
+  const welcomeLines = [
+    { text: "السلام عليكم ورحمة الله وبركاته", lang: "ar", voice: /^(ar)(-|_)/i },
+    {
+      text: "ফুডোরা ওয়েবসাইটে আপনাকে জানাই আন্তরিক স্বাগতম। আমাদের সুস্বাদু খাবারের মেনু থেকে আপনার পছন্দের খাবারটি দেখে নিন এবং সহজেই আপনার অর্ডারটি সম্পন্ন করুন। আপনার অর্ডারটি আমরা যত্ন ও আন্তরিকতার সঙ্গে আপনার কাছে পৌঁছে দেওয়ার চেষ্টা করব। ধন্যবাদ, ফুডোরার সঙ্গে থাকার জন্য।",
+      lang: "bn-BD",
+      voice: /^bn(-|_)?BD$/i
+    }
+  ];
   const menuLink = document.querySelector('a[href="#menu"], #menu');
 
   function setStatus(message) {
     if (status) status.textContent = message;
   }
 
-  function chooseVoice() {
+  function chooseVoice(pattern, fallbackPattern) {
     const voices = window.speechSynthesis.getVoices();
-    return voices.find(voice => /^bn(-|_)?BD$/i.test(voice.lang)) ||
-      voices.find(voice => /^bn/i.test(voice.lang)) || null;
+    return voices.find(voice => pattern.test(voice.lang)) ||
+      voices.find(voice => fallbackPattern.test(voice.lang)) || null;
   }
 
-  function speakWelcome() {
-    if (muted || greeted) return;
-    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+  function stopSpeech() {
+    sequenceToken += 1;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(greeting);
-    const voice = chooseVoice();
-    if (voice) {
-      utterance.voice = voice;
-      utterance.lang = voice.lang;
-    } else {
-      utterance.lang = "bn-BD";
-    }
-    utterance.rate = 0.88;
-    utterance.pitch = 0.9;
-    utterance.volume = 0.95;
-    activeUtterance = utterance;
-    utterance.onstart = () => {
+    root.classList.remove("is-speaking");
+    activeUtterance = null;
+    if (fallbackTimer) window.clearTimeout(fallbackTimer);
+    fallbackTimer = null;
+  }
+
+  function speakLine(index, token) {
+    if (token !== sequenceToken || muted) return;
+    if (index >= welcomeLines.length) {
       greeted = true;
       try { sessionStorage.setItem(KEY, "1"); } catch (_) {}
+      root.classList.remove("is-speaking");
+      setStatus("স্বাগতম! মেনু ঘুরে আপনার পছন্দের খাবার অর্ডার করুন।");
+      activeUtterance = null;
+      return;
+    }
+
+    const line = welcomeLines[index];
+    const utterance = new SpeechSynthesisUtterance(line.text);
+    const voice = chooseVoice(line.voice, line.lang === "ar" ? /^ar/i : /^bn/i);
+    utterance.lang = voice ? voice.lang : line.lang;
+    if (voice) utterance.voice = voice;
+    utterance.rate = line.lang === "ar" ? 0.88 : 0.9;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    activeUtterance = utterance;
+
+    utterance.onstart = () => {
+      if (token !== sequenceToken) return;
       root.classList.add("is-speaking");
-      setStatus("Foodora আপনাকে স্বাগতম জানাচ্ছে");
-      if (fallbackTimer) window.clearTimeout(fallbackTimer);
       root.classList.remove("needs-gesture");
+      setStatus(index === 0 ? "আরবি সম্ভাষণ…" : "বাংলায় স্বাগতম ও অর্ডারের নির্দেশনা…");
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
     };
     utterance.onend = () => {
-      root.classList.remove("is-speaking");
-      setStatus("স্বাগতম! মেনু ঘুরে দেখুন।");
-      activeUtterance = null;
+      if (token !== sequenceToken) return;
+      speakLine(index + 1, token);
     };
     utterance.onerror = () => {
+      if (token !== sequenceToken) return;
       root.classList.remove("is-speaking");
       activeUtterance = null;
       root.classList.add("needs-gesture");
-      setStatus("শুনতে নিচের বাটনে চাপ দিন");
+      setStatus("ভয়েস শুনতে আবার ‘শুনুন’ বাটনে চাপ দিন");
     };
     window.speechSynthesis.speak(utterance);
-    if (fallbackTimer) window.clearTimeout(fallbackTimer);
+  }
+
+  function speakWelcome() {
+    if (muted) return;
+    stopSpeech();
+    greeted = false;
+    const token = sequenceToken;
+    speakLine(0, token);
     fallbackTimer = window.setTimeout(() => {
-      if (!greeted && !muted) {
+      if (!greeted && !muted && token === sequenceToken) {
         root.classList.add("needs-gesture");
-        setStatus("স্বাগতম বার্তা শুনতে চাপ দিন");
+        setStatus("স্বাগতম বার্তা শুনতে ‘শুনুন’ চাপ দিন");
       }
     }, 1800);
   }
 
-  function stopSpeech() {
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-    root.classList.remove("is-speaking");
-    activeUtterance = null;
-  }
-
-  playButton?.addEventListener("click", () => {
-    greeted = false;
-    speakWelcome();
-  });
+  playButton?.addEventListener("click", speakWelcome);
 
   muteButton?.addEventListener("click", () => {
     muted = !muted;
@@ -94,10 +115,7 @@
     setStatus(muted ? "ভয়েস বন্ধ আছে" : "ভয়েস চালু আছে");
   });
 
-  menuLink?.addEventListener("click", () => {
-    if (activeUtterance) stopSpeech();
-  });
-
+  menuLink?.addEventListener("click", stopSpeech);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) stopSpeech();
   });
@@ -105,11 +123,10 @@
   let alreadySeen = false;
   try { alreadySeen = sessionStorage.getItem(KEY) === "1"; } catch (_) {}
   if (!alreadySeen) {
-    // Attempt a welcome on first entry. Browsers that block speech until a gesture
-    // receive a visible, accessible one-tap fallback instead.
+    // Browsers may block autoplay; the visible play button is the accessible fallback.
     speakWelcome();
   } else {
     greeted = true;
-    setStatus("স্বাগতম! মেনু ঘুরে দেখুন।");
+    setStatus("স্বাগতম! মেনু ঘুরে আপনার পছন্দের খাবার অর্ডার করুন।");
   }
 })();
