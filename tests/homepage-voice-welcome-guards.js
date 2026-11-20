@@ -8,34 +8,31 @@ const root = path.join(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const js = fs.readFileSync(path.join(root, "homepage-voice-welcome.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "homepage-voice-welcome.css"), "utf8");
+const intro = fs.readFileSync(path.join(root, "homepage-entry-intro.js"), "utf8");
 
-test("homepage includes the accessible voice welcome controls and assets", () => {
+test("homepage includes the accessible recorded-audio welcome controls", () => {
   assert.match(html, /id="fdVoiceWelcome"/);
+  assert.match(html, /data-voice-audio/);
+  assert.match(html, /\/audio\/foodora-welcome-bn\.mp3/);
   assert.match(html, /data-voice-play/);
   assert.match(html, /data-voice-mute/);
   assert.match(html, /homepage-voice-welcome\.js/);
   assert.match(html, /homepage-voice-welcome\.css/);
 });
 
-test("welcome is one continuous Bengali utterance with the requested greeting and wording", () => {
-  assert.match(js, /আসসালামু আলাইকুম ওয়া রাহমাতুল্লাহি ওয়া বারাকাতুহু/);
-  assert.match(js, /আমাদের ওয়েবসাইটে আপনাকে আন্তরিক স্বাগতম/);
-  assert.match(js, /আপনার পছন্দের খাবারটি বেছে নিতে মেনু ঘুরে দেখুন/);
-  assert.match(js, /const utterance = new SpeechSynthesisUtterance\(welcomeText\)/);
-  assert.match(js, /utterance\.lang = voice \? voice\.lang : "bn-BD"/);
-  assert.match(js, /utterance\.rate = 0\.96/);
-  assert.doesNotMatch(js, /ফুডোরা ওয়েবসাইট/);
-  assert.doesNotMatch(js, /lang: "ar"/);
-  assert.doesNotMatch(js, /speakLine\(index \+ 1/);
+test("welcome uses a real audio element and never falls back to robotic browser speech", () => {
+  assert.match(js, /audio\.play\(\)/);
+  assert.match(js, /audio\.pause\(\)/);
+  assert.match(js, /audio\.muted = muted/);
+  assert.match(js, /audio\.addEventListener\("ended"/);
+  assert.doesNotMatch(js, /SpeechSynthesisUtterance|speechSynthesis/);
 });
 
-test("voice welcome respects browser gesture fallback, session state and interruption", () => {
-  assert.match(js, /speechSynthesis/);
-  assert.match(js, /needs-gesture/);
-  assert.match(js, /sessionStorage/);
-  assert.match(js, /speechSynthesis\.cancel\(\)/);
+test("welcome waits for the visual intro and respects first-visit state", () => {
+  assert.match(intro, /foodora:intro:finished/);
+  assert.match(js, /foodora:intro:finished/);
+  assert.match(js, /foodora_voice_welcome_seen_v4/);
   assert.match(js, /visibilitychange/);
-  assert.match(js, /utterance\.pitch = 1/);
 });
 
 test("voice controls remain keyboard accessible and support reduced motion", () => {
