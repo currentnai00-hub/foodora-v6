@@ -23,6 +23,7 @@
     root.classList.remove("fd-entry-pending");
     document.body.style.overflow = previousOverflow;
     document.body.classList.remove("fd-entry-intro-open");
+    document.dispatchEvent(new CustomEvent("foodora:intro:finished"));
   }
 
   function onKeydown(event) {
