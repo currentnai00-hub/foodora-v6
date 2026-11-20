@@ -9,4 +9,4 @@
 @keyframes fdVoicePulse{50%{box-shadow:0 0 0 5px rgba(233,195,155,.17)}}
 @keyframes fdVoiceGlow{50%{box-shadow:0 0 0 7px rgba(233,195,155,.14)}}
 @media(max-width:480px){#fdVoiceWelcome{right:10px;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:none;gap:6px;padding:9px}#fdVoiceWelcome [data-voice-status]{font-size:11px}#fdVoiceWelcome button{padding:8px 9px;font-size:10px}}
-@media(prefers-reduced-motion:reduce){#fdVoiceWelcome.is-speaking .fd-voice-mark{animation:fdVoiceGlow 1.6s ease-in-out infinite}}
+@media(prefers-reduced-motion:reduce){#fdVoiceWelcome .fd-voice-mark{animation:none!important}}}
