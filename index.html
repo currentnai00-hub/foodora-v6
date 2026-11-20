@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/homepage-flavorverse.css?v=1">
 <link rel="stylesheet" href="/homepage-entry-intro.css?v=1">
 <script>try{if(!sessionStorage.getItem("foodora_entry_intro_seen"))document.documentElement.classList.add("fd-entry-pending");}catch(_){document.documentElement.classList.add("fd-entry-pending");}</script>
-</head>
+<link rel="stylesheet" href="/homepage-voice-welcome.css?v=1">\n</head>
 <body>
 <div class="fd-entry-intro" id="fdEntryIntro" role="dialog" aria-modal="true" aria-label="Foodora welcome" aria-hidden="true">
   <div class="fd-entry-noise" aria-hidden="true"></div>
@@ -315,7 +315,14 @@
 
 <section class="about" id="about"><p class="eyebrow">আপনার প্রতিটি মুহূর্তের জন্য</p><h2>ভালো খাবার<br>সবাইকে কাছে আনে।</h2><p>প্রতিদিনের পছন্দের খাবার অর্ডার করুন সহজে, নিশ্চিন্তে।</p></section>
 </main>
-<footer><a class="brand" href="/">foodora<span>.</span></a><p>যত্নে তৈরি খাবার, পৌঁছে যাবে আপনার ঘরে।</p><small>© <span id="year"></span> Foodora. সর্বস্বত্ব সংরক্ষিত।</small></footer>
+
+<div id="fdVoiceWelcome" class="fd-voice-welcome" role="region" aria-label="Foodora voice welcome">
+  <span class="fd-voice-mark" aria-hidden="true">♪</span>
+  <span data-voice-status role="status" aria-live="polite">Foodora-তে স্বাগতম</span>
+  <button type="button" data-voice-play aria-label="স্বাগতম বার্তা আবার শুনুন">শুনুন</button>
+  <button type="button" data-voice-mute aria-label="ভয়েস বন্ধ করুন" aria-pressed="false">শব্দ বন্ধ</button>
+</div>
+\n<footer><a class="brand" href="/">foodora<span>.</span></a><p>যত্নে তৈরি খাবার, পৌঁছে যাবে আপনার ঘরে।</p><small>© <span id="year"></span> Foodora. সর্বস্বত্ব সংরক্ষিত।</small></footer>
 <div class="drawer-backdrop" id="backdrop"></div><aside class="cart-drawer" id="drawer"><div class="drawer-head"><h2>আপনার কার্ট</h2><button class="icon-button" id="cartClose">✕</button></div><div id="cartItems" class="cart-items"></div><div id="deliveryProgress" class="delivery-progress" aria-live="polite"></div><div class="coupon-row"><input id="coupon" placeholder="কুপন কোড"><button id="applyCoupon">প্রয়োগ করুন</button></div><p id="couponMessage" class="muted"></p><div class="totals" id="totals"></div><button class="primary-button full" id="checkoutOpen">চেকআউটে যান</button></aside>
 <div class="modal-backdrop" id="checkoutModal"><form class="modal" id="checkoutForm"><div class="drawer-head"><h2>চেকআউট</h2><button type="button" class="icon-button" id="checkoutClose" aria-label="চেকআউট বন্ধ করুন">✕</button></div><div id="checkoutSummary" class="checkout-summary" aria-live="polite"></div><div id="checkoutFields"><label>আপনার নাম<input name="name" required maxlength="80"></label><label>মোবাইল নম্বর<input name="phone" required inputmode="numeric" pattern="01[0-9]{9}" placeholder="01XXXXXXXXX"></label><label>ডেলিভারি এলাকা<select name="deliveryArea" id="deliveryArea" required><option value="">এলাকা নির্বাচন করুন</option></select></label><label>বিস্তারিত ঠিকানা<textarea name="address" required maxlength="400" placeholder="বাড়ি/রোড/গ্রাম/ল্যান্ডমার্ক"></textarea></label><label>পেমেন্ট পদ্ধতি<select name="paymentMethod" id="paymentMethod" required></select></label><label>ট্রানজ্যাকশন আইডি (পেমেন্ট করে থাকলে)<input name="transactionId" maxlength="80" placeholder="Optional"></label><p class="payment-help" id="paymentHelp"></p><p class="checkout-security-note">আপনার অর্ডারের চূড়ান্ত মূল্য সার্ভার থেকে যাচাই করে নিশ্চিত করা হবে।</p>
 <button type="button" id="copyPaymentNumber"
@@ -344,5 +351,5 @@ class="primary-button full" style="display:none;">
 <script src="/homepage-flavorverse.js?v=1" defer></script>
 <script src="/homepage-entry-intro.js?v=1" defer></script>
 <script src="/customer-support.js?v=2" defer></script>
-<script src="/app-pwa.js?v=1" defer></script>
+<script src="/app-pwa.js?v=1" defer></script>\n<script src="/homepage-voice-welcome.js?v=1" defer></script>
 </body></html>
