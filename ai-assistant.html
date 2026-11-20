@@ -110,7 +110,7 @@ async function load(){
   if(error.message.toLowerCase().includes("authentication"))$("snapshot").textContent="Your admin session may have expired. Return to the Admin Dashboard and sign in again.";
  }
 }
-async function sendMessage(fromVoice=false){
+async function sendMessage(){
  if(!chatReady)return;
  const input=$("prompt"),message=input.value.trim();
  if(!message)return;
@@ -136,7 +136,7 @@ function startVoice(){
  if(recognition){try{recognition.abort()}catch{}}
  const rec=new SpeechRecognition();recognition=rec;rec.lang=$("voice-language").value;rec.interimResults=false;rec.continuous=false;rec.maxAlternatives=1;
  rec.onstart=()=>{$("voice").textContent="Listening…";$("voice").disabled=true;$("chat-note").textContent="Listening. Speak clearly, then I’ll send your message to Foodora AI.";};
- rec.onresult=event=>{const transcript=event.results?.[0]?.[0]?.transcript||"";$("prompt").value=transcript;if(transcript.trim())sendMessage(true);};
+ rec.onresult=event=>{const transcript=event.results?.[0]?.[0]?.transcript||"";$("prompt").value=transcript;if(transcript.trim())sendMessage();};
  rec.onerror=event=>{$("chat-note").textContent=event.error==="not-allowed"?"Microphone permission was denied. Allow microphone access in your browser settings.":"Voice input could not start. You can type your message instead.";};
  rec.onend=()=>{$("voice").textContent="🎙 Talk";$("voice").disabled=!SpeechRecognition||!chatReady;recognition=null;};
  try{rec.start()}catch{$("chat-note").textContent="Voice input could not start. Please try again.";}
