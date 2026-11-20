@@ -4,9 +4,9 @@
 #fdVoiceWelcome button{border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:8px 11px;background:transparent;color:#fff;font-family:inherit;font-size:11px;font-weight:600;line-height:1.2;white-space:nowrap;cursor:pointer}
 #fdVoiceWelcome button:focus-visible{outline:2px solid #f0c99f;outline-offset:3px}
 #fdVoiceWelcome [data-voice-play]{background:#e9c39b;border-color:#e9c39b;color:#183326}
-#fdVoiceWelcome.needs-gesture [data-voice-play]{animation:fdVoicePulse 1.8s ease-in-out infinite}
+#fdVoiceWelcome [data-voice-play]:disabled{opacity:.55;cursor:not-allowed}
 #fdVoiceWelcome.is-speaking .fd-voice-mark{animation:fdVoiceGlow 1.6s ease-in-out infinite}
 @keyframes fdVoicePulse{50%{box-shadow:0 0 0 5px rgba(233,195,155,.17)}}
 @keyframes fdVoiceGlow{50%{box-shadow:0 0 0 7px rgba(233,195,155,.14)}}
 @media(max-width:480px){#fdVoiceWelcome{right:10px;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:none;gap:6px;padding:9px}#fdVoiceWelcome [data-voice-status]{font-size:11px}#fdVoiceWelcome button{padding:8px 9px;font-size:10px}}
-@media(prefers-reduced-motion:reduce){#fdVoiceWelcome.needs-gesture [data-voice-play],#fdVoiceWelcome.is-speaking .fd-voice-mark{animation:none}}
+@media(prefers-reduced-motion:reduce){#fdVoiceWelcome.is-speaking .fd-voice-mark{animation:fdVoiceGlow 1.6s ease-in-out infinite}}
