@@ -6,6 +6,7 @@ const { Pool } = require("pg");
 const { registerWalletRoutes } = require("./wallet");
 const { registerBackupRoutes } = require("./backup");
 const { registerAssistantRoutes } = require("./assistant");
+const { registerOpenJarvisRoutes } = require("./openjarvis-bridge");
 const { createStockAlertWorker } = require("./stock-alerts");
 const { registerPartnerPortal } = require("./partner-portal");
 const { registerOrderEventStream } = require("./event-stream");
@@ -47,7 +48,7 @@ app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(self), geolocation=()");
   if (process.env.NODE_ENV === "production" && req.secure) {
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
@@ -1072,6 +1073,7 @@ const backupServices = usePg ? registerBackupRoutes({ app, pool, adminOnly }) : 
 
 // The Personal AI workspace starts with authenticated, read-only store insights.
 registerAssistantRoutes({ app, adminOnly, getProducts, getOrders });
+registerOpenJarvisRoutes({ app, adminOnly, getProducts, getOrders });
 const stockAlertWorker = usePg ? createStockAlertWorker({ pool }) : null;
 const partnerPortal = usePg ? registerPartnerPortal({ app, pool, adminOnly, requestIsSameOrigin, clean }) : null;
 const orderEventStream = usePg ? registerOrderEventStream({ app, pool, adminOnly }) : null;
