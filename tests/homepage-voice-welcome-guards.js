@@ -17,13 +17,16 @@ test("homepage includes the accessible voice welcome controls and assets", () =>
   assert.match(html, /homepage-voice-welcome\.css/);
 });
 
-test("welcome speaks the correct Arabic greeting followed by Bengali ordering guidance", () => {
-  assert.match(js, /السلام عليكم ورحمة الله وبركاته/);
-  assert.match(js, /ফুডোরা ওয়েবসাইটে আপনাকে জানাই আন্তরিক স্বাগতম/);
-  assert.match(js, /আপনার পছন্দের খাবারটি দেখে নিন/);
-  assert.match(js, /lang: "ar"/);
-  assert.match(js, /lang: "bn-BD"/);
-  assert.match(js, /speakLine\(index \+ 1, token\)/);
+test("welcome is one continuous Bengali utterance with the requested greeting and wording", () => {
+  assert.match(js, /আসসালামু আলাইকুম ওয়া রাহমাতুল্লাহি ওয়া বারাকাতুহু/);
+  assert.match(js, /আমাদের ওয়েবসাইটে আপনাকে আন্তরিক স্বাগতম/);
+  assert.match(js, /আপনার পছন্দের খাবারটি বেছে নিতে মেনু ঘুরে দেখুন/);
+  assert.match(js, /const utterance = new SpeechSynthesisUtterance\(welcomeText\)/);
+  assert.match(js, /utterance\.lang = voice \? voice\.lang : "bn-BD"/);
+  assert.match(js, /utterance\.rate = 0\.96/);
+  assert.doesNotMatch(js, /ফুডোরা ওয়েবসাইট/);
+  assert.doesNotMatch(js, /lang: "ar"/);
+  assert.doesNotMatch(js, /speakLine\(index \+ 1/);
 });
 
 test("voice welcome respects browser gesture fallback, session state and interruption", () => {
@@ -32,7 +35,6 @@ test("voice welcome respects browser gesture fallback, session state and interru
   assert.match(js, /sessionStorage/);
   assert.match(js, /speechSynthesis\.cancel\(\)/);
   assert.match(js, /visibilitychange/);
-  assert.match(js, /utterance\.rate = line\.lang === "ar" \? 0\.88 : 0\.9/);
   assert.match(js, /utterance\.pitch = 1/);
 });
 
