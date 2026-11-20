@@ -7,6 +7,8 @@ on:
       - "stock-alerts.js"
       - "server.js"
       - "ai-assistant.html"
+      - "openjarvis-bridge.js"
+      - "test/openjarvis-bridge.test.js"
       - "test/assistant.test.js"
       - "test/assistant-chat.test.js"
       - "test/stock-alerts.test.js"
@@ -59,9 +61,9 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Check backend syntax
-        run: node --check assistant.js && node --check stock-alerts.js && node --check server.js
+        run: node --check assistant.js && node --check stock-alerts.js && node --check openjarvis-bridge.js && node --check server.js
       - name: Check test syntax
-        run: node --check test/assistant.test.js && node --check test/assistant-chat.test.js && node --check test/stock-alerts.test.js && node --check test/stock-alerts.integration.test.js
+        run: node --check test/assistant.test.js && node --check test/assistant-chat.test.js && node --check test/openjarvis-bridge.test.js && node --check test/stock-alerts.test.js && node --check test/stock-alerts.integration.test.js
       - name: Run unit and PostgreSQL integration tests
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/foodora_test
