@@ -126,11 +126,12 @@ async function sendMessage(fromVoice=false){
   if(!response.ok)throw new Error(data.error||"Assistant request failed.");
   const answer=data.answer||"No response.";pending.textContent=answer;
   if(openJarvisReady){conversation.push({role:"user",content:message},{role:"assistant",content:answer});conversation=conversation.slice(-10);}
-  if(voiceReplies||fromVoice)speak(answer);
+  if(voiceReplies)speak(answer);
  }catch(error){pending.textContent=error.message;}
  finally{button.disabled=false;input.disabled=false;$("voice").disabled=!SpeechRecognition||!chatReady;input.focus();}
 }
 function startVoice(){
+ if("speechSynthesis" in window)window.speechSynthesis.cancel();
  if(!SpeechRecognition){$("chat-note").textContent="Voice input is not supported in this browser. You can still type and use voice replies.";return;}
  if(recognition){try{recognition.abort()}catch{}}
  const rec=new SpeechRecognition();recognition=rec;rec.lang=$("voice-language").value;rec.interimResults=false;rec.continuous=false;rec.maxAlternatives=1;
