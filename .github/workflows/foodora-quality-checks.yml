@@ -60,6 +60,10 @@ jobs:
         run: |
           node --check homepage-entry-intro.js
           node tests/homepage-entry-intro-guards.js
+      - name: Check cinematic customer voice welcome
+        run: |
+          node --check homepage-voice-welcome.js
+          node tests/homepage-voice-welcome-guards.js
       - name: Check Admin dashboard JavaScript syntax
         run: node --check admin.js
       - name: Check payment guide JavaScript syntax
